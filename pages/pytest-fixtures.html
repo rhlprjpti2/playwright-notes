@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pytest Fixtures &amp; Fundamentals · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Pytest Fixtures &amp; Fundamentals</div>
+    <h1>Pytest Fixtures &amp; Fundamentals</h1>
+    <p class="lede">The single most interview-relevant Pytest topic before Playwright even enters the picture: how tests get discovered, how fixtures work, why they don't run automatically like JUnit/TestNG hooks, the four scopes, conftest.py, and the yield-based setup/teardown pattern. Play with the simulators below — don't just read past them.</p>
+    <div class="card-tags">
+      <span>pytest</span>
+      <span>fundamentals</span>
+      <span>fixtures</span>
+    </div>
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#discovery">Test discovery rules</a>
+      <a href="#running">Running &amp; selecting tests</a>
+      <a href="#visual-linkage">Fixture linkage &amp; resolution</a>
+      <a href="#scopes">Fixture scopes</a>
+      <a href="#conftest">conftest.py</a>
+      <a href="#visual-yield">Setup/teardown with yield</a>
+      <a href="#returning-data">Returning data from fixtures</a>
+      <a href="#leads-to">Where this leads</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p><strong>Pytest</strong> is Python's testing framework/engine — the direct equivalent of JUnit for Java. Playwright's Python tests are written and run <em>on top of</em> Pytest, which is why Pytest fundamentals are a prerequisite, not an optional side topic.</p>
+        <p><strong>Fixtures</strong> are Pytest's mechanism for reusable setup code shared across multiple tests — think "reusable pre-work," like spinning up a browser instance before every test that needs one.</p>
+      </section>
+
+      <section id="discovery">
+        <h2>Test discovery rules</h2>
+        <ul>
+          <li>A <strong>function</strong> is only treated as a test if its name is prefixed or postfixed with <code>test</code> (e.g. <code>test_initial_check</code>). Without that keyword, it's just a plain function — Pytest won't touch it, no matter what's inside.</li>
+          <li>A <strong>file</strong> is only scanned by the <code>pytest</code> CLI command if its filename also starts with <code>test</code> (e.g. <code>test_validation.py</code>). Running the bare <code>pytest</code> command walks the current directory and only picks up files matching that naming rule.</li>
+          <li>The <code>-s</code> flag on the CLI (<code>pytest -s</code>) shows <code>print()</code> output in the console — without it, print statements are suppressed from the run output.</li>
+        </ul>
+      </section>
+
+      <section id="running">
+        <h2>Running &amp; selecting tests</h2>
+        <p>Beyond running a whole directory with a bare <code>pytest</code>, you can target specific tests or skip/tag them for selective runs — all relevant later when a CI/CD pipeline needs to trigger specific subsets.</p>
+        <ul>
+          <li><strong>Run one file:</strong> <code>pytest test_validation.py</code> — runs only that file, ignoring every other test file in the directory.</li>
+          <li><strong>Run one function:</strong> <code>pytest test_validation.py::test_initial_check</code> — the double-colon <code>::</code> separates the file from the specific test function name.</li>
+          <li><strong>Skip a test:</strong> <code>@pytest.mark.skip</code> above a test function — Pytest will skip it during any run and report it as "skipped" rather than pass/fail.</li>
+          <li><strong>Tag/mark tests:</strong> <code>@pytest.mark.smoke</code> (any custom name) applied to multiple tests, then run only that subset with <code>pytest -m smoke</code>. Tests without the mark are reported as "deselected." This is the Pytest equivalent of Cucumber tags or TestNG groups.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Shared prefix</strong>
+          Both skipping and custom tagging use the same <code>@pytest.mark.*</code> namespace — <code>.skip</code> is really just a built-in mark, structurally no different from a custom one like <code>.smoke</code>.
+        </div>
+      </section>
+
+      <section id="visual-linkage">
+        <h2>Fixture linkage &amp; resolution</h2>
+        <p>Unlike Java's TestNG/JUnit <code>@BeforeTest</code>, which runs automatically for every test with no explicit reference, a Pytest fixture only executes if a test <strong>names it as an argument</strong>. Defining <code>@pytest.fixture</code> alone does nothing until something links to it.</p>
+        <div class="diagram" id="flow-linkage"></div>
+        <script>
+          renderFlowDiagram("flow-linkage", {
+            steps: [
+              { label: "Define fixture", sub: "@pytest.fixture def pre_work():", desc: "Marks a function as reusable setup code — but it does not run on its own yet." },
+              { label: "Reference in test", sub: "def test_x(pre_work):", desc: "The test names the fixture as an argument. This is the linkage — without it, the fixture body never runs." },
+              { label: "Resolve fixture", sub: "local file → conftest.py", desc: "Pytest looks for the fixture definition in the test's own file first. If not found there, it falls back to conftest.py in the same directory." },
+              { label: "Run setup code", sub: "code before yield (or all of it, if no yield)", desc: "The fixture body executes. If it returns a value, that value becomes available to the test via the fixture argument." },
+              { label: "Run the test", sub: "test body executes", desc: "Control passes to the actual test function, which can use any value the fixture returned." },
+              { label: "Resume teardown", sub: "code after yield", desc: "If the fixture used yield, Pytest resumes it after the test finishes and runs whatever comes after the yield line — e.g. closing a browser or DB connection." }
+            ]
+          });
+        </script>
+
+        <div class="quiz">
+          <div class="quiz-q">You write <code>@pytest.fixture</code> above <code>def pre_work():</code> but no test function takes <code>pre_work</code> as an argument. What happens when you run the suite?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">It runs anyway — Pytest auto-detects every fixture defined in the file</button>
+            <button class="quiz-opt" data-correct="true">It never executes — no test linked to it, so its body is simply never called</button>
+            <button class="quiz-opt" data-correct="false">Pytest raises a "fixture unused" error and fails the run</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="scopes">
+        <h2>Fixture scopes</h2>
+        <p>Scope controls <em>how often</em> a fixture actually runs, independent of how many tests reference it. Default scope is <code>function</code>.</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Scope</th><th>Runs</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">function</td><td>Before every test that references it</td><td>Default scope if none is specified</td></tr>
+              <tr><td class="highlight">class</td><td>Once per test class</td><td>Same idea as module scope, but for tests grouped in a class instead of a file</td></tr>
+              <tr><td class="highlight">module</td><td>Once per test file</td><td>Even if 5 tests in that file reference it, it runs only once at the start</td></tr>
+              <tr><td class="highlight">session</td><td>Once per full test run, across every file</td><td>Only observable when running the whole suite together — running a single file in isolation, Pytest can't tell it apart from module scope</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout tip">
+          <strong>Practical use</strong>
+          Session scope is the natural choice for something expensive you want created exactly once across an entire run — e.g. launching one browser instance reused by all 30-40 tests in a framework, instead of relaunching per test or per file.
+        </div>
+
+        <div class="quiz">
+          <div class="quiz-q">You run <code>pytest test_two.py</code> — just that one file — and a fixture it uses has <code>scope="session"</code>. How does it actually behave in this run?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="true">Indistinguishable from scope="module" — Pytest needs the whole suite scanned to apply true session behavior</button>
+            <button class="quiz-opt" data-correct="false">Pytest errors out, since session scope requires at least two files</button>
+            <button class="quiz-opt" data-correct="false">It re-runs before every test function anyway, ignoring the scope setting</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="conftest">
+        <h2>conftest.py</h2>
+        <p><code>conftest.py</code> is a specifically-named file (the name is fixed, not customizable) that Pytest automatically checks for shared fixtures. Resolution order: Pytest first checks the test's own file for the fixture; if it isn't defined there, Pytest falls back to <code>conftest.py</code> in the same directory.</p>
+        <p>Purpose: instead of repeating the same setup fixture (browser launch, API client setup, etc.) in every test file, define it once in <code>conftest.py</code> and every test file in that directory can reference it by name.</p>
+      </section>
+
+      <section id="visual-yield">
+        <h2>Setup/teardown with yield</h2>
+        <p class="lead">The <code>yield</code> keyword splits a single fixture into a setup phase (code before <code>yield</code>) and a teardown phase (code after <code>yield</code>) — Pytest's equivalent of before/after hooks, without needing two separate functions. Step through the actual execution order below instead of just reading about it.</p>
+
+        <div class="sim" id="yield-sim"></div>
+        <script>
+          renderStepDebugger("yield-sim", {
+            title: "second_work fixture · step debugger",
+            terminalPrompt: "$ pytest test_validation.py -s",
+            legend: [
+              { label: "setup zone", color: "var(--success)" },
+              { label: "pause point", color: "#e0c14a" },
+              { label: "teardown zone", color: "var(--accent-3)" }
+            ],
+            codeBlocks: [
+              {
+                caption: "conftest.py",
+                lines: [
+                  { id: "ln1", zone: "setup", html: '<span class="ln">1</span> <span class="tok-kw">@pytest.fixture</span>(scope=<span class="tok-str">"function"</span>)' },
+                  { id: "ln2", zone: "setup", html: '<span class="ln">2</span> <span class="tok-kw">def</span> <span class="tok-fn">second_work</span>():' },
+                  { id: "ln3", zone: "setup", html: '<span class="ln">3</span> &nbsp;&nbsp;print(<span class="tok-str">"I setup second work instance"</span>)' },
+                  { id: "ln4", html: '<span class="ln">4</span> &nbsp;&nbsp;<span class="tok-kw">yield</span> <span class="tok-str">"fail"</span> &nbsp;<span class="tok-cm"># pauses here, hands back "fail"</span>' },
+                  { id: "ln5", zone: "teardown", html: '<span class="ln">5</span> &nbsp;&nbsp;print(<span class="tok-str">"tear down validation"</span>)' }
+                ]
+              },
+              {
+                caption: "test_validation.py",
+                lines: [
+                  { id: "ln6", html: '<span class="ln">6</span> <span class="tok-kw">def</span> <span class="tok-fn">test_initial_check</span>(second_work):' },
+                  { id: "ln7", html: '<span class="ln">7</span> &nbsp;&nbsp;<span class="tok-kw">assert</span> second_work == <span class="tok-str">"fail"</span>' }
+                ]
+              }
+            ],
+            steps: [
+              { lineIds: ["ln1", "ln2"], desc: "pytest sees the test needs second_work — enters the fixture", term: '<span class="tag-setup">▸ collecting second_work fixture</span>' },
+              { lineIds: ["ln3"], desc: "runs the setup line, before yield", term: '<span class="tag-setup">I setup second work instance</span>' },
+              { lineIds: ["ln4"], desc: 'yield "fail" reached — fixture pauses and hands back "fail", same as a return would', term: '<span class="tag-pause">⏸ yield "fail" — fixture pauses, second_work = "fail"</span>' },
+              { lineIds: ["ln6", "ln7"], desc: "control jumps to the test body — assertion runs against the yielded value", term: '<span class="tag-test">▸ test_initial_check runs — checking assert second_work == "fail"</span>' },
+              { lineIds: ["ln6", "ln7"], desc: "assertion matches — test finishes", term: '<span class="tag-test">✓ test_initial_check PASSED</span>' },
+              { lineIds: ["ln5"], desc: "execution jumps back into the fixture, right after yield — teardown runs", term: '<span class="tag-teardown">▸ fixture resumes after yield</span><br><span class="tag-teardown">tear down validation</span>' }
+            ]
+          });
+        </script>
+
+        <ul class="notes" style="list-style:none; padding-left:0; margin:18px 0;">
+          <li style="margin-bottom:8px;">Everything <strong>before</strong> <code>yield</code> = setup — connections, logins, browser launches.</li>
+          <li style="margin-bottom:8px;">Everything <strong>after</strong> <code>yield</code> = teardown — closing connections, closing the browser, deleting cookies.</li>
+          <li style="margin-bottom:8px;">One fixture, split by <code>yield</code>, gives you both — no separate teardown function needed.</li>
+          <li style="margin-bottom:8px;"><code>yield "fail"</code> hands data to the test exactly like <code>return</code> would — it just also gives you a teardown phase afterward, which is why the test can assert against it.</li>
+        </ul>
+
+        <div class="quiz">
+          <div class="quiz-q">In the trace above, does "tear down validation" print before or after the test's own assertion runs?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">Before — teardown always runs first to reset state</button>
+            <button class="quiz-opt" data-correct="true">After — the fixture pauses at yield and only resumes once the test finishes</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="returning-data">
+        <h2>Returning data from fixtures</h2>
+        <p>A fixture isn't limited to running setup actions — it can also <code>return</code> data that the test then receives through the fixture argument. This is how framework-level fixtures typically supply test data: login credentials, tokens, IDs, etc., defined centrally rather than hardcoded per test.</p>
+
+        <div class="code-block">
+          <div class="cap">test_validation.py</div>
+          <span class="code-line"><span class="ln">1</span> <span class="tok-kw">@pytest.fixture</span></span>
+          <span class="code-line"><span class="ln">2</span> <span class="tok-kw">def</span> <span class="tok-fn">pre_work</span>():</span>
+          <span class="code-line"><span class="ln">3</span> &nbsp;&nbsp;print(<span class="tok-str">"setup"</span>)</span>
+          <span class="code-line"><span class="ln">4</span> &nbsp;&nbsp;<span class="tok-kw">return</span> <span class="tok-str">"fail"</span></span>
+          <span class="code-line"><span class="ln">5</span> </span>
+          <span class="code-line"><span class="ln">6</span> <span class="tok-kw">def</span> <span class="tok-fn">test_initial_check</span>(pre_work):</span>
+          <span class="code-line"><span class="ln">7</span> &nbsp;&nbsp;<span class="tok-cm"># pre_work now holds whatever was returned</span></span>
+        </div>
+
+        <div class="demo" id="value-flow-demo">
+          <div class="demo-label">watch the value travel — click to run</div>
+        </div>
+        <script>
+          renderValueFlowDemo("value-flow-demo", {
+            playLabel: "Call the fixture",
+            steps: [
+              { k: "fixture runs", v: "pre_work()" },
+              { k: "it returns", v: '"fail"' },
+              { k: "captured in", v: "pre_work" }
+            ]
+          });
+        </script>
+
+        <p style="margin-top:22px;">Assertion compares <strong>expected</strong> to <strong>actual</strong>. <code>pre_work</code> is fixed at <code>"fail"</code> by the fixture above — toggle what's expected and watch the outcome:</p>
+        <div class="demo" id="assert-toggle-demo"></div>
+        <script>
+          renderAssertToggle("assert-toggle-demo", {
+            expression: "assert pre_work == expected",
+            initialKey: "fail",
+            options: [
+              { key: "fail", label: 'expected = "fail"', pass: true, detail: 'pre_work == "fail"  →  "fail" == "fail"  →  true' },
+              { key: "pass", label: 'expected = "pass"', pass: false, detail: "AssertionError: received 'fail', expected 'pass'" }
+            ]
+          });
+        </script>
+
+        <div class="callout tip" style="margin-top:18px;">
+          <strong>Why this matters</strong>
+          The fixture is a source of data, not just a block of steps — the assertion checks the <em>returned value</em>, not whether the fixture merely "ran ok."
+        </div>
+      </section>
+
+      <section id="leads-to">
+        <h2>Where this leads</h2>
+        <p>These aren't abstract Pytest trivia — every mechanism here is already load-bearing in the Playwright pages covered so far, and will matter even more once framework-building starts.</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Concept here</th><th>Already showing up as</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">Argument-based fixture linkage</td><td>The <code>playwright</code> and <code>page</code> fixtures from <code>pytest-playwright</code> — global fixtures referenced the exact same way. See <a href="playwright-browser-context-page.html">Browser, Context &amp; Page</a>.</td></tr>
+              <tr><td class="highlight">Fixture return values</td><td>The pattern framework fixtures will use to hand tests credentials, tokens, and IDs centrally instead of hardcoding them</td></tr>
+              <tr><td class="highlight">yield setup/teardown</td><td>Future framework fixtures: browser launch as setup, browser close as teardown — one fixture, not two</td></tr>
+              <tr><td class="highlight">scope="session"</td><td>Launching a single browser instance reused across an entire framework run instead of relaunching per test</td></tr>
+              <tr><td class="highlight">conftest.py</td><td>Where framework-level browser/page setup will eventually get centralized so every test file can share it</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary>Does a Pytest fixture run automatically, like JUnit's @BeforeTest or TestNG's before-hooks?</summary>
+          <div class="qa-body">No — this is a common trip-up for people coming from Java. A Pytest fixture only executes when a test function explicitly names it as an argument. Defining <code>@pytest.fixture</code> alone does nothing on its own; without the linkage, the fixture body never runs.</div>
+        </details>
+        <details class="qa">
+          <summary>Explain the four fixture scopes and how they differ.</summary>
+          <div class="qa-body"><code>function</code> (default) runs before every test that references it. <code>class</code> runs once per test class. <code>module</code> runs once per test file, no matter how many tests in that file use it. <code>session</code> runs exactly once across the entire test run, shared across all files — but this is only observable when running the full suite, since running one file in isolation looks identical to module scope.</div>
+        </details>
+        <details class="qa">
+          <summary>What is conftest.py and why does it need that exact filename?</summary>
+          <div class="qa-body">It's a specially-recognized file Pytest automatically checks for fixture definitions not found in a test's own file. The filename is fixed — Pytest looks for it by that exact name in the same directory as the tests. It's used to centralize fixtures shared across multiple test files instead of duplicating them.</div>
+        </details>
+        <details class="qa">
+          <summary>How do you implement both setup and teardown in a single fixture?</summary>
+          <div class="qa-body">Use the <code>yield</code> keyword. Code before <code>yield</code> runs as setup; Pytest then pauses the fixture, runs the test, and once the test completes, resumes the fixture from the line after <code>yield</code> as teardown — all inside one function, no separate before/after methods needed.</div>
+        </details>
+        <details class="qa">
+          <summary>How do you run a single test function from the command line, and how do you run only a tagged subset?</summary>
+          <div class="qa-body">Target a single function with the double-colon syntax: <code>pytest test_file.py::test_function_name</code>. For a tagged subset, mark tests with <code>@pytest.mark.&lt;tagname&gt;</code> (e.g. <code>@pytest.mark.smoke</code>) and run <code>pytest -m smoke</code> — tests without that mark are skipped as "deselected." This is Pytest's equivalent of Cucumber tags or TestNG groups.</div>
+        </details>
+        <details class="qa">
+          <summary>Can a fixture provide test data, not just perform setup actions?</summary>
+          <div class="qa-body">Yes. A fixture can return a value (or yield one), and that value becomes accessible to the test through the fixture argument — commonly used to centrally supply data like credentials or tokens rather than hardcoding them per test.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Watch out</strong>
+          Module scope and session scope can look identical if you only ever run one file at a time — both appear to run "once." The difference only becomes observable when running the full suite across multiple files together.
+        </div>
+        <div class="callout warn">
+          <strong>Watch out</strong>
+          A fixture must be referenced <em>by name as an argument</em> to activate — simply having <code>@pytest.fixture</code> above a function is not enough for it to execute.
+        </div>
+        <div class="callout interview">
+          <strong>Interview framing</strong>
+          If asked to compare Pytest fixtures to JUnit/TestNG hooks, the sharpest answer isn't "they're similar" — it's naming the one real structural difference: explicit linkage (argument-based) vs. automatic annotation-based execution.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="course-roadmap.html">Course Roadmap →</a>
+          <a href="environment-setup.html">Environment Setup →</a>
+          <a href="python-basics.html">Python Basics →</a>
+          <a href="playwright-browser-context-page.html">Browser, Context &amp; Page →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Sources: "Pytest Basics: Test Functions &amp; Fixtures", "Pytest Fixture Scopes &amp; conftest.py", "Pytest Fixtures: Return Values &amp; Yield (Setup/Teardown)" — added 2026-07-29</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

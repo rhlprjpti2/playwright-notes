@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Playwright Auto-Waiting &amp; Assertions · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Auto-Waiting &amp; Assertions</div>
+    <h1>Playwright Auto-Waiting &amp; Assertions</h1>
+    <p class="lede">Back on <a href="why-playwright-and-python.html">Why Playwright &amp; Why Python</a>, auto-waiting was flagged as one of the two genuine differentiators from Selenium. This is the technical detail behind that claim — what Playwright actually checks before acting, and why it means no explicit wait code.</p>
+    <div class="card-tags">
+      <span>playwright</span>
+      <span>auto-waiting</span>
+      <span>assertions</span>
+    </div>
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#visual">The actionability check loop</a>
+      <a href="#assertions">Web-first assertions</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p>Before performing most actions (click, fill, check, etc.), Playwright runs a series of <strong>actionability checks</strong> on the target element: is it visible, is it stable (fully finished loading/animating, not still moving), does it receive events (nothing else obscuring it), and is it enabled (not disabled). If any check fails, Playwright automatically retries — it does not fail immediately the way a naive single check would.</p>
+        <p>In Selenium, none of this happens automatically — an immediate check on a not-yet-rendered element simply fails, and the developer has to hand-write explicit or implicit wait code to compensate.</p>
+      </section>
+
+      <section id="visual">
+        <h2>The actionability check loop</h2>
+        <p class="lead">Actions and assertions both go through the same loop: check, and if it fails, retry — automatically, with no wait code written by you. Step through what actually happens under the hood of the two lines below, from the wrong-credentials example on the login form.</p>
+
+        <div class="sim" id="wait-sim"></div>
+        <script>
+          renderStepDebugger("wait-sim", {
+            title: "Auto-wait retry loop · step debugger",
+            terminalPrompt: "$ pytest test_login.py -s",
+            legend: [
+              { label: "checking", color: "#e0c14a" },
+              { label: "check passed", color: "var(--success)" }
+            ],
+            codeBlocks: [
+              {
+                caption: "test_login.py",
+                lines: [
+                  { id: "aln1", html: '<span class="ln">1</span> page.get_by_role(<span class="tok-str">"button"</span>, name=<span class="tok-str">"Sign In"</span>).click()' },
+                  { id: "aln2", html: '<span class="ln">2</span> expect(page.get_by_text(<span class="tok-str">"Incorrect username or password"</span>)).to_be_visible()' }
+                ]
+              }
+            ],
+            steps: [
+              { lineIds: ["aln1"], desc: "Sign In button is already actionable — click executes immediately, no retry needed here", term: '<span class="tag-test">▸ click "Sign In" — actionability checks pass immediately</span>' },
+              { lineIds: ["aln2"], desc: "Assertion requested — Playwright begins actionability checks on the error-message locator", term: '<span class="tag-setup">▸ expect(...).to_be_visible() — attempt 1</span>' },
+              { lineIds: ["aln2"], desc: "Attempt 1: element not yet visible — the error message hasn't rendered yet", term: '<span class="tag-pause">✗ visible? no — retrying…</span>' },
+              { lineIds: ["aln2"], desc: "Attempt 2, shortly after: still not visible", term: '<span class="tag-pause">✗ visible? no — retrying…</span>' },
+              { lineIds: ["aln2"], desc: "Attempt 3: element has now rendered and is visible — check passes", term: '<span class="tag-setup">✓ visible? yes</span>' },
+              { lineIds: ["aln2"], desc: "All actionability checks pass — assertion succeeds, with zero explicit wait code written", term: '<span class="tag-test">✓ PASSED — to_be_visible() succeeded on attempt 3</span>' }
+            ]
+          });
+        </script>
+
+        <div class="quiz">
+          <div class="quiz-q">If the credentials had been correct instead of wrong, so the error message never appears at all, what happens to this same assertion?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">It passes immediately — Playwright assumes success if nothing contradicts it</button>
+            <button class="quiz-opt" data-correct="true">It retries until the timeout is reached, then fails with an AssertionError — the element genuinely never becomes visible</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="assertions">
+        <h2>Web-first assertions</h2>
+        <p>Auto-waiting isn't limited to actions — Playwright's <code>expect()</code> assertions (imported from <code>playwright.sync_api</code>) are <strong>auto-retrying</strong> too. Instead of checking a condition once immediately, they retry until the condition becomes true or the timeout is reached:</p>
+        <pre><code>from playwright.sync_api import expect
+
+expect(page.get_by_text("Incorrect username or password")).to_be_visible()</code></pre>
+        <p>This is what makes it safe to assert on something that appears with a short delay (e.g. an error message after a failed login) without writing any explicit wait beforehand.</p>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary>What does Playwright's automatic actionability check actually check for?</summary>
+          <div class="qa-body">Per this course: visible, stable (finished loading/animating), receives events (not obscured by another element), and enabled. Playwright verifies these before most actions, retrying automatically until they pass or a timeout is reached.</div>
+        </details>
+        <details class="qa">
+          <summary>How is this different from Selenium's approach to synchronization?</summary>
+          <div class="qa-body">Selenium has no built-in auto-wait for actionability — an immediate check on a not-yet-rendered or not-yet-stable element simply fails. The developer must write explicit or implicit wait code by hand to compensate. Playwright performs these checks and retries internally, with no synchronization code required from the test author.</div>
+        </details>
+        <details class="qa">
+          <summary>Does auto-waiting apply only to actions like click/fill, or also to assertions?</summary>
+          <div class="qa-body">Both. Playwright's `expect()` assertions are "web-first" and auto-retrying — they recheck the condition repeatedly until it's true or the timeout is hit, rather than evaluating once immediately like a plain equality check would.</div>
+        </details>
+        <details class="qa">
+          <summary>If an element becomes ready in 2 seconds but the timeout is much longer, does Playwright wait out the full timeout?</summary>
+          <div class="qa-body">No — Playwright proceeds the instant all actionability checks succeed. It only consumes the full timeout when the checks keep failing all the way until the deadline.</div>
+        </details>
+        <details class="qa">
+          <summary>What genuinely differentiates Playwright's auto-waiting from Selenium, in one sentence for an interview?</summary>
+          <div class="qa-body">Playwright treats waiting for actionability as a built-in, automatic, retrying part of every action and assertion, while Selenium treats it as something the test author must explicitly code — that shift is what removes synchronization code from Playwright test scripts entirely.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Watch out</strong>
+          This course gives the global timeout as roughly "7 to 10 seconds," stated informally ("I think") rather than cited from documentation. Don't quote that as an exact figure in an interview — verify the current default against Playwright's official docs rather than repeating an approximate, unconfirmed number.
+        </div>
+        <div class="callout interview">
+          <strong>Callback</strong>
+          This is the technical backbone of the claim made on <a href="why-playwright-and-python.html">Why Playwright &amp; Why Python</a>: that auto-waiting (alongside combined web+API testing) is one of the few things genuinely distinguishing Playwright from Selenium, as opposed to cross-browser/cross-OS support which both tools share.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="why-playwright-and-python.html">Why Playwright &amp; Why Python →</a>
+          <a href="playwright-locators.html">Playwright Core Locators →</a>
+          <a href="playwright-browser-context-page.html">Browser, Context &amp; Page →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: "Auto-Waiting & Assertions in Playwright" — added 2026-07-29</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

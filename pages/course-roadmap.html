@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Course Roadmap · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Course Roadmap</div>
+    <h1>Course Roadmap</h1>
+    <p class="lede">The learning path this course follows, from zero prior experience to a CI/CD-integrated framework. Doubles as a living coverage checklist — items link to their notes page once a transcript on them has been processed.</p>
+    <div class="card-tags">
+      <span>course-intro</span>
+      <span>roadmap</span>
+      <span>fundamentals</span>
+    </div>
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#visual">The learning path</a>
+      <a href="#checklist">Coverage checklist</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p>The course assumes no prior experience with any technology and builds up in a strict dependency order: <strong>Python fundamentals</strong> first, then <strong>Pytest</strong> — because Playwright's Python tests are built directly on top of the Pytest framework, so Pytest knowledge is a prerequisite, not an optional side topic.</p>
+        <p>From there it moves to hands-on <strong>UI automation</strong> covering every major web component, then <strong>API automation with network interception</strong> (intercepting requests/responses to test edge cases), then a full <strong>framework-building</strong> phase, an optional <strong>BDD</strong> layer, and finally <strong>CI/CD integration with Jenkins</strong>.</p>
+      </section>
+
+      <section id="visual">
+        <h2>The learning path</h2>
+        <div class="diagram" id="flow-roadmap"></div>
+        <script>
+          renderFlowDiagram("flow-roadmap", {
+            steps: [
+              { label: "Python Fundamentals", sub: "from scratch", desc: "Core language basics — no prior programming experience assumed." },
+              { label: "Pytest Fundamentals", sub: "prerequisite framework", desc: "Playwright's Python tests are built on Pytest, so this comes before any Playwright code." },
+              { label: "UI Automation", sub: "Playwright web testing", desc: "Examples covering every component of a web page, using Playwright's browser automation." },
+              { label: "API Automation", sub: "network interception", desc: "Intercepting API requests and responses to test edge-case scenarios — a key modern automation skill." },
+              { label: "Framework Design", sub: "best practices, from scratch", desc: "Data-driven testing, parameterization, parallel/grouped test runs, logs, reporting, screenshots, and Page Object Model design." },
+              { label: "BDD Layer", sub: "Gherkin + Cucumber via Pytest plugin", desc: "A Pytest plugin adds Gherkin feature files, bringing Cucumber-style BDD on top of the framework." },
+              { label: "CI/CD", sub: "Jenkins", desc: "Integrate the framework with Jenkins and schedule automated job runs." }
+            ]
+          });
+        </script>
+
+        <div class="quiz">
+          <div class="quiz-q">Why does Pytest come before Playwright itself in this order, rather than after or in parallel?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">It's just a stylistic choice by the instructor — the order doesn't really matter</button>
+            <button class="quiz-opt" data-correct="true">Playwright's Python tests are built directly on top of the Pytest framework — Pytest is a structural prerequisite, not optional side content</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="checklist">
+        <h2>Coverage checklist</h2>
+        <p>What's actually been turned into notes so far vs. what's still ahead:</p>
+        <ul>
+          <li>Why Playwright / Why Python — <a href="why-playwright-and-python.html">covered →</a></li>
+          <li>Environment setup (Python, pip, PyCharm) — <a href="environment-setup.html">covered →</a></li>
+          <li>Python fundamentals — <a href="python-basics.html">covered →</a></li>
+          <li>Pytest fundamentals (fixtures, scopes, conftest.py) — <a href="pytest-fixtures.html">covered →</a></li>
+          <li>Playwright fundamentals: browser, context, page, fixtures — <a href="playwright-browser-context-page.html">covered →</a></li>
+          <li>Playwright core locators (get_by_label, get_by_role, CSS) — <a href="playwright-locators.html">covered →</a></li>
+          <li>Playwright auto-waiting &amp; web-first assertions — <a href="playwright-auto-waiting.html">covered →</a></li>
+          <li>Dynamic locators, filtering &amp; scoped search — <a href="playwright-dynamic-locators.html">covered →</a></li>
+          <li>API automation &amp; network interception — not yet covered</li>
+          <li>Framework design (data-driven testing, parameterization, parallel/grouped runs, logging, reporting, screenshots) — not yet covered</li>
+          <li>Page Object Model design pattern — not yet covered</li>
+          <li>BDD with Gherkin/Cucumber (Pytest plugin) — not yet covered</li>
+          <li>CI/CD integration with Jenkins — not yet covered</li>
+        </ul>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary>Why learn Pytest before Playwright, specifically?</summary>
+          <div class="qa-body">Playwright's Python test support is built directly on the Pytest framework — Pytest isn't a separate, optional tool alongside Playwright, it's the foundation the tests actually run on. Skipping it means not understanding fixtures, test discovery, and assertions that Playwright-Python code relies on.</div>
+        </details>
+        <details class="qa">
+          <summary>What does "framework design" cover beyond writing individual test scripts?</summary>
+          <div class="qa-body">Data-driven testing, parameterization, running tests in parallel or in groups, logging, reporting, automatic screenshots, and the Page Object Model design pattern for maintainable test code.</div>
+        </details>
+        <details class="qa">
+          <summary>How does BDD fit into a Playwright + Pytest framework?</summary>
+          <div class="qa-body">Through a separate Pytest plugin that lets you write Gherkin feature files, bringing Cucumber-style behavior-driven development on top of the existing Pytest/Playwright framework — it's layered on, not a replacement.</div>
+        </details>
+        <details class="qa">
+          <summary>Where does Jenkins fit in?</summary>
+          <div class="qa-body">Once the framework and tests are built, Jenkins is used as the CI/CD tool to integrate the framework and schedule automated test job runs.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout tip">
+          <strong>Terminology precision</strong>
+          "API automation" and "network interception" are named as related but distinct ideas in this course — interception specifically means intercepting requests/responses (e.g. to mock or inspect them) for edge-case testing, not just calling an API endpoint directly in a test.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="why-playwright-and-python.html">Why Playwright &amp; Why Python →</a>
+          <a href="environment-setup.html">Environment Setup →</a>
+          <a href="python-basics.html">Python Basics →</a>
+          <a href="pytest-fixtures.html">Pytest Fixtures &amp; Fundamentals →</a>
+          <a href="playwright-browser-context-page.html">Browser, Context &amp; Page →</a>
+          <a href="playwright-locators.html">Playwright Core Locators →</a>
+          <a href="playwright-auto-waiting.html">Auto-Waiting &amp; Assertions →</a>
+          <a href="playwright-dynamic-locators.html">Dynamic Locators &amp; Filtering →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: "Course Curriculum Overview" (Lecture 2) — added 2026-07-29</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

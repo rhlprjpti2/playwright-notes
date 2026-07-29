@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Playwright Core Locators · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Core Locators</div>
+    <h1>Playwright Core Locators</h1>
+    <p class="lede">get_by_label, get_by_role, CSS locators, get_by_text — which one to reach for depends entirely on what the DOM actually exposes, not personal preference. The label-locator failure conditions are a genuine interview trap.</p>
+    <div class="card-tags">
+      <span>playwright</span>
+      <span>locators</span>
+      <span>fundamentals</span>
+    </div>
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#visual">Choosing a strategy</a>
+      <a href="#get-by-label">get_by_label</a>
+      <a href="#get-by-role">get_by_role</a>
+      <a href="#css">CSS locators</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p>Playwright gives you several complementary ways to locate an element, ranked roughly by how "semantic" the underlying attribute is: a form field's associated label, a component's accessibility role, a raw CSS selector as a universal fallback, or the visible text an element contains.</p>
+      </section>
+
+      <section id="visual">
+        <h2>Choosing a strategy</h2>
+        <div class="diagram" id="flow-strategy"></div>
+        <script>
+          renderFlowDiagram("flow-strategy", {
+            steps: [
+              { label: "Has a &lt;label&gt;?", sub: "form fields", desc: "Use get_by_label — but it only works if the input is nested inside the label, OR the label's for= attribute matches the input's id exactly." },
+              { label: "Has a semantic role?", sub: "button, link, checkbox, combobox…", desc: "Use get_by_role, optionally narrowed with name= when multiple elements share the same role." },
+              { label: "Custom component, no role?", sub: "plain &lt;div&gt;s, custom widgets", desc: "Fall back to a CSS locator built from an id (#), class (.), or — least preferred — a tag name." },
+              { label: "Just need it by visible text?", sub: "alerts, messages", desc: "get_by_text grabs the element containing that exact or partial text directly." }
+            ]
+          });
+        </script>
+      </section>
+
+      <section id="get-by-label">
+        <h2>get_by_label</h2>
+        <pre><code>page.get_by_label("Username").fill("RahulAcademy")
+page.get_by_label("Password").fill("learning")</code></pre>
+        <p>This only works if <strong>one</strong> of two DOM conditions is true:</p>
+        <ul>
+          <li>The <code>&lt;input&gt;</code> is nested <em>inside</em> the <code>&lt;label&gt;</code> tag, or</li>
+          <li>The <code>&lt;label for="id"&gt;</code> attribute exactly matches the input's own <code>id</code> attribute.</li>
+        </ul>
+        <div class="callout warn">
+          <strong>Real failure case from this lecture</strong>
+          On a second practice page, the label's <code>for</code> attribute was <code>"email"</code> but the input's actual <code>id</code> was <code>"userEmail"</code> — a mismatch. Since the input also wasn't nested inside the label, <code>get_by_label</code> failed to find it despite a label being visibly present on the page.
+        </div>
+
+        <div class="quiz">
+          <div class="quiz-q">HTML: <code>&lt;label for="email"&gt;Email&lt;/label&gt; &lt;input id="userEmail"&gt;</code> (input not nested inside the label). Does <code>page.get_by_label("Email")</code> find this input?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">Yes — a visible label is enough on its own</button>
+            <button class="quiz-opt" data-correct="true">No — for="email" doesn't match id="userEmail", and the input isn't nested inside the label, so neither valid condition is met</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="get-by-role">
+        <h2>get_by_role</h2>
+        <pre><code>page.get_by_role("combobox").select_option("teach")
+page.get_by_role("button", name="Sign In").click()
+page.get_by_role("link", name="Terms and Conditions").click()</code></pre>
+        <p>Identifies an element by its accessibility/semantic role — <code>combobox</code>, <code>button</code>, <code>link</code>, <code>checkbox</code>, <code>alert</code>, <code>image</code>, and more. When multiple elements share the same role (e.g. several buttons on a page), the optional <code>name=</code> parameter filters down to the one whose visible name matches — role and filter are bundled into the single call.</p>
+        <p>For dropdowns, <code>.select_option()</code> selects by the underlying HTML <code>&lt;option value="..."&gt;</code> attribute — which is not necessarily the same string as what's visually displayed to the user.</p>
+      </section>
+
+      <section id="css">
+        <h2>CSS locators</h2>
+        <p>The universal fallback — works on anything, including custom components with no ARIA role (e.g. plain <code>&lt;div&gt;</code> cards). Derived directly from DOM attributes via <code>page.locator(css_selector)</code>:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>DOM attribute</th><th>CSS selector syntax</th><th>Example</th></tr></thead>
+            <tbody>
+              <tr><td><code>id="terms"</code></td><td class="highlight"><code>#id</code></td><td><code>#terms</code></td></tr>
+              <tr><td><code>class="text-info"</code></td><td class="highlight"><code>.class-name</code></td><td><code>.text-info</code></td></tr>
+              <tr><td>tag name</td><td class="muted">bare tag name</td><td class="muted">rarely unique — not much preferred</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>For a checkbox specifically, Playwright provides a semantic <code>.check()</code> action (in addition to the generic <code>.click()</code>) that specifically validates and checks a checkbox element:</p>
+        <pre><code>page.locator("#terms").check()</code></pre>
+        <p>To grab an element purely by its visible text (e.g. an alert/message block, without knowing its CSS class):</p>
+        <pre><code>page.get_by_text("Incorrect username or password")</code></pre>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary>What two DOM conditions must hold for get_by_label to successfully find an element?</summary>
+          <div class="qa-body">Either the input element is nested inside the <code>&lt;label&gt;</code> tag itself, or the label's <code>for</code> attribute exactly matches the input's <code>id</code> attribute. If neither holds, get_by_label won't find it — even if a label is visually present on the page.</div>
+        </details>
+        <details class="qa">
+          <summary>How do you disambiguate multiple elements that share the same role, like several buttons on a page?</summary>
+          <div class="qa-body">Pass the <code>name=</code> parameter to <code>get_by_role</code>, e.g. <code>get_by_role("button", name="Sign In")</code> — Playwright gets all elements with that role first, then filters to the one whose visible/accessible name matches.</div>
+        </details>
+        <details class="qa">
+          <summary>When would you fall back to a CSS locator instead of get_by_role or get_by_label?</summary>
+          <div class="qa-body">When the element is a custom component with no semantic ARIA role attached — e.g. a plain <code>&lt;div&gt;</code>-based product card — or a form field with no associated label. CSS built from id/class attributes works regardless of role or label semantics.</div>
+        </details>
+        <details class="qa">
+          <summary>What's the difference between what select_option chooses and what's visually shown in a dropdown?</summary>
+          <div class="qa-body">select_option targets the underlying HTML <code>option value</code> attribute, which is not necessarily identical to the text visually displayed to the user in the dropdown UI.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Watch out</strong>
+          A visually-present label doesn't guarantee get_by_label will work — always check whether the input is actually nested in the label or correctly linked via for/id before assuming this locator is usable.
+        </div>
+        <div class="callout warn">
+          <strong>Watch out</strong>
+          Bare tag-name CSS selectors are rarely unique on a real page (multiple labels, multiple divs, etc.) — prefer id or class-based selectors unless you're deliberately grabbing every match.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="playwright-browser-context-page.html">Browser, Context &amp; Page →</a>
+          <a href="playwright-dynamic-locators.html">Dynamic Locators &amp; Filtering →</a>
+          <a href="playwright-auto-waiting.html">Playwright Auto-Waiting &amp; Assertions →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Sources: "Handling Core Locators: Labels, Roles & Combo Boxes", "get_by_label Limitations", "Handling Buttons, Links & CSS Selectors" — added 2026-07-29</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

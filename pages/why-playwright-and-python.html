@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why Playwright &amp; Why Python · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Why Playwright &amp; Why Python</div>
+    <h1>Why Playwright &amp; Why Python</h1>
+    <p class="lede">What actually makes Playwright different from Selenium and Cypress, and why Python is a strong language choice for it — the framing you should be able to defend in an interview, not just recite.</p>
+    <div class="card-tags">
+      <span>fundamentals</span>
+      <span>tool-comparison</span>
+      <span>course-intro</span>
+    </div>
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#visual">What makes it unique</a>
+      <a href="#comparison">Playwright vs Selenium vs Cypress</a>
+      <a href="#why-python">Why Python</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p>Playwright is a browser automation tool built primarily for web testing, but it can also drive <strong>API automation</strong> — one single tool covers both. It supports four languages (JavaScript, Python, C#, Java), so you're not locked into one ecosystem. It automates across the top three browser engines — <strong>Chromium, Firefox, and WebKit (Safari)</strong> — and runs on Windows, macOS, and Linux.</p>
+        <p>Those last two points (multi-browser, multi-OS) aren't exclusive to Playwright — Selenium offers the same. What's actually distinctive is covered next.</p>
+      </section>
+
+      <section id="visual">
+        <h2>What makes it unique</h2>
+        <p>Step through Playwright's differentiators — the first two are table stakes shared with Selenium, the rest are where Playwright genuinely stands apart.</p>
+        <div class="diagram" id="flow-unique"></div>
+        <script>
+          renderFlowDiagram("flow-unique", {
+            steps: [
+              { label: "Cross-Browser", sub: "Chromium · Firefox · WebKit", desc: "Runs the same test suite against all three major browser engines. Selenium supports this too — not a Playwright exclusive." },
+              { label: "Cross-OS", sub: "Windows · macOS · Linux", desc: "Executes on all major operating systems. Also shared with Selenium." },
+              { label: "Multi-Language", sub: "JS · Python · C# · Java", desc: "Pick your language. Cypress is JavaScript-only by design — Playwright isn't. This is a real point of separation from Cypress specifically." },
+              { label: "Auto-Waiting", sub: "built-in synchronization", desc: "Playwright automatically waits for an element to be loaded/visible/actionable before interacting with it. No manual wait code needed — this is inbuilt, not bolted on." },
+              { label: "Web + API in one tool", sub: "front-end + back-end in one script", desc: "The standout feature: combine UI actions and API calls in the same test to build smart, efficient end-to-end automation." },
+              { label: "Built-in Reporting", sub: "logs/traces + screenshots", desc: "Generates run logs/traces and before-and-after screenshots automatically at the end of a test run — zero extra reporting code." }
+            ]
+          });
+        </script>
+
+        <div class="quiz">
+          <div class="quiz-q">In an interview, you're asked "why Playwright over Selenium?" Which answer actually holds up?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">"Playwright supports multiple browsers and operating systems" — a strong, distinguishing answer</button>
+            <button class="quiz-opt" data-correct="true">"Playwright has built-in auto-waiting and can combine web + API testing in one script" — Selenium already matches the browser/OS point</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="comparison">
+        <h2>Playwright vs Selenium vs Cypress</h2>
+        <p>Only what the video actually stated is filled in below — worth knowing where the gaps are rather than guessing in an interview.</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead>
+              <tr><th>Aspect</th><th>Playwright</th><th>Selenium</th><th>Cypress</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Language support</td><td class="highlight">JS, Python, C#, Java</td><td>Multi-language (also supported)</td><td class="highlight">JavaScript only</td></tr>
+              <tr><td>Web automation</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+              <tr><td>API automation (same tool)</td><td class="highlight">Yes — combined with web in one script</td><td class="muted">not covered in this video</td><td class="muted">not covered in this video</td></tr>
+              <tr><td>Automatic waiting</td><td class="highlight">Built-in / inbuilt</td><td class="muted">not covered in this video</td><td class="muted">not covered in this video</td></tr>
+              <tr><td>Browsers</td><td>Chrome, Firefox, WebKit (Safari)</td><td class="muted">not covered in this video</td><td class="muted">not covered in this video</td></tr>
+              <tr><td>OS support</td><td>Windows, macOS, Linux</td><td class="muted">not covered in this video</td><td class="muted">not covered in this video</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="why-python">
+        <h2>Why Python</h2>
+        <ul>
+          <li><strong>Largest market share</strong> among languages Playwright supports right now (JS, Python, C#, Java).</li>
+          <li><strong>Less resource competition:</strong> post a job for Java and you get hundreds of resumes; only roughly half as many will have Python. Popular language, comparatively less crowded talent pool.</li>
+          <li><strong>Lightweight, simple syntax</strong> — beginners become productive faster than with other languages, shortening the learning curve.</li>
+          <li><strong>AI/ML alignment:</strong> most machine learning models are built on Python. As dev teams lean further into Python for AI-driven work, teams increasingly want a <em>unified tech stack</em> across development and QA — which pulls automation toward Python too.</li>
+        </ul>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary>Playwright supports multiple browsers and OSes — isn't that the same as Selenium? What's actually unique about it then?</summary>
+          <div class="qa-body">Cross-browser and cross-OS support are shared with Selenium, not exclusive to Playwright. What's genuinely different: (1) built-in automatic waiting, so you don't hand-write synchronization/explicit-wait code; (2) the ability to do web <em>and</em> API automation in the same tool/script, enabling combined front-end + back-end end-to-end tests; (3) inbuilt logging/tracing and automatic before/after screenshots with no extra reporting setup.</div>
+        </details>
+        <details class="qa">
+          <summary>How is Playwright different from Cypress specifically?</summary>
+          <div class="qa-body">Cypress is JavaScript-only by design. Playwright supports JavaScript, Python, C#, and Java, so teams aren't forced into one language ecosystem.</div>
+        </details>
+        <details class="qa">
+          <summary>Why would a QA team pick Python over JavaScript or Java for Playwright automation?</summary>
+          <div class="qa-body">Python currently has the largest market share of Playwright's supported languages, with comparatively less competition for jobs than Java. Its syntax is simple enough that beginners ramp up quickly. There's also a strategic angle: since most AI/ML models are built on Python, dev orgs are gravitating toward Python-first stacks — and QA teams that want a unified tech stack with development follow that same direction.</div>
+        </details>
+        <details class="qa">
+          <summary>What does Playwright's "automatic waiting mechanism" actually mean?</summary>
+          <div class="qa-body">When you interact with an element (click, select, etc.) and the app needs to load a new page or component, Playwright automatically waits until that element is present/loaded before acting — you don't write explicit wait/synchronization code yourself. It's inbuilt behavior, not an add-on. See <a href="playwright-auto-waiting.html">Playwright Auto-Waiting &amp; Assertions</a> for the full actionability-check breakdown.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Watch out</strong>
+          Don't claim cross-browser or cross-OS support as a Playwright advantage over Selenium in an interview — Selenium already does both. Lead with auto-waiting and combined web+API testing instead; those are the real differentiators.
+        </div>
+        <div class="callout interview">
+          <strong>Interview framing</strong>
+          If asked "why Playwright over Selenium," a comparison-by-feature-list answer is weak. A stronger answer names the one or two things Playwright does that the others structurally can't (or don't do as cleanly): inbuilt auto-waiting and unified web+API scripting.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="course-roadmap.html">Course Roadmap →</a>
+          <a href="playwright-auto-waiting.html">Playwright Auto-Waiting &amp; Assertions →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: "Course Introduction — Why Playwright, Why Python" (Lecture 1) — added 2026-07-29</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

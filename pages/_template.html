@@ -1,0 +1,101 @@
+<!--
+  TEMPLATE — not a real topic, not listed in topics-index.js.
+  Copy this file to pages/<slug>.html when creating a new topic page,
+  fill in content, then add a matching entry to data/topics-index.js.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TOPIC TITLE · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / TOPIC TITLE</div>
+    <h1>TOPIC TITLE</h1>
+    <p class="lede">One or two sentence framing of what this topic covers and why it matters for interviews.</p>
+    <div class="card-tags">
+      <span>tag-one</span>
+      <span>tag-two</span>
+    </div>
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#visual">How it works</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p>Plain-language explanation pulled from the transcript, kept factually accurate to what was said.</p>
+      </section>
+
+      <section id="visual">
+        <h2>How it works</h2>
+        <div class="diagram" id="flow-example"></div>
+        <script>
+          renderFlowDiagram("flow-example", {
+            steps: [
+              { label: "Step A", sub: "api.call()", desc: "Explanation of this step." },
+              { label: "Step B", sub: "api.call()", desc: "Explanation of this step." }
+            ]
+          });
+        </script>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary>Likely question goes here?</summary>
+          <div class="qa-body">Model answer, concise and accurate.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Watch out</strong>
+          A common mistake or edge case worth calling out.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="other-topic.html">Other Topic →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: "Video title" — added YYYY-MM-DD</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

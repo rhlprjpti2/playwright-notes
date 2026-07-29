@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python Basics · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Python Basics</div>
+    <h1>Python Basics</h1>
+    <p class="lede">The absolute minimum syntax needed before touching Playwright code: printing, comments, and — the one thing that trips up people coming from typed languages — variables with no declared type.</p>
+    <div class="card-tags">
+      <span>python</span>
+      <span>fundamentals</span>
+    </div>
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#visual">Quick tour</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p><code>print("Hello")</code> writes to the console — the equivalent of Java's <code>System.out.println</code>. Comments start with <code>#</code>; everything after it on that line is ignored by the interpreter.</p>
+        <p>Variables need no declared type: <code>a = 3</code> is a complete, valid declaration. Unlike Java (<code>int a = 3;</code>), Python figures out the data type at runtime from whatever value you assign — the data types still exist under the hood, they're just never written explicitly at the point of declaration.</p>
+        <p>Multiple variables can be declared and assigned on a single line: <code>b, c, d = 5, 6.4, "great"</code> — values are assigned respectively, in the order given, without needing three separate lines.</p>
+      </section>
+
+      <section id="visual">
+        <h2>Quick tour</h2>
+        <div class="diagram" id="flow-basics"></div>
+        <script>
+          renderFlowDiagram("flow-basics", {
+            steps: [
+              { label: "print()", sub: 'print("Hello")', desc: "Writes output to the console. Equivalent to Java's System.out.println." },
+              { label: "Comments", sub: "# starts a comment", desc: "Everything after # on that line is ignored by the interpreter — used to explain what the code does." },
+              { label: "Variables", sub: "a = 3", desc: "No return type needed. Python infers the data type from the assigned value at runtime." },
+              { label: "Multi-assignment", sub: "b, c, d = 5, 6.4, \"great\"", desc: "Declare and assign several variables in one line — each value maps to the matching variable, in order." }
+            ]
+          });
+        </script>
+
+        <div class="quiz">
+          <div class="quiz-q">Given `b, c, d = 5, 6.4, "great"`, what is the data type of `c`, and where was that type declared?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">float — declared explicitly by writing `float c = 6.4`</button>
+            <button class="quiz-opt" data-correct="true">float — inferred automatically at runtime from the assigned value; never explicitly declared</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary>Does Python require you to declare a variable's data type?</summary>
+          <div class="qa-body">No. Python is dynamically typed — you write <code>a = 3</code> with no type annotation, and the interpreter determines the data type from the assigned value at runtime. Data types still exist internally; they're just never declared explicitly at the point of creation, unlike Java's <code>int a = 3;</code>.</div>
+        </details>
+        <details class="qa">
+          <summary>How do you declare multiple variables on a single line, and why would you?</summary>
+          <div class="qa-body"><code>b, c, d = 5, 6.4, "great"</code> assigns each value to the corresponding variable in order, avoiding three separate declaration lines for related values.</div>
+        </details>
+        <details class="qa">
+          <summary>What character starts a comment in Python?</summary>
+          <div class="qa-body">The hash character <code>#</code>. Everything after it on that line is ignored by the interpreter.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Watch out</strong>
+          PyCharm may flag missing whitespace (e.g. around <code>=</code>) as a code-style warning. That's a cosmetic formatting nag from the editor, not a syntax error — the code still runs without it. Don't conflate this with Python's actual indentation-based block structure (where whitespace at the start of a line is functionally significant for scoping) — that's a separate, stricter rule this lecture didn't get into yet.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="course-roadmap.html">Course Roadmap →</a>
+          <a href="environment-setup.html">Environment Setup →</a>
+          <a href="pytest-fixtures.html">Pytest Fixtures &amp; Fundamentals →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: "Python Basics: Print, Comments, Variables" — added 2026-07-29</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

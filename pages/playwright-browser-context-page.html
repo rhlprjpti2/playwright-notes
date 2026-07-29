@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Playwright Fundamentals: Browser, Context &amp; Page · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Browser, Context &amp; Page</div>
+    <h1>Playwright Fundamentals: Browser, Context &amp; Page</h1>
+    <p class="lede">Two ways to start a Playwright test: the explicit 3-step hierarchy (full control), or the <code>page</code> fixture shortcut (covers ~90% of real cases). Knowing when the shortcut stops working is the actual interview-worthy part.</p>
+    <div class="card-tags">
+      <span>playwright</span>
+      <span>fundamentals</span>
+      <span>fixtures</span>
+    </div>
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#visual">The three-step hierarchy</a>
+      <a href="#shortcut">The page fixture shortcut</a>
+      <a href="#comparison">Manual vs shortcut</a>
+      <a href="#firefox">Switching browsers</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p>The <code>pytest-playwright</code> plugin ships a global <strong>playwright</strong> fixture — no need to define or implement it yourself, just reference it as a test argument and start using it. From there, three explicit steps build up to something you can actually automate on: <strong>browser</strong> → <strong>context</strong> → <strong>page</strong>.</p>
+      </section>
+
+      <section id="visual">
+        <h2>The three-step hierarchy</h2>
+        <div class="diagram" id="flow-hierarchy"></div>
+        <script>
+          renderFlowDiagram("flow-hierarchy", {
+            steps: [
+              { label: "playwright fixture", sub: "global, from pytest-playwright", desc: "Provided automatically by the plugin — you reference it as a test argument, no setup code needed." },
+              { label: "Browser", sub: "playwright.chromium.launch(headless=False)", desc: "Launches the browser engine. Chromium covers both Google Chrome and Microsoft Edge, since both are Chromium-based under the hood." },
+              { label: "Context", sub: "browser.new_context()", desc: "Like opening an incognito window — an isolated session with its own cookies/cache. Leaving the context loses that data. Lets you simulate multiple independent logged-in users in one test." },
+              { label: "Page", sub: "context.new_page()", desc: "A tab within that context — most automation actions (click, fill, goto) happen on this object." },
+              { label: "Navigate", sub: 'page.goto("https://...")', desc: "Loads the target URL. From here you're automating exactly like any other Playwright test." }
+            ]
+          });
+        </script>
+
+        <div class="demo" id="object-chain-demo">
+          <div class="demo-label">watch the object chain build — click to run</div>
+        </div>
+        <script>
+          renderValueFlowDemo("object-chain-demo", {
+            playLabel: "Launch and navigate",
+            steps: [
+              { k: "playwright.chromium", v: ".launch()" },
+              { k: "returns", v: "browser" },
+              { k: "browser.new_context()", v: "returns context" },
+              { k: "context.new_page()", v: "returns page" },
+              { k: "page.goto(url)", v: "ready to automate" }
+            ]
+          });
+        </script>
+      </section>
+
+      <section id="shortcut">
+        <h2>The page fixture shortcut</h2>
+        <p>Instead of manually wiring up all three steps every test, the plugin also provides a <strong>page</strong> fixture (defined inside the <code>Page</code> class of the <code>playwright.sync_api</code> package) that handles browser + context + page internally. Import it explicitly to get IDE autocomplete and make the source traceable:</p>
+        <pre><code>from playwright.sync_api import Page
+
+def test_playwright_shortcut(page: Page):
+    page.goto("https://rahulshettyacademy.com")</code></pre>
+        <p>The import isn't required for the fixture to work — it's global either way — but without it, the IDE has no idea what type <code>page</code> is, so you lose autocomplete on its methods.</p>
+      </section>
+
+      <section id="comparison">
+        <h2>Manual vs shortcut</h2>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Aspect</th><th>Manual 3-step (playwright fixture)</th><th>Shortcut (page fixture)</th></tr></thead>
+            <tbody>
+              <tr><td>Code</td><td>3 explicit lines: browser, context, page</td><td class="highlight">1 line — just use <code>page</code> directly</td></tr>
+              <tr><td>Browser engine</td><td class="highlight">Any — chromium, firefox, webkit</td><td>Chromium only</td></tr>
+              <tr><td>Headless/headed</td><td class="highlight">Set inline: <code>headless=False</code></td><td>Fixed headless by default; override via <code>--headed</code> CLI/run-config flag</td></tr>
+              <tr><td>Multiple contexts</td><td class="highlight">Full control — open as many as needed</td><td>Single context only</td></tr>
+              <tr><td>Best for</td><td>Custom browser, multi-user/OTP flows, mixed UI+API scripts needing context switches</td><td class="highlight">Straightforward single-browser automation — the majority of real test cases</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="quiz">
+          <div class="quiz-q">You need a test that logs in as two different users simultaneously, without either session's cookies leaking into the other. Can you use the page fixture shortcut for this?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">Yes — just call page.goto() twice with different credentials</button>
+            <button class="quiz-opt" data-correct="true">No — the page fixture is locked to a single context; this needs the manual approach with two separate browser.new_context() calls</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="firefox">
+        <h2>Switching browsers</h2>
+        <p>The page-manipulation code itself doesn't change between browsers — only the launch step does. Swapping Chromium for Firefox is a one-line change:</p>
+        <pre><code>from playwright.sync_api import Playwright
+
+def test_firefox_browser(playwright: Playwright):
+    firefox_browser = playwright.firefox.launch(headless=False)
+    page = firefox_browser.new_page()
+    page.goto("https://rahulshettyacademy.com")</code></pre>
+        <p>For a single page, the context step can be skipped — <code>browser.new_page()</code> works directly and uses a single default context.</p>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary>What's the difference between the `playwright` fixture and the `page` fixture in pytest-playwright?</summary>
+          <div class="qa-body"><code>playwright</code> is the low-level global fixture you use to manually launch a specific browser engine, open a context, and open a page — full control over engine choice, headless/headed mode, and number of contexts. <code>page</code> is a higher-level convenience fixture that does all three steps internally, but with fixed assumptions: Chromium engine, headless by default, single context.</div>
+        </details>
+        <details class="qa">
+          <summary>Why open a new browser context instead of just using one for everything?</summary>
+          <div class="qa-body">A context is isolated like an incognito window — its own cookies, cache, and session data. If you need to simulate multiple independent users logging in within the same test (or want a guaranteed-fresh session), you open separate contexts rather than risk one login's cookies leaking into a supposedly-fresh flow.</div>
+        </details>
+        <details class="qa">
+          <summary>When would you NOT use the page fixture shortcut?</summary>
+          <div class="qa-body">When you need a non-Chromium engine (Firefox/WebKit), when you need headed mode without relying on an external CLI flag, when a test needs multiple browser contexts at once (e.g. a multi-user or OTP-across-sessions flow), or when mixing UI and API testing in one script that requires switching contexts.</div>
+        </details>
+        <details class="qa">
+          <summary>How do you run a test in headed mode if you're using the page fixture shortcut?</summary>
+          <div class="qa-body">Pass <code>--headed</code> as an additional argument in the run configuration or CLI command (e.g. <code>pytest --headed</code>), since the fixture's internal launch call isn't directly editable the way it is in the manual 3-step approach.</div>
+        </details>
+        <details class="qa">
+          <summary>Why does testing against Playwright's Chromium engine effectively cover both Chrome and Edge?</summary>
+          <div class="qa-body">Both Google Chrome and Microsoft Edge are built on the Chromium engine under the hood, so automating against Playwright's Chromium build simulates real-world behavior for both browsers.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Watch out</strong>
+          The page fixture's default is headless and Chromium-only — if a test needs headed mode, you can't just pass a kwarg like the manual approach; it has to come from the run configuration/CLI as <code>--headed</code>.
+        </div>
+        <div class="callout tip">
+          <strong>Import for autocomplete</strong>
+          Explicitly importing <code>Page</code> / <code>Playwright</code> from <code>playwright.sync_api</code> isn't required for the fixtures to function — they're globally available regardless — but it's what makes the IDE show autocomplete/IntelliSense on their methods, and it documents where the fixture actually comes from.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="pytest-fixtures.html">Pytest Fixtures &amp; Fundamentals →</a>
+          <a href="playwright-locators.html">Playwright Core Locators →</a>
+          <a href="playwright-auto-waiting.html">Playwright Auto-Waiting &amp; Assertions →</a>
+          <a href="course-roadmap.html">Course Roadmap →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Sources: "Invoking the Browser in Playwright", "The Page Fixture Shortcut", "Running Tests in Firefox" — added 2026-07-29</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

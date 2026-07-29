@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Environment Setup: Python, Pip &amp; PyCharm · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Environment Setup</div>
+    <h1>Environment Setup: Python, Pip &amp; PyCharm</h1>
+    <p class="lede">Installing Python and PyCharm is the easy part — the part worth actually understanding is why the IDE's interpreter has to stay in sync with your system's Python, and what pip is actually doing when you install packages.</p>
+    <div class="card-tags">
+      <span>setup</span>
+      <span>tooling</span>
+      <span>fundamentals</span>
+    </div>
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#visual">Setup sequence</a>
+      <a href="#platform-notes">Windows vs Mac</a>
+      <a href="#pip">What is pip</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p>The setup has three layers: install <strong>Python</strong> itself, install the <strong>PyCharm</strong> IDE, and make sure PyCharm's project interpreter points at the <em>same</em> Python installation as your system/terminal. That last part matters more than it looks — packages installed via <code>pip</code> from the terminal live inside a specific Python installation's folder. If PyCharm is configured to use a different interpreter, those packages simply won't show up in the project, and you'd have to install them again through the IDE.</p>
+      </section>
+
+      <section id="visual">
+        <h2>Setup sequence</h2>
+        <div class="diagram" id="flow-setup"></div>
+        <script>
+          renderFlowDiagram("flow-setup", {
+            steps: [
+              { label: "Install Python", sub: "python.org", desc: "Download the stable version installer from the official site and run it." },
+              { label: "Verify install", sub: "where python / which python3", desc: "Confirms the install path and version so you can point the IDE at the exact same interpreter later." },
+              { label: "Install PyCharm", sub: "jetbrains.com", desc: "Download and install the IDE, then create a new project." },
+              { label: "Sync interpreter", sub: "Custom environment → Existing", desc: "When creating the project, choose the same Python executable found in the verify step — not PyCharm's own bundled environment." },
+              { label: "pip install pytest", sub: "pip3 on Mac", desc: "Installs the Pytest testing framework that Playwright's Python tests run on." },
+              { label: "pip install pytest-playwright", sub: "official Pytest plugin", desc: "The plugin that makes Pytest recognize and run Playwright-based tests." },
+              { label: "playwright install", sub: "downloads browser engines", desc: "Separately downloads the actual Chromium/Firefox/WebKit binaries tests will run against." }
+            ]
+          });
+        </script>
+      </section>
+
+      <section id="platform-notes">
+        <h2>Windows vs Mac</h2>
+        <p>Installation is a click-through installer on both platforms, but the platform detail worth remembering is about the <em>default</em> Python already on the machine:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Aspect</th><th>Windows</th><th>Mac</th></tr></thead>
+            <tbody>
+              <tr><td>Default Python present?</td><td class="muted">No — clean until you install one</td><td class="highlight">Yes — ships with Python 2 by default</td></tr>
+              <tr><td>Install command flavor</td><td><code>pip</code>, <code>python</code></td><td class="highlight"><code>pip3</code>, <code>python3</code> (to avoid the built-in Python 2)</td></tr>
+              <tr><td>Typical install path</td><td><code>AppData\Local\Programs\Python\Python312</code></td><td><code>~/Library/Frameworks/Python.framework/Versions/&lt;version&gt;</code> (or symlinked via <code>/usr/local/bin</code>)</td></tr>
+              <tr><td>Find install path</td><td><code>where python</code></td><td><code>which python3</code></td></tr>
+              <tr><td>PATH setup</td><td>Check "Add python.exe to PATH" during install — installer sets the environment variable for you</td><td class="muted">not covered in this video</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="quiz">
+          <div class="quiz-q">On a fresh Mac, you run `pip install pytest`. It appears to succeed, but PyCharm can't find the package. What most likely happened?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">PyCharm needs to be restarted — packages take a few minutes to register</button>
+            <button class="quiz-opt" data-correct="true">Plain `pip` resolved to the Mac's built-in Python 2, not the Python 3 you separately installed — should have used `pip3`</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="pip">
+        <h2>What is pip</h2>
+        <p><strong>Pip</strong> is Python's package installer — it ships bundled with Python, so installing Python also gives you pip. When you need an external library (in this course, the Playwright package), pip is the tool that downloads it.</p>
+        <p>Cross-language mapping, since the concept exists everywhere under a different name:</p>
+        <ul>
+          <li>Java calls them <strong>jars</strong> (e.g. Selenium jars, Playwright jars)</li>
+          <li>JavaScript calls them <strong>node packages</strong></li>
+          <li>Python calls them simply <strong>packages</strong></li>
+        </ul>
+        <div class="callout tip">
+          <strong>Two installs, not one</strong>
+          <code>pip install pytest-playwright</code> installs the Python plugin/package. It does <em>not</em> download the actual browser engines. That's a separate step: <code>playwright install</code>, which pulls the Chromium/Firefox/WebKit binaries the tests will actually drive.
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary>What is pip, and how does it relate to concepts in other languages?</summary>
+          <div class="qa-body">Pip is Python's built-in package installer/manager, bundled with every Python install. It's the equivalent of downloading jars in Java or installing node packages in JavaScript — Python just calls the downloaded external libraries "packages."</div>
+        </details>
+        <details class="qa">
+          <summary>Why does Playwright for Python need a separate Pytest plugin?</summary>
+          <div class="qa-body">Playwright's Python tests are written on top of the Pytest testing framework/engine. The <code>pytest-playwright</code> plugin is what makes Pytest actually recognize and execute Playwright-based test code — without it, Pytest has no built-in awareness of Playwright.</div>
+        </details>
+        <details class="qa">
+          <summary>What's the difference between `pip install pytest-playwright` and `playwright install`?</summary>
+          <div class="qa-body">The pip command installs the Python package/plugin itself. <code>playwright install</code> is a separate step that downloads the actual browser engine binaries (Chromium, Firefox, WebKit) that your tests run against — installing the plugin doesn't get you the browsers.</div>
+        </details>
+        <details class="qa">
+          <summary>Why does keeping the IDE's interpreter in sync with the system Python matter?</summary>
+          <div class="qa-body">Packages installed via pip are stored inside whatever Python installation pip is attached to. If PyCharm's project interpreter points at a different Python installation than the one you used in the terminal, packages you installed from the terminal won't appear in the project — you'd have to reinstall them again through the IDE, or vice versa. Pointing both at the same interpreter keeps everything in sync regardless of where you install from.</div>
+        </details>
+        <details class="qa">
+          <summary>On a Mac, why use `which python3` / `pip3` instead of `which python` / `pip`?</summary>
+          <div class="qa-body">Mac machines ship with Python 2 pre-installed by default. Plain `python`/`pip` commands can resolve to that legacy Python 2 rather than the Python 3 you separately installed, so Mac users should explicitly use the `python3`/`pip3` variants to target the right version. Windows machines don't have this issue since they don't ship with a default Python.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Watch out</strong>
+          On Mac, don't assume <code>python</code>/<code>pip</code> point to your newly installed Python 3 — verify with <code>which python3</code> first, since the system's built-in Python 2 can silently intercept the plain command.
+        </div>
+        <div class="callout warn">
+          <strong>Watch out</strong>
+          Newer PyCharm versions merged the separate "project name" and "project location" fields into a single path field — if you're following older instructions or screenshots, this can be confusing when creating a new project.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="course-roadmap.html">Course Roadmap →</a>
+          <a href="python-basics.html">Python Basics →</a>
+          <a href="pytest-fixtures.html">Pytest Fixtures &amp; Fundamentals →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Sources: "Installing Python on Windows", "Installing Python on Mac", "Installing PyCharm IDE &amp; Syncing Interpreter", "Pip &amp; Installing Pytest/Playwright Packages" — added 2026-07-29</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

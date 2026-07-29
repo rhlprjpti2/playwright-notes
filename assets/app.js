@@ -1,0 +1,131 @@
+/* Shared behavior: theme toggle, hub grid render/search, topic page scroll effects. */
+
+(function themeInit() {
+  const saved = localStorage.getItem("pw-notes-theme");
+  if (saved) document.documentElement.setAttribute("data-theme", saved);
+})();
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute("data-theme") ||
+    (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  const next = current === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  localStorage.setItem("pw-notes-theme", next);
+}
+
+/* ---------- Hub page ---------- */
+function initHub() {
+  const grid = document.getElementById("grid");
+  const emptyState = document.getElementById("empty-state");
+  const searchInput = document.getElementById("search");
+  const tagRow = document.getElementById("tag-row");
+  const statTopics = document.getElementById("stat-topics");
+  const statSources = document.getElementById("stat-sources");
+  if (!grid) return;
+
+  const topics = (window.TOPICS_INDEX || []).slice().sort((a, b) =>
+    (b.lastUpdated || "").localeCompare(a.lastUpdated || ""));
+
+  const allTags = Array.from(new Set(topics.flatMap(t => t.tags || []))).sort();
+  let activeTag = null;
+  let query = "";
+
+  statTopics.innerHTML = `<b>${topics.length}</b> topic${topics.length === 1 ? "" : "s"}`;
+  const totalSources = topics.reduce((sum, t) => sum + (t.sources ? t.sources.length : 0), 0);
+  statSources.innerHTML = `<b>${totalSources}</b> video${totalSources === 1 ? "" : "s"} processed`;
+
+  allTags.forEach(tag => {
+    const pill = document.createElement("span");
+    pill.className = "tag-pill";
+    pill.textContent = tag;
+    pill.onclick = () => {
+      activeTag = activeTag === tag ? null : tag;
+      render();
+    };
+    tagRow.appendChild(pill);
+  });
+
+  function render() {
+    const q = query.trim().toLowerCase();
+    const filtered = topics.filter(t => {
+      const matchesTag = !activeTag || (t.tags || []).includes(activeTag);
+      const haystack = [t.title, t.summary, ...(t.tags || []), ...(t.keyTerms || [])]
+        .join(" ").toLowerCase();
+      const matchesQuery = !q || haystack.includes(q);
+      return matchesTag && matchesQuery;
+    });
+
+    Array.from(tagRow.children).forEach(pill => {
+      pill.classList.toggle("active", pill.textContent === activeTag);
+    });
+
+    grid.innerHTML = "";
+    if (filtered.length === 0) {
+      emptyState.style.display = "block";
+      emptyState.querySelector("h3").textContent = topics.length === 0
+        ? "No topics yet"
+        : "No matches";
+      emptyState.querySelector("p").textContent = topics.length === 0
+        ? "Send over a video transcript and the first topic page will show up here."
+        : "Try a different search term or clear the tag filter.";
+      return;
+    }
+    emptyState.style.display = "none";
+
+    filtered.forEach((t, i) => {
+      const card = document.createElement("a");
+      card.href = t.file;
+      card.className = "card";
+      card.style.animationDelay = `${i * 40}ms`;
+      card.innerHTML = `
+        <div class="card-title">${t.title}</div>
+        <div class="card-summary">${t.summary || ""}</div>
+        <div class="card-tags">${(t.tags || []).map(tag => `<span>${tag}</span>`).join("")}</div>
+        <div class="card-meta">
+          <span>${t.sources ? t.sources.length : 0} source${t.sources && t.sources.length === 1 ? "" : "s"}</span>
+          <span>${t.lastUpdated || ""}</span>
+        </div>`;
+      grid.appendChild(card);
+    });
+  }
+
+  searchInput.addEventListener("input", (e) => {
+    query = e.target.value;
+    render();
+  });
+
+  render();
+}
+
+/* ---------- Topic page: scroll reveal + TOC scrollspy ---------- */
+function initTopicPage() {
+  const sections = document.querySelectorAll(".content section[id]");
+  if (sections.length === 0) return;
+
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) entry.target.classList.add("visible");
+    });
+  }, { threshold: 0.08 });
+  sections.forEach(s => revealObserver.observe(s));
+
+  const tocLinks = document.querySelectorAll(".toc a");
+  if (tocLinks.length) {
+    const spy = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const link = document.querySelector(`.toc a[href="#${entry.target.id}"]`);
+        if (!link) return;
+        if (entry.isIntersecting) {
+          tocLinks.forEach(l => l.classList.remove("active"));
+          link.classList.add("active");
+        }
+      });
+    }, { rootMargin: "-20% 0px -70% 0px" });
+    sections.forEach(s => spy.observe(s));
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  initHub();
+  initTopicPage();
+});

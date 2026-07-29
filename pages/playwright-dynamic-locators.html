@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamic Locators, Filtering &amp; Scoped Search · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Dynamic Locators &amp; Filtering</div>
+    <h1>Dynamic Locators, Filtering &amp; Scoped Search</h1>
+    <p class="lede">The pattern for writing scripts that don't break when a page's item order changes: scan everything matching a tag, filter down to the one that matches your data, then search only inside it. Demonstrated with a product-cart scenario (add "iPhone X" and "Nokia Edge" to cart, by name — not by position).</p>
+    <div class="card-tags">
+      <span>playwright</span>
+      <span>locators</span>
+      <span>filtering</span>
+    </div>
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#visual">The scan-and-filter pattern</a>
+      <a href="#worked-example">Worked example</a>
+      <a href="#count">Asserting on count</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p>Hardcoding "click the first card" or "click the third button" is fragile — if the page's display order changes (sorting, re-ranking, a new item added), an index-based script breaks even though the target item still exists. The resilient approach: locate <em>every</em> matching element, filter down to the one whose content matches your target data, then scope any further search to inside that specific element.</p>
+      </section>
+
+      <section id="visual">
+        <h2>The scan-and-filter pattern</h2>
+        <div class="diagram" id="flow-filter"></div>
+        <script>
+          renderFlowDiagram("flow-filter", {
+            steps: [
+              { label: "Locate all matches", sub: 'page.locator("app-card")', desc: "Returns every matching element on the page — e.g. all 4 product cards, not just one." },
+              { label: "Filter by content", sub: '.filter(has_text="iPhone X")', desc: "Playwright checks each matched element's text content and narrows the result down to the one that actually contains it." },
+              { label: "Scope further search", sub: 'iphone_product.get_by_role("button")', desc: "Calling a locator method on an already-found element searches only inside that element — not the whole page again." },
+              { label: "Act or assert", sub: '.click()  /  expect(...).to_have_count(2)', desc: "Interact with the narrowed-down element, or assert on how many elements a locator ultimately matched." }
+            ]
+          });
+        </script>
+
+        <div class="demo" id="filter-chain-demo">
+          <div class="demo-label">watch "iPhone X" get resolved to one button — click to run</div>
+        </div>
+        <script>
+          renderValueFlowDemo("filter-chain-demo", {
+            playLabel: "Resolve iPhone X",
+            steps: [
+              { k: 'locator("app-card")', v: "4 cards" },
+              { k: 'filter(has_text="iPhone X")', v: "1 card" },
+              { k: "scoped .get_by_role(\"button\")", v: "1 button" },
+              { k: ".click()", v: "added to cart" }
+            ]
+          });
+        </script>
+      </section>
+
+      <section id="worked-example">
+        <h2>Worked example</h2>
+        <p>Goal: find the products named "iPhone X" and "Nokia Edge" wherever they currently sit on the page, add each to the cart, then check out.</p>
+        <pre><code>iphone_product = page.locator("app-card").filter(has_text="iPhone X")
+iphone_product.get_by_role("button").click()   # only one button exists inside this scoped card
+
+nokia_product = page.locator("app-card").filter(has_text="Nokia Edge")
+nokia_product.get_by_role("button").click()
+
+page.get_by_text("Checkout").click()   # partial text match is enough</code></pre>
+        <p>Note the scoping: <code>page.get_by_role("button")</code> would search the <em>entire page</em> and likely match many buttons. <code>iphone_product.get_by_role("button")</code> only searches within the already-filtered card, so it uniquely resolves without needing a <code>name=</code> filter — because the search space itself was already narrowed down to one card.</p>
+
+        <div class="quiz">
+          <div class="quiz-q">Tomorrow, the store re-sorts its product grid and "iPhone X" moves from the 1st card to the 3rd. Does <code>page.locator("app-card").filter(has_text="iPhone X")</code> still work correctly?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="true">Yes — it filters by content, not position, so it finds the card wherever it currently sits</button>
+            <button class="quiz-opt" data-correct="false">No — the script needs to be updated to target the 3rd card instead</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="count">
+        <h2>Asserting on count</h2>
+        <p>To verify how many elements a locator ultimately matched (e.g. confirming exactly 2 items landed in the cart), use the <code>to_have_count</code> web-first assertion:</p>
+        <pre><code>from playwright.sync_api import expect
+
+expect(page.locator(".media-body")).to_have_count(2)</code></pre>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary>Why scan-and-filter instead of clicking an element at a fixed index?</summary>
+          <div class="qa-body">Resilience. If the page's display order changes — items re-sorted, a new item inserted — an index-based script targets the wrong element or breaks entirely. A filter-by-content script finds the correct element regardless of its position on the page.</div>
+        </details>
+        <details class="qa">
+          <summary>What's the difference between `page.locator(...).get_by_role(...)` and `product_locator.get_by_role(...)`?</summary>
+          <div class="qa-body">Scope. The first searches the entire page for that role, which can return many matches. The second searches only within the previously-located element (`product_locator`), so it can resolve uniquely without further filtering — because the search space was already narrowed.</div>
+        </details>
+        <details class="qa">
+          <summary>How do you assert on the number of elements a locator matched?</summary>
+          <div class="qa-body"><code>expect(locator).to_have_count(n)</code> — a web-first assertion, so it auto-retries like other Playwright assertions rather than checking the count exactly once immediately.</div>
+        </details>
+        <details class="qa">
+          <summary>What's the difference between get_by_role's `name=` filter and a separate `.filter(has_text=...)` call?</summary>
+          <div class="qa-body"><code>name=</code> is bundled directly into <code>get_by_role</code> and specifically matches the element's accessible name. <code>.filter()</code> is a separate, more general-purpose chained method usable on any locator (not just role-based ones), and can match on text content via <code>has_text</code> (there's also <code>has_text</code>/<code>has_not_text</code>/<code>has</code> variants for different filter conditions).</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Watch out</strong>
+          Hardcoding an index ("the first card," "the third button") is exactly the anti-pattern this technique exists to avoid — it's fragile the moment content order changes, even though nothing about the target element itself changed.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="playwright-locators.html">Playwright Core Locators →</a>
+          <a href="playwright-auto-waiting.html">Playwright Auto-Waiting &amp; Assertions →</a>
+          <a href="playwright-browser-context-page.html">Browser, Context &amp; Page →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: "Dynamic Element Scanning: Product Cart Example" — added 2026-07-29</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

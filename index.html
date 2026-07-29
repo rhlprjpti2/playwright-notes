@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Playwright Interview Notes</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="brand-mark"></span> Playwright Interview Notes</div>
+    <div class="topbar-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>Playwright, interview-ready</h1>
+    <p>Structured notes built from your video transcripts, organized by topic and cross-linked automatically. Search or filter by tag below.</p>
+    <div class="search-box">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="search" type="text" placeholder="Search topics, tags, terms…" autocomplete="off">
+    </div>
+    <div class="stats">
+      <span id="stat-topics"></span>
+      <span id="stat-sources"></span>
+    </div>
+    <div class="tag-row" id="tag-row"></div>
+  </div>
+
+  <div id="empty-state" class="empty-state" style="display:none;">
+    <h3></h3>
+    <p></p>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<footer class="site-footer">Local notes app · updates whenever a new transcript is processed</footer>
+
+<script src="data/topics-index.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

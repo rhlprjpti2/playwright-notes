@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>All Interview Questions · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/interactive.js"></script>
+<script src="../data/questions.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <a class="topbar-link active" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / All Interview Questions</div>
+    <h1>All Interview Questions</h1>
+    <p class="lede">Every question from every topic page, in one place. Filter by difficulty, by topic, or both — then drill only what you need before a specific round. Each answer links back to its full topic page for context.</p>
+  </div>
+
+  <div class="qhub">
+    <div class="qhub-search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="q-search" type="text" placeholder="Search questions and answers…" autocomplete="off">
+    </div>
+
+    <div class="qhub-filter-group">
+      <span class="qhub-filter-label">Difficulty</span>
+      <div class="qhub-chips" id="level-chips"></div>
+    </div>
+
+    <div class="qhub-filter-group">
+      <span class="qhub-filter-label">Topic</span>
+      <div class="qhub-chips" id="topic-chips"></div>
+    </div>
+
+    <div class="qhub-toolbar">
+      <span class="qhub-count" id="q-count"></span>
+      <div class="qhub-actions">
+        <button class="qhub-btn" id="expand-all">Expand all</button>
+        <button class="qhub-btn" id="collapse-all">Collapse all</button>
+        <button class="qhub-btn" id="reset-filters">Reset filters</button>
+      </div>
+    </div>
+
+    <div id="q-list"></div>
+    <div id="q-empty" class="empty-state" style="display:none;">
+      <h3>No questions match</h3>
+      <p>Try a different search term, or reset the filters.</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app · questions generated from the topic pages</footer>
+
+<script>
+(function () {
+  const ALL = window.ALL_QUESTIONS || [];
+  const LEVEL_ORDER = ["junior", "mid", "senior", "scenario"];
+  const LEVEL_LABEL = { junior: "Junior", mid: "Mid", senior: "Senior", scenario: "Scenario", unrated: "Unrated" };
+
+  let activeLevel = "all";
+  let activeTopic = "all";
+  let query = "";
+
+  const listEl = document.getElementById("q-list");
+  const emptyEl = document.getElementById("q-empty");
+  const countEl = document.getElementById("q-count");
+
+  function countBy(items, key) {
+    const map = {};
+    items.forEach((i) => { map[i[key]] = (map[i[key]] || 0) + 1; });
+    return map;
+  }
+
+  // ---- build filter chips ----
+  function buildChips(containerId, values, labelFor, countFor, onPick, current) {
+    const box = document.getElementById(containerId);
+    box.innerHTML = "";
+    const mk = (val, label, n) => {
+      const b = document.createElement("button");
+      b.className = "qhub-chip" + (val === current() ? " active" : "");
+      b.innerHTML = `${label} <span class="n">${n}</span>`;
+      b.addEventListener("click", () => { onPick(val); render(); });
+      return b;
+    };
+    box.appendChild(mk("all", "All", ALL.length));
+    values.forEach((v) => box.appendChild(mk(v, labelFor(v), countFor(v))));
+  }
+
+  const levelCounts = countBy(ALL, "level");
+  const topicCounts = countBy(ALL, "topic");
+  const levelsPresent = LEVEL_ORDER.filter((l) => levelCounts[l]);
+  const topicsPresent = Object.keys(topicCounts).sort(
+    (a, b) => topicCounts[b] - topicCounts[a]
+  );
+  const topicLabelBySlug = {};
+  ALL.forEach((q) => { topicLabelBySlug[q.topic] = q.topicLabel; });
+
+  function refreshChips() {
+    buildChips(
+      "level-chips", levelsPresent,
+      (l) => LEVEL_LABEL[l] || l,
+      (l) => levelCounts[l],
+      (v) => { activeLevel = v; },
+      () => activeLevel
+    );
+    buildChips(
+      "topic-chips", topicsPresent,
+      (t) => topicLabelBySlug[t],
+      (t) => topicCounts[t],
+      (v) => { activeTopic = v; },
+      () => activeTopic
+    );
+  }
+
+  function stripTags(s) {
+    const d = document.createElement("div");
+    d.innerHTML = s;
+    return d.textContent || "";
+  }
+
+  function render() {
+    refreshChips();
+
+    const q = query.trim().toLowerCase();
+    const filtered = ALL.filter((item) => {
+      if (activeLevel !== "all" && item.level !== activeLevel) return false;
+      if (activeTopic !== "all" && item.topic !== activeTopic) return false;
+      if (q) {
+        const hay = (stripTags(item.q) + " " + stripTags(item.a) + " " + item.topicLabel).toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+
+    countEl.textContent = filtered.length === ALL.length
+      ? `Showing all ${ALL.length} questions`
+      : `Showing ${filtered.length} of ${ALL.length} questions`;
+
+    listEl.innerHTML = "";
+    emptyEl.style.display = filtered.length ? "none" : "block";
+
+    filtered.forEach((item) => {
+      const d = document.createElement("details");
+      d.className = "qa qhub-item";
+      d.innerHTML = `
+        <summary>
+          <span class="q-level ${item.level}">${LEVEL_LABEL[item.level] || item.level}</span>
+          <span class="qhub-topic">${item.topicLabel}</span>
+          <span class="qhub-q">${item.q}</span>
+        </summary>
+        <div class="qa-body">
+          ${item.a}
+          <a class="qhub-src" href="${item.file.replace("pages/", "")}">Read in context: ${item.topicLabel} &rarr;</a>
+        </div>`;
+      listEl.appendChild(d);
+    });
+  }
+
+  document.getElementById("q-search").addEventListener("input", (e) => {
+    query = e.target.value;
+    render();
+  });
+  document.getElementById("expand-all").addEventListener("click", () => {
+    listEl.querySelectorAll("details").forEach((d) => (d.open = true));
+  });
+  document.getElementById("collapse-all").addEventListener("click", () => {
+    listEl.querySelectorAll("details").forEach((d) => (d.open = false));
+  });
+  document.getElementById("reset-filters").addEventListener("click", () => {
+    activeLevel = "all";
+    activeTopic = "all";
+    query = "";
+    document.getElementById("q-search").value = "";
+    render();
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>

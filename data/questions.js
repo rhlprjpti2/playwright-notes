@@ -1,0 +1,551 @@
+/**
+ * GENERATED FILE — do not edit by hand.
+ * Produced by build-questions.py from the Q&A blocks in pages/*.html.
+ * Re-run `python build-questions.py` after changing any question.
+ */
+window.ALL_QUESTIONS = [
+ {
+  "q": "Why learn Pytest before Playwright, specifically?",
+  "a": "Playwright's Python test support is built directly on the Pytest framework — Pytest isn't a separate, optional tool alongside Playwright, it's the foundation the tests actually run on. Skipping it means not understanding fixtures, test discovery, and assertions that Playwright-Python code relies on.",
+  "level": "junior",
+  "topic": "course-roadmap",
+  "topicLabel": "Course Roadmap",
+  "file": "pages/course-roadmap.html"
+ },
+ {
+  "q": "What does \"framework design\" cover beyond writing individual test scripts?",
+  "a": "Data-driven testing, parameterization, running tests in parallel or in groups, logging, reporting, automatic screenshots, and the Page Object Model design pattern for maintainable test code.",
+  "level": "mid",
+  "topic": "course-roadmap",
+  "topicLabel": "Course Roadmap",
+  "file": "pages/course-roadmap.html"
+ },
+ {
+  "q": "How does BDD fit into a Playwright + Pytest framework?",
+  "a": "Through a separate Pytest plugin that lets you write Gherkin feature files, bringing Cucumber-style behavior-driven development on top of the existing Pytest/Playwright framework — it's layered on, not a replacement.",
+  "level": "mid",
+  "topic": "course-roadmap",
+  "topicLabel": "Course Roadmap",
+  "file": "pages/course-roadmap.html"
+ },
+ {
+  "q": "Where does Jenkins fit in?",
+  "a": "Once the framework and tests are built, Jenkins is used as the CI/CD tool to integrate the framework and schedule automated test job runs.",
+  "level": "junior",
+  "topic": "course-roadmap",
+  "topicLabel": "Course Roadmap",
+  "file": "pages/course-roadmap.html"
+ },
+ {
+  "q": "What is pip, and how does it relate to concepts in other languages?",
+  "a": "Pip is Python's built-in package installer/manager, bundled with every Python install. It's the equivalent of downloading jars in Java or installing node packages in JavaScript — Python just calls the downloaded external libraries \"packages.\"",
+  "level": "junior",
+  "topic": "environment-setup",
+  "topicLabel": "Environment Setup",
+  "file": "pages/environment-setup.html"
+ },
+ {
+  "q": "Why does Playwright for Python need a separate Pytest plugin?",
+  "a": "Playwright's Python tests are written on top of the Pytest testing framework/engine. The <code>pytest-playwright</code> plugin is what makes Pytest actually recognize and execute Playwright-based test code — without it, Pytest has no built-in awareness of Playwright.",
+  "level": "junior",
+  "topic": "environment-setup",
+  "topicLabel": "Environment Setup",
+  "file": "pages/environment-setup.html"
+ },
+ {
+  "q": "What's the difference between `pip install pytest-playwright` and `playwright install`?",
+  "a": "The pip command installs the Python package/plugin itself. <code>playwright install</code> is a separate step that downloads the actual browser engine binaries (Chromium, Firefox, WebKit) that your tests run against — installing the plugin doesn't get you the browsers.",
+  "level": "junior",
+  "topic": "environment-setup",
+  "topicLabel": "Environment Setup",
+  "file": "pages/environment-setup.html"
+ },
+ {
+  "q": "Why does keeping the IDE's interpreter in sync with the system Python matter?",
+  "a": "Packages installed via pip are stored inside whatever Python installation pip is attached to. If PyCharm's project interpreter points at a different Python installation than the one you used in the terminal, packages you installed from the terminal won't appear in the project — you'd have to reinstall them again through the IDE, or vice versa. Pointing both at the same interpreter keeps everything in sync regardless of where you install from.",
+  "level": "mid",
+  "topic": "environment-setup",
+  "topicLabel": "Environment Setup",
+  "file": "pages/environment-setup.html"
+ },
+ {
+  "q": "On a Mac, why use `which python3` / `pip3` instead of `which python` / `pip`?",
+  "a": "Mac machines ship with Python 2 pre-installed by default. Plain `python`/`pip` commands can resolve to that legacy Python 2 rather than the Python 3 you separately installed, so Mac users should explicitly use the `python3`/`pip3` variants to target the right version. Windows machines don't have this issue since they don't ship with a default Python.",
+  "level": "junior",
+  "topic": "environment-setup",
+  "topicLabel": "Environment Setup",
+  "file": "pages/environment-setup.html"
+ },
+ {
+  "q": "Why use a virtual environment instead of installing packages system-wide?",
+  "a": "Isolation. Each project gets its own copy of Python plus its own independent set of installed packages, so Project A needing <code>pytest-playwright==0.5.2</code> and Project B needing a different version don't conflict. It also keeps a machine's system Python clean and makes a project's exact dependencies reproducible on another machine.",
+  "level": "mid",
+  "topic": "environment-setup",
+  "topicLabel": "Environment Setup",
+  "file": "pages/environment-setup.html"
+ },
+ {
+  "q": "Walk me through how you'd structure a Playwright + Pytest project from scratch.",
+  "a": "A <code>tests/</code> directory holding the test files plus a <code>conftest.py</code> for shared fixtures (browser/page setup, login, test data), a <code>pytest.ini</code> registering custom markers and default options, and <code>requirements.txt</code> pinning <code>pytest</code> and <code>pytest-playwright</code>. Fixtures go in conftest so they're shared by directory without imports; test data lives in fixtures rather than hardcoded in tests; and page interactions use semantic locators so tests survive UI churn.",
+  "level": "mid",
+  "topic": "first-real-test",
+  "topicLabel": "First Real Test",
+  "file": "pages/first-real-test.html"
+ },
+ {
+  "q": "A fixture depends on another fixture. How does Pytest resolve that?",
+  "a": "Automatically, by name. <code>logged_in_page</code> declares <code>login_page</code> as a parameter, which itself declares <code>page</code>. Pytest walks that dependency chain and builds them in order before the test body runs — you never instantiate them yourself. Each is also cached per its scope, so a session-scoped dependency isn't rebuilt for every consumer.",
+  "level": "mid",
+  "topic": "first-real-test",
+  "topicLabel": "First Real Test",
+  "file": "pages/first-real-test.html"
+ },
+ {
+  "q": "Why put login in a fixture rather than a helper function you call at the top of each test?",
+  "a": "Three reasons. Scope control — a fixture can be session/module scoped to avoid repeating expensive setup, a plain function can't. Automatic teardown — <code>yield</code> gives you guaranteed cleanup even if the test fails, whereas a helper's cleanup is skipped on exception unless you wrap everything in try/finally. And composability — other fixtures can depend on it, letting Pytest build a dependency graph rather than you sequencing calls by hand.",
+  "level": "senior",
+  "topic": "first-real-test",
+  "topicLabel": "First Real Test",
+  "file": "pages/first-real-test.html"
+ },
+ {
+  "q": "How would you debug a Playwright test that fails only in CI?",
+  "a": "Run with <code>--tracing on</code> so CI produces a trace artifact, then open it locally with <code>playwright show-trace</code> — it gives per-step DOM snapshots, network activity and console logs from the actual failing run. Locally, reproduce with <code>--headed --slowmo</code> or drop a <code>page.pause()</code> to step through with Inspector. Also check for the classic CI-only causes: different viewport size, missing <code>--headed</code> display assumptions, timezone/locale differences, and test-ordering dependencies exposed by parallel execution.",
+  "level": "senior",
+  "topic": "first-real-test",
+  "topicLabel": "First Real Test",
+  "file": "pages/first-real-test.html"
+ },
+ {
+  "q": "How do you run only a subset of tests?",
+  "a": "By file (<code>pytest tests/test_login.py</code>), by single function using the double-colon syntax (<code>pytest tests/test_login.py::test_name</code>), or by marker (<code>pytest -m smoke</code>) after tagging tests with <code>@pytest.mark.smoke</code> and registering that marker in <code>pytest.ini</code>.",
+  "level": "junior",
+  "topic": "first-real-test",
+  "topicLabel": "First Real Test",
+  "file": "pages/first-real-test.html"
+ },
+ {
+  "q": "Your suite has 40 tests and each one logs in through the UI. It takes 25 minutes. How do you speed it up?",
+  "a": "Stop logging in through the UI repeatedly. Authenticate once, save the session with <code>context.storage_state(path=\"state.json\")</code>, and have tests start from a context created with that stored state — turning a multi-second UI login into a near-instant state load. Beyond that: run tests in parallel with <code>pytest-xdist</code> (<code>-n auto</code>), keep the browser session-scoped rather than per-test, and reserve full UI login for the handful of tests actually testing login itself.",
+  "level": "senior",
+  "topic": "first-real-test",
+  "topicLabel": "First Real Test",
+  "file": "pages/first-real-test.html"
+ },
+ {
+  "q": "What does Playwright's automatic actionability check actually check for?",
+  "a": "Per this course: visible, stable (finished loading/animating), receives events (not obscured by another element), and enabled. Playwright verifies these before most actions, retrying automatically until they pass or a timeout is reached.",
+  "level": "junior",
+  "topic": "playwright-auto-waiting",
+  "topicLabel": "Auto-Waiting",
+  "file": "pages/playwright-auto-waiting.html"
+ },
+ {
+  "q": "How is this different from Selenium's approach to synchronization?",
+  "a": "Selenium has no built-in auto-wait for actionability — an immediate check on a not-yet-rendered or not-yet-stable element simply fails. The developer must write explicit or implicit wait code by hand to compensate. Playwright performs these checks and retries internally, with no synchronization code required from the test author.",
+  "level": "mid",
+  "topic": "playwright-auto-waiting",
+  "topicLabel": "Auto-Waiting",
+  "file": "pages/playwright-auto-waiting.html"
+ },
+ {
+  "q": "Does auto-waiting apply only to actions like click/fill, or also to assertions?",
+  "a": "Both. Playwright's `expect()` assertions are \"web-first\" and auto-retrying — they recheck the condition repeatedly until it's true or the timeout is hit, rather than evaluating once immediately like a plain equality check would.",
+  "level": "junior",
+  "topic": "playwright-auto-waiting",
+  "topicLabel": "Auto-Waiting",
+  "file": "pages/playwright-auto-waiting.html"
+ },
+ {
+  "q": "If an element becomes ready in 2 seconds but the timeout is much longer, does Playwright wait out the full timeout?",
+  "a": "No — Playwright proceeds the instant all actionability checks succeed. It only consumes the full timeout when the checks keep failing all the way until the deadline.",
+  "level": "mid",
+  "topic": "playwright-auto-waiting",
+  "topicLabel": "Auto-Waiting",
+  "file": "pages/playwright-auto-waiting.html"
+ },
+ {
+  "q": "What genuinely differentiates Playwright's auto-waiting from Selenium, in one sentence for an interview?",
+  "a": "Playwright treats waiting for actionability as a built-in, automatic, retrying part of every action and assertion, while Selenium treats it as something the test author must explicitly code — that shift is what removes synchronization code from Playwright test scripts entirely.",
+  "level": "mid",
+  "topic": "playwright-auto-waiting",
+  "topicLabel": "Auto-Waiting",
+  "file": "pages/playwright-auto-waiting.html"
+ },
+ {
+  "q": "What are Playwright's actual default timeouts — for actions and for assertions?",
+  "a": "30 seconds for actions (click, fill, etc.), configurable via <code>page.set_default_timeout()</code> or a per-call <code>timeout=</code> argument. 5 seconds for web-first assertions (<code>expect()</code>), configured separately. They're two independent values — knowing this precisely (rather than \"a few seconds\") signals you've actually used the tool, not just watched a tutorial.",
+  "level": "mid",
+  "topic": "playwright-auto-waiting",
+  "topicLabel": "Auto-Waiting",
+  "file": "pages/playwright-auto-waiting.html"
+ },
+ {
+  "q": "A colleague fixes a flaky test by adding <code>time.sleep(5)</code> before the assertion. Why is that wrong, and what do you do instead?",
+  "a": "It's wrong on both ends. It's <em>too slow</em> when the element appears in 200ms — you've now permanently added 5s to every run of that test. And it's <em>still flaky</em> when a slow CI machine takes 6s. It trades a fast intermittent failure for a slow intermittent failure. The right fix is a web-first assertion (<code>expect(locator).to_be_visible()</code>), which polls and continues the instant the condition holds, and only consumes the full timeout on genuine failure. If a specific step genuinely needs longer, raise that call's <code>timeout=</code> rather than blocking the thread.",
+  "level": "scenario",
+  "topic": "playwright-auto-waiting",
+  "topicLabel": "Auto-Waiting",
+  "file": "pages/playwright-auto-waiting.html"
+ },
+ {
+  "q": "A test passes locally but fails in CI with a timeout on a click. What's your diagnostic sequence?",
+  "a": "Auto-waiting means the element failed at least one actionability check for the entire timeout window — so ask which one. Grab a trace (<code>--tracing on</code>) and inspect the DOM snapshot at failure: is the element absent entirely (data/seed differences, slower backend), present but off-screen (smaller CI viewport — a real difference from a local maximized window), present but covered (a cookie banner or overlay that only appears in a fresh CI profile), or present but <code>disabled</code> (an async precondition that hadn't resolved yet)? Each points at a different fix; blanket-raising the timeout usually just makes the failure slower.",
+  "level": "scenario",
+  "topic": "playwright-auto-waiting",
+  "topicLabel": "Auto-Waiting",
+  "file": "pages/playwright-auto-waiting.html"
+ },
+ {
+  "q": "Given auto-waiting, is there ever a legitimate reason to wait explicitly?",
+  "a": "Yes, for conditions actionability checks don't cover. Actionability is about a specific element's state — it says nothing about, say, a network request having settled, an animation having finished before a visual snapshot, or a background job completing. For those, Playwright provides purpose-built waits (<code>wait_for_load_state</code>, <code>wait_for_response</code>, <code>expect_download</code>, <code>locator.wait_for(state=...)</code>). The rule isn't \"never wait\" — it's \"never sleep a fixed duration.\" Wait on a condition, not on the clock.",
+  "level": "senior",
+  "topic": "playwright-auto-waiting",
+  "topicLabel": "Auto-Waiting",
+  "file": "pages/playwright-auto-waiting.html"
+ },
+ {
+  "q": "Playwright checks that an element \"receives events.\" What real bug class does that catch?",
+  "a": "Elements that are visually present and enabled but covered by something else at the click point — a modal overlay, a sticky header, a cookie banner, a toast notification. Playwright hit-tests the target point and confirms the click would actually reach that element rather than the thing on top of it. Without that check (Selenium's default position), the click silently lands on the overlay: the test reports a successful click, no exception is raised, and it fails confusingly several steps later. It converts a misleading downstream failure into a precise one at the real point of breakage.",
+  "level": "senior",
+  "topic": "playwright-auto-waiting",
+  "topicLabel": "Auto-Waiting",
+  "file": "pages/playwright-auto-waiting.html"
+ },
+ {
+  "q": "What's the difference between the `playwright` fixture and the `page` fixture in pytest-playwright?",
+  "a": "<code>playwright</code> is the low-level global fixture you use to manually launch a specific browser engine, open a context, and open a page — full control over engine choice, headless/headed mode, and number of contexts. <code>page</code> is a higher-level convenience fixture that does all three steps internally, but with fixed assumptions: Chromium engine, headless by default, single context.",
+  "level": "junior",
+  "topic": "playwright-browser-context-page",
+  "topicLabel": "Browser / Context / Page",
+  "file": "pages/playwright-browser-context-page.html"
+ },
+ {
+  "q": "Why open a new browser context instead of just using one for everything?",
+  "a": "A context is isolated like an incognito window — its own cookies, cache, and session data. If you need to simulate multiple independent users logging in within the same test (or want a guaranteed-fresh session), you open separate contexts rather than risk one login's cookies leaking into a supposedly-fresh flow.",
+  "level": "mid",
+  "topic": "playwright-browser-context-page",
+  "topicLabel": "Browser / Context / Page",
+  "file": "pages/playwright-browser-context-page.html"
+ },
+ {
+  "q": "When would you NOT use the page fixture shortcut?",
+  "a": "When you need a non-Chromium engine (Firefox/WebKit), when you need headed mode without relying on an external CLI flag, when a test needs multiple browser contexts at once (e.g. a multi-user or OTP-across-sessions flow), or when mixing UI and API testing in one script that requires switching contexts.",
+  "level": "mid",
+  "topic": "playwright-browser-context-page",
+  "topicLabel": "Browser / Context / Page",
+  "file": "pages/playwright-browser-context-page.html"
+ },
+ {
+  "q": "How do you run a test in headed mode if you're using the page fixture shortcut?",
+  "a": "Pass <code>--headed</code> as an additional argument in the run configuration or CLI command (e.g. <code>pytest --headed</code>), since the fixture's internal launch call isn't directly editable the way it is in the manual 3-step approach.",
+  "level": "junior",
+  "topic": "playwright-browser-context-page",
+  "topicLabel": "Browser / Context / Page",
+  "file": "pages/playwright-browser-context-page.html"
+ },
+ {
+  "q": "Why does testing against Playwright's Chromium engine effectively cover both Chrome and Edge?",
+  "a": "Both Google Chrome and Microsoft Edge are built on the Chromium engine under the hood, so automating against Playwright's Chromium build simulates real-world behavior for both browsers.",
+  "level": "junior",
+  "topic": "playwright-browser-context-page",
+  "topicLabel": "Browser / Context / Page",
+  "file": "pages/playwright-browser-context-page.html"
+ },
+ {
+  "q": "Explain browser vs context vs page as a hierarchy, including the cost of each.",
+  "a": "A <strong>browser</strong> is an actual launched browser process — expensive (hundreds of ms to seconds), so you launch it once and reuse it. A <strong>context</strong> is an isolated session inside that process with its own cookies, storage and cache — cheap to create, which is what makes per-test isolation practical. A <strong>page</strong> is a tab inside a context; one context can hold several pages that share the same session state. The standard framework shape follows directly: session-scoped browser, function-scoped context, page per test.",
+  "level": "mid",
+  "topic": "playwright-browser-context-page",
+  "topicLabel": "Browser / Context / Page",
+  "file": "pages/playwright-browser-context-page.html"
+ },
+ {
+  "q": "You need to test a chat feature where User A sends a message and User B must receive it — in one test. How do you set that up?",
+  "a": "Two contexts from a single browser, not two browsers. Launch the browser once, then <code>ctx_a = browser.new_context()</code> and <code>ctx_b = browser.new_context()</code>, open a page in each, and log in as a different user per context. Because contexts are isolated, the two sessions won't share cookies or clobber each other's auth — while still being cheap since you only paid the browser-launch cost once. The <code>page</code> fixture can't do this, as it's locked to a single context.",
+  "level": "scenario",
+  "topic": "playwright-browser-context-page",
+  "topicLabel": "Browser / Context / Page",
+  "file": "pages/playwright-browser-context-page.html"
+ },
+ {
+  "q": "Every test in a suite logs in through the UI, adding ~4 seconds each. How would you eliminate that?",
+  "a": "Authenticate once, then reuse the resulting session state. Log in in a session-scoped setup step and call <code>context.storage_state(path=\"state.json\")</code> to persist cookies and local storage; each test then creates its context with <code>browser.new_context(storage_state=\"state.json\")</code> and starts already authenticated — milliseconds instead of a full UI flow. Tests stay isolated because each still gets its own context. Keep a small number of tests that do exercise real UI login, since that path still needs coverage.",
+  "level": "senior",
+  "topic": "playwright-browser-context-page",
+  "topicLabel": "Browser / Context / Page",
+  "file": "pages/playwright-browser-context-page.html"
+ },
+ {
+  "q": "Why scan-and-filter instead of clicking an element at a fixed index?",
+  "a": "Resilience. If the page's display order changes — items re-sorted, a new item inserted — an index-based script targets the wrong element or breaks entirely. A filter-by-content script finds the correct element regardless of its position on the page.",
+  "level": "junior",
+  "topic": "playwright-dynamic-locators",
+  "topicLabel": "Dynamic Locators",
+  "file": "pages/playwright-dynamic-locators.html"
+ },
+ {
+  "q": "What's the difference between `page.locator(...).get_by_role(...)` and `product_locator.get_by_role(...)`?",
+  "a": "Scope. The first searches the entire page for that role, which can return many matches. The second searches only within the previously-located element (`product_locator`), so it can resolve uniquely without further filtering — because the search space was already narrowed.",
+  "level": "mid",
+  "topic": "playwright-dynamic-locators",
+  "topicLabel": "Dynamic Locators",
+  "file": "pages/playwright-dynamic-locators.html"
+ },
+ {
+  "q": "How do you assert on the number of elements a locator matched?",
+  "a": "<code>expect(locator).to_have_count(n)</code> — a web-first assertion, so it auto-retries like other Playwright assertions rather than checking the count exactly once immediately.",
+  "level": "junior",
+  "topic": "playwright-dynamic-locators",
+  "topicLabel": "Dynamic Locators",
+  "file": "pages/playwright-dynamic-locators.html"
+ },
+ {
+  "q": "What's the difference between get_by_role's `name=` filter and a separate `.filter(has_text=...)` call?",
+  "a": "<code>name=</code> is bundled directly into <code>get_by_role</code> and specifically matches the element's accessible name. <code>.filter()</code> is a separate, more general-purpose chained method usable on any locator (not just role-based ones), and can match on text content via <code>has_text</code> (there's also <code>has_text</code>/<code>has_not_text</code>/<code>has</code> variants for different filter conditions).",
+  "level": "mid",
+  "topic": "playwright-dynamic-locators",
+  "topicLabel": "Dynamic Locators",
+  "file": "pages/playwright-dynamic-locators.html"
+ },
+ {
+  "q": "Are Playwright locators evaluated when you create them?",
+  "a": "No — locators are lazy. Creating one just describes <em>how</em> to find an element; the DOM query runs at the moment you act or assert on it, and re-runs on each auto-wait retry. That's why a locator stored in a variable still works after the page updates, and why locators don't go stale the way a Selenium <code>WebElement</code> reference does.",
+  "level": "mid",
+  "topic": "playwright-dynamic-locators",
+  "topicLabel": "Dynamic Locators",
+  "file": "pages/playwright-dynamic-locators.html"
+ },
+ {
+  "q": "You must click \"Delete\" on the row for user \"jsmith\" in a table where rows load in unpredictable order. How do you write it?",
+  "a": "Filter to the row by its content, then scope the button search inside that row: <code>page.get_by_role(\"row\").filter(has_text=\"jsmith\").get_by_role(\"button\", name=\"Delete\").click()</code>. The row is identified by the data that makes it unique, not its index, and the Delete button is found <em>within</em> that row — so it can't accidentally hit another row's Delete even though every row has one. This is the canonical shape of this whole pattern.",
+  "level": "scenario",
+  "topic": "playwright-dynamic-locators",
+  "topicLabel": "Dynamic Locators",
+  "file": "pages/playwright-dynamic-locators.html"
+ },
+ {
+  "q": "When is using <code>.nth()</code> or <code>.first</code> actually the correct choice rather than a smell?",
+  "a": "When position itself is the thing under test, not an incidental detail. Examples: asserting that a \"sort by newest\" control genuinely puts the newest item first, verifying a top-ranked search result, or checking pagination boundaries. The distinction is intent — <code>.first</code> is legitimate when your assertion is <em>about</em> ordering, and a smell when you're just using position as a lazy proxy for identity. A useful tell: if reordering the data should keep the test passing, filtering by content is right; if reordering <em>should</em> fail the test, position is right.",
+  "level": "senior",
+  "topic": "playwright-dynamic-locators",
+  "topicLabel": "Dynamic Locators",
+  "file": "pages/playwright-dynamic-locators.html"
+ },
+ {
+  "q": "What two DOM conditions must hold for get_by_label to successfully find an element?",
+  "a": "Either the input element is nested inside the <code>&lt;label&gt;</code> tag itself, or the label's <code>for</code> attribute exactly matches the input's <code>id</code> attribute. If neither holds, get_by_label won't find it — even if a label is visually present on the page.",
+  "level": "junior",
+  "topic": "playwright-locators",
+  "topicLabel": "Locators",
+  "file": "pages/playwright-locators.html"
+ },
+ {
+  "q": "How do you disambiguate multiple elements that share the same role, like several buttons on a page?",
+  "a": "Pass the <code>name=</code> parameter to <code>get_by_role</code>, e.g. <code>get_by_role(\"button\", name=\"Sign In\")</code> — Playwright gets all elements with that role first, then filters to the one whose visible/accessible name matches.",
+  "level": "junior",
+  "topic": "playwright-locators",
+  "topicLabel": "Locators",
+  "file": "pages/playwright-locators.html"
+ },
+ {
+  "q": "When would you fall back to a CSS locator instead of get_by_role or get_by_label?",
+  "a": "When the element is a custom component with no semantic ARIA role attached — e.g. a plain <code>&lt;div&gt;</code>-based product card — or a form field with no associated label. CSS built from id/class attributes works regardless of role or label semantics.",
+  "level": "mid",
+  "topic": "playwright-locators",
+  "topicLabel": "Locators",
+  "file": "pages/playwright-locators.html"
+ },
+ {
+  "q": "What's the difference between what select_option chooses and what's visually shown in a dropdown?",
+  "a": "select_option targets the underlying HTML <code>option value</code> attribute, which is not necessarily identical to the text visually displayed to the user in the dropdown UI.",
+  "level": "junior",
+  "topic": "playwright-locators",
+  "topicLabel": "Locators",
+  "file": "pages/playwright-locators.html"
+ },
+ {
+  "q": "Name the full get_by_* family.",
+  "a": "<code>get_by_role</code>, <code>get_by_label</code>, <code>get_by_text</code>, <code>get_by_placeholder</code>, <code>get_by_alt_text</code>, <code>get_by_title</code>, and <code>get_by_test_id</code>. Plus the generic <code>locator()</code> which takes a raw CSS or XPath selector.",
+  "level": "junior",
+  "topic": "playwright-locators",
+  "topicLabel": "Locators",
+  "file": "pages/playwright-locators.html"
+ },
+ {
+  "q": "Rank the locator strategies by preference and justify the order.",
+  "a": "Roughly: <code>get_by_role</code> first, because it matches how a real user and assistive technology perceive the page — so it breaks only when actual user-facing behaviour changes. Then <code>get_by_label</code>/<code>get_by_placeholder</code> for form fields, still user-visible. Then <code>get_by_test_id</code> where the team maintains dedicated hooks — completely stable but invisible to users, so it tests nothing about accessibility. CSS/XPath last, because it couples tests to internal DOM structure and styling, which change for reasons that have nothing to do with behaviour.",
+  "level": "mid",
+  "topic": "playwright-locators",
+  "topicLabel": "Locators",
+  "file": "pages/playwright-locators.html"
+ },
+ {
+  "q": "A form field has a visible \"Email\" label on screen, but <code>get_by_label(\"Email\")</code> finds nothing. Walk through your diagnosis.",
+  "a": "The label is rendering, so the problem is the association, not the text. Inspect the DOM and check the two valid linkages: (1) is the input nested inside the <code>&lt;label&gt;</code>? (2) does the label's <code>for</code> value exactly match the input's <code>id</code>? The classic failure is a near-miss like <code>for=\"email\"</code> against <code>id=\"userEmail\"</code> — visually fine, functionally unlinked. Fixes: correct the HTML if you own it (which also fixes real accessibility for screen-reader users), or work around it with <code>get_by_placeholder</code>, <code>get_by_role(\"textbox\")</code>, or a CSS selector on the id.",
+  "level": "scenario",
+  "topic": "playwright-locators",
+  "topicLabel": "Locators",
+  "file": "pages/playwright-locators.html"
+ },
+ {
+  "q": "Your <code>get_by_role(\"button\")</code> call suddenly fails after a UI update that added a second button. What happened and how do you fix it?",
+  "a": "Playwright runs in strict mode by default — a locator resolving to multiple elements raises a strict-mode violation rather than silently acting on the first one. That's deliberate: it surfaces ambiguity instead of letting a test quietly click the wrong thing. Fix by narrowing: add <code>name=</code> (<code>get_by_role(\"button\", name=\"Sign In\")</code>), scope the search to a container first, or use <code>.filter()</code>. Reaching for <code>.first</code> \"makes it pass\" but reintroduces exactly the positional fragility you were avoiding.",
+  "level": "scenario",
+  "topic": "playwright-locators",
+  "topicLabel": "Locators",
+  "file": "pages/playwright-locators.html"
+ },
+ {
+  "q": "A team's suite is full of CSS selectors like <code>div.container &gt; div:nth-child(3) &gt; button</code> and breaks constantly. What do you change and how do you argue for it?",
+  "a": "Those selectors encode DOM structure, so any layout refactor breaks them even though behaviour is unchanged — high maintenance cost, zero behavioural signal. Migrate to role/label-based locators so tests bind to what users actually perceive, and introduce <code>data-testid</code> for genuinely ambiguous elements. The business argument is maintenance cost and trust: a suite that fails for non-bugs gets ignored, and an ignored suite provides no safety net. Practical rollout is incremental — convert as you touch tests, not a big-bang rewrite — and adding roles/labels often improves real accessibility as a side effect.",
+  "level": "senior",
+  "topic": "playwright-locators",
+  "topicLabel": "Locators",
+  "file": "pages/playwright-locators.html"
+ },
+ {
+  "q": "Does a Pytest fixture run automatically, like JUnit's @BeforeTest or TestNG's before-hooks?",
+  "a": "No — this is a common trip-up for people coming from Java. A Pytest fixture only executes when a test function explicitly names it as an argument. Defining <code>@pytest.fixture</code> alone does nothing on its own; without the linkage, the fixture body never runs.",
+  "level": "mid",
+  "topic": "pytest-fixtures",
+  "topicLabel": "Pytest Fixtures",
+  "file": "pages/pytest-fixtures.html"
+ },
+ {
+  "q": "Explain the four fixture scopes and how they differ.",
+  "a": "<code>function</code> (default) runs before every test that references it. <code>class</code> runs once per test class. <code>module</code> runs once per test file, no matter how many tests in that file use it. <code>session</code> runs exactly once across the entire test run, shared across all files — but this is only observable when running the full suite, since running one file in isolation looks identical to module scope.",
+  "level": "junior",
+  "topic": "pytest-fixtures",
+  "topicLabel": "Pytest Fixtures",
+  "file": "pages/pytest-fixtures.html"
+ },
+ {
+  "q": "What is conftest.py and why does it need that exact filename?",
+  "a": "It's a specially-recognized file Pytest automatically checks for fixture definitions not found in a test's own file. The filename is fixed — Pytest looks for it by that exact name in the same directory as the tests. It's used to centralize fixtures shared across multiple test files instead of duplicating them.",
+  "level": "junior",
+  "topic": "pytest-fixtures",
+  "topicLabel": "Pytest Fixtures",
+  "file": "pages/pytest-fixtures.html"
+ },
+ {
+  "q": "How do you implement both setup and teardown in a single fixture?",
+  "a": "Use the <code>yield</code> keyword. Code before <code>yield</code> runs as setup; Pytest then pauses the fixture, runs the test, and once the test completes, resumes the fixture from the line after <code>yield</code> as teardown — all inside one function, no separate before/after methods needed.",
+  "level": "mid",
+  "topic": "pytest-fixtures",
+  "topicLabel": "Pytest Fixtures",
+  "file": "pages/pytest-fixtures.html"
+ },
+ {
+  "q": "How do you run a single test function from the command line, and how do you run only a tagged subset?",
+  "a": "Target a single function with the double-colon syntax: <code>pytest test_file.py::test_function_name</code>. For a tagged subset, mark tests with <code>@pytest.mark.&lt;tagname&gt;</code> (e.g. <code>@pytest.mark.smoke</code>) and run <code>pytest -m smoke</code> — tests without that mark are skipped as \"deselected.\" This is Pytest's equivalent of Cucumber tags or TestNG groups.",
+  "level": "junior",
+  "topic": "pytest-fixtures",
+  "topicLabel": "Pytest Fixtures",
+  "file": "pages/pytest-fixtures.html"
+ },
+ {
+  "q": "Can a fixture provide test data, not just perform setup actions?",
+  "a": "Yes. A fixture can return a value (or yield one), and that value becomes accessible to the test through the fixture argument — commonly used to centrally supply data like credentials or tokens rather than hardcoding them per test.",
+  "level": "junior",
+  "topic": "pytest-fixtures",
+  "topicLabel": "Pytest Fixtures",
+  "file": "pages/pytest-fixtures.html"
+ },
+ {
+  "q": "What is <code>autouse=True</code> and when is it appropriate?",
+  "a": "It makes a fixture run for every test in its scope without any test naming it as an argument — the one exception to the normal linkage rule. Appropriate for genuinely universal concerns like global logging setup or a session-wide browser launch. Overusing it hurts readability, because a test's dependencies become invisible from its signature: someone reading the test can no longer tell what ran before it.",
+  "level": "mid",
+  "topic": "pytest-fixtures",
+  "topicLabel": "Pytest Fixtures",
+  "file": "pages/pytest-fixtures.html"
+ },
+ {
+  "q": "Can one fixture depend on another? How does Pytest resolve the chain?",
+  "a": "Yes — a fixture declares another fixture as a parameter exactly like a test does. Pytest builds the full dependency graph and instantiates them in order, caching each according to its scope. So a session-scoped fixture consumed by three function-scoped fixtures is still created only once.",
+  "level": "mid",
+  "topic": "pytest-fixtures",
+  "topicLabel": "Pytest Fixtures",
+  "file": "pages/pytest-fixtures.html"
+ },
+ {
+  "q": "A fixture has <code>scope=\"session\"</code>, but you observe it running before every single test. What are the likely causes?",
+  "a": "Two common ones. First: it's being requested by a <em>narrower-scoped</em> fixture in a way that forces re-creation, or you're misreading output that's actually showing a different function-scoped fixture. Second and more likely: you're running one file at a time, where session and module scope are behaviourally indistinguishable — the difference only appears across a multi-file run. Verify by running the full suite with <code>-s</code> and counting the setup prints. Also confirm the argument is spelled <code>scope=\"session\"</code> exactly; a typo silently falls back to the default function scope.",
+  "level": "scenario",
+  "topic": "pytest-fixtures",
+  "topicLabel": "Pytest Fixtures",
+  "file": "pages/pytest-fixtures.html"
+ },
+ {
+  "q": "Teardown code after <code>yield</code> — does it still run if the test fails? What if the setup itself raises?",
+  "a": "If the test fails, teardown after <code>yield</code> still runs — that's the main advantage over cleanup written inline at the end of a test, which gets skipped on exception. If the fixture's own setup raises <em>before</em> reaching <code>yield</code>, the teardown half never executes, because execution never got there — so anything already allocated at that point can leak. For setup that acquires several resources, either split into separate fixtures (each with its own teardown) or guard with try/finally inside the fixture.",
+  "level": "senior",
+  "topic": "pytest-fixtures",
+  "topicLabel": "Pytest Fixtures",
+  "file": "pages/pytest-fixtures.html"
+ },
+ {
+  "q": "When is session-scoped browser reuse the wrong choice?",
+  "a": "When tests can contaminate each other through shared browser state — cookies, localStorage, service workers, or an authenticated session leaking from one test into the next and creating order-dependent passes. The usual resolution isn't abandoning the session-scoped <em>browser</em> (which is expensive to launch), but giving each test its own <em>context</em> from that shared browser: cheap to create and fully isolated. Session-scoped browser + function-scoped context is the standard trade-off.",
+  "level": "senior",
+  "topic": "pytest-fixtures",
+  "topicLabel": "Pytest Fixtures",
+  "file": "pages/pytest-fixtures.html"
+ },
+ {
+  "q": "Does Python require you to declare a variable's data type?",
+  "a": "No. Python is dynamically typed — you write <code>a = 3</code> with no type annotation, and the interpreter determines the data type from the assigned value at runtime. Data types still exist internally; they're just never declared explicitly at the point of creation, unlike Java's <code>int a = 3;</code>.",
+  "level": "junior",
+  "topic": "python-basics",
+  "topicLabel": "Python Basics",
+  "file": "pages/python-basics.html"
+ },
+ {
+  "q": "How do you declare multiple variables on a single line, and why would you?",
+  "a": "<code>b, c, d = 5, 6.4, \"great\"</code> assigns each value to the corresponding variable in order, avoiding three separate declaration lines for related values.",
+  "level": "junior",
+  "topic": "python-basics",
+  "topicLabel": "Python Basics",
+  "file": "pages/python-basics.html"
+ },
+ {
+  "q": "What character starts a comment in Python?",
+  "a": "The hash character <code>#</code>. Everything after it on that line is ignored by the interpreter.",
+  "level": "junior",
+  "topic": "python-basics",
+  "topicLabel": "Python Basics",
+  "file": "pages/python-basics.html"
+ },
+ {
+  "q": "Playwright supports multiple browsers and OSes — isn't that the same as Selenium? What's actually unique about it then?",
+  "a": "Cross-browser and cross-OS support are shared with Selenium, not exclusive to Playwright. What's genuinely different: (1) built-in automatic waiting, so you don't hand-write synchronization/explicit-wait code; (2) the ability to do web <em>and</em> API automation in the same tool/script, enabling combined front-end + back-end end-to-end tests; (3) inbuilt logging/tracing and automatic before/after screenshots with no extra reporting setup.",
+  "level": "mid",
+  "topic": "why-playwright-and-python",
+  "topicLabel": "Why Playwright",
+  "file": "pages/why-playwright-and-python.html"
+ },
+ {
+  "q": "How is Playwright different from Cypress specifically?",
+  "a": "Cypress is JavaScript-only by design. Playwright supports JavaScript, Python, C#, and Java, so teams aren't forced into one language ecosystem.",
+  "level": "junior",
+  "topic": "why-playwright-and-python",
+  "topicLabel": "Why Playwright",
+  "file": "pages/why-playwright-and-python.html"
+ },
+ {
+  "q": "Why would a QA team pick Python over JavaScript or Java for Playwright automation?",
+  "a": "Python currently has the largest market share of Playwright's supported languages, with comparatively less competition for jobs than Java. Its syntax is simple enough that beginners ramp up quickly. There's also a strategic angle: since most AI/ML models are built on Python, dev orgs are gravitating toward Python-first stacks — and QA teams that want a unified tech stack with development follow that same direction.",
+  "level": "mid",
+  "topic": "why-playwright-and-python",
+  "topicLabel": "Why Playwright",
+  "file": "pages/why-playwright-and-python.html"
+ },
+ {
+  "q": "What does Playwright's \"automatic waiting mechanism\" actually mean?",
+  "a": "When you interact with an element (click, select, etc.) and the app needs to load a new page or component, Playwright automatically waits until that element is present/loaded before acting — you don't write explicit wait/synchronization code yourself. It's inbuilt behavior, not an add-on. See <a href=\"playwright-auto-waiting.html\">Playwright Auto-Waiting &amp; Assertions</a> for the full actionability-check breakdown.",
+  "level": "junior",
+  "topic": "why-playwright-and-python",
+  "topicLabel": "Why Playwright",
+  "file": "pages/why-playwright-and-python.html"
+ }
+];

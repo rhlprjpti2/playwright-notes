@@ -82,7 +82,7 @@
 
       <section id="comparison">
         <h2>Playwright vs Selenium vs Cypress</h2>
-        <p>Only what the video actually stated is filled in below — worth knowing where the gaps are rather than guessing in an interview.</p>
+        <p>The highlighted cells below are what the video actually stated. The rest were gaps left as "not covered" — now filled in below the table as clearly-marked supplementary knowledge, rather than left blank.</p>
         <div class="table-wrap">
           <table class="compare">
             <thead>
@@ -91,12 +91,16 @@
             <tbody>
               <tr><td>Language support</td><td class="highlight">JS, Python, C#, Java</td><td>Multi-language (also supported)</td><td class="highlight">JavaScript only</td></tr>
               <tr><td>Web automation</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
-              <tr><td>API automation (same tool)</td><td class="highlight">Yes — combined with web in one script</td><td class="muted">not covered in this video</td><td class="muted">not covered in this video</td></tr>
-              <tr><td>Automatic waiting</td><td class="highlight">Built-in / inbuilt</td><td class="muted">not covered in this video</td><td class="muted">not covered in this video</td></tr>
-              <tr><td>Browsers</td><td>Chrome, Firefox, WebKit (Safari)</td><td class="muted">not covered in this video</td><td class="muted">not covered in this video</td></tr>
-              <tr><td>OS support</td><td>Windows, macOS, Linux</td><td class="muted">not covered in this video</td><td class="muted">not covered in this video</td></tr>
+              <tr><td>API automation (same tool)</td><td class="highlight">Yes — combined with web in one script</td><td>No native support — typically paired with a separate HTTP client library</td><td>Limited — <code>cy.request()</code> exists but isn't commonly used for standalone API-only suites</td></tr>
+              <tr><td>Automatic waiting</td><td class="highlight">Built-in / inbuilt</td><td>None — explicit/implicit waits must be written manually</td><td>Yes — Cypress also has built-in retry-ability on commands and assertions, genuinely comparable to Playwright here</td></tr>
+              <tr><td>Browsers</td><td>Chrome, Firefox, WebKit (Safari)</td><td>Chrome, Firefox, Safari, Edge — via WebDriver, broadest legacy browser support</td><td>Chromium-family + Firefox; WebKit/Safari support has historically been more limited</td></tr>
+              <tr><td>OS support</td><td>Windows, macOS, Linux</td><td>Windows, macOS, Linux</td><td>Windows, macOS, Linux</td></tr>
             </tbody>
           </table>
+        </div>
+        <div class="callout supplement">
+          <strong>Beyond this video <span class="src-tag">— the table cells above, not stated in the course</span></strong>
+          One correction worth internalizing: Cypress is <em>not</em> actually weak on auto-waiting — it has real built-in retry-ability, similar in spirit to Playwright's web-first assertions. If asked to compare the three tools, don't lump Cypress in with Selenium on this point; the genuine three-way differentiator for Playwright is combined web+API testing and multi-language support, not auto-waiting alone.
         </div>
       </section>
 

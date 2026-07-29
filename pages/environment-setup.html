@@ -109,6 +109,16 @@
           <strong>Two installs, not one</strong>
           <code>pip install pytest-playwright</code> installs the Python plugin/package. It does <em>not</em> download the actual browser engines. That's a separate step: <code>playwright install</code>, which pulls the Chromium/Firefox/WebKit binaries the tests will actually drive.
         </div>
+
+        <div class="callout supplement">
+          <strong>Beyond this video <span class="src-tag">— virtual environments</span></strong>
+          The course installs packages directly into the system-wide Python install. In real projects (and in most interviews), packages are installed into a <strong>virtual environment</strong> instead — an isolated, per-project copy of Python + its own package set, so different projects can depend on different (even conflicting) package versions without interfering with each other.
+          <pre style="margin-top:10px;"><code>python -m venv .venv
+.venv\Scripts\activate      <span class="tok-cm"># Windows</span>
+source .venv/bin/activate   <span class="tok-cm"># Mac/Linux</span>
+pip install pytest-playwright</code></pre>
+          Once activated, <code>pip</code>/<code>python</code> inside that terminal session point at the venv, not the system install — and PyCharm's "custom environment → existing" interpreter picker (covered above) can point at a venv's Python executable exactly the same way it points at a system one.
+        </div>
       </section>
 
       <section id="interview-qa">
@@ -132,6 +142,10 @@
         <details class="qa">
           <summary>On a Mac, why use `which python3` / `pip3` instead of `which python` / `pip`?</summary>
           <div class="qa-body">Mac machines ship with Python 2 pre-installed by default. Plain `python`/`pip` commands can resolve to that legacy Python 2 rather than the Python 3 you separately installed, so Mac users should explicitly use the `python3`/`pip3` variants to target the right version. Windows machines don't have this issue since they don't ship with a default Python.</div>
+        </details>
+        <details class="qa">
+          <summary>Why use a virtual environment instead of installing packages system-wide?</summary>
+          <div class="qa-body">Isolation. Each project gets its own copy of Python plus its own independent set of installed packages, so Project A needing <code>pytest-playwright==0.5.2</code> and Project B needing a different version don't conflict. It also keeps a machine's system Python clean and makes a project's exact dependencies reproducible on another machine.</div>
         </details>
       </section>
 

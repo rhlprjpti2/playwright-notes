@@ -67,7 +67,8 @@ window.TOPICS_INDEX = [
     keyTerms: [
       "python.org", "pip", "pip3", "PyCharm", "interpreter", "which python3", "where python",
       "PATH", "environment variables", "pytest-playwright", "playwright install", "pip install pytest",
-      "jetbrains", "custom environment", "project interpreter", "jars", "node packages"
+      "jetbrains", "custom environment", "project interpreter", "jars", "node packages",
+      "virtual environment", "venv", "activate", "isolated environment"
     ],
     summary: "Installing Python and PyCharm, and why the IDE's interpreter has to stay in sync with the system Python for pip-installed packages to show up.",
     related: ["python-basics", "pytest-fixtures", "course-roadmap"],
@@ -104,7 +105,8 @@ window.TOPICS_INDEX = [
       "pytest", "fixture", "@pytest.fixture", "scope", "function scope", "module scope",
       "class scope", "session scope", "conftest.py", "yield", "setup", "teardown",
       "assert", "test discovery", "test_ prefix", "fixture linkage", "return value fixture",
-      "pytest.mark", "pytest.mark.skip", "pytest -m", "tagging", "marks", "deselected", "smoke test"
+      "pytest.mark", "pytest.mark.skip", "pytest -m", "tagging", "marks", "deselected", "smoke test",
+      "autouse", "autouse=True"
     ],
     summary: "How Pytest discovers tests, how fixtures work (and why they don't auto-run), the four fixture scopes, conftest.py, yield-based setup/teardown, and running/tagging tests via CLI.",
     related: ["environment-setup", "python-basics", "course-roadmap", "playwright-browser-context-page"],
@@ -124,7 +126,7 @@ window.TOPICS_INDEX = [
     keyTerms: [
       "playwright fixture", "page fixture", "browser", "context", "new_context", "new_page",
       "chromium", "firefox", "headless", "headed", "--headed", "incognito", "pytest-playwright",
-      "sync_api", "Page class", "Playwright class"
+      "sync_api", "Page class", "Playwright class", "slow_mo", "viewport", "storage_state"
     ],
     summary: "The manual browser→context→page hierarchy vs the page fixture shortcut — and exactly when the shortcut stops being enough.",
     related: ["pytest-fixtures", "playwright-locators", "playwright-auto-waiting", "course-roadmap"],
@@ -142,7 +144,9 @@ window.TOPICS_INDEX = [
     tags: ["playwright", "locators", "fundamentals"],
     keyTerms: [
       "get_by_label", "get_by_role", "get_by_text", "locator", "CSS selector", "select_option",
-      "check", "combobox", "for attribute", "label tag", "id selector", "class selector", "name filter"
+      "check", "combobox", "for attribute", "label tag", "id selector", "class selector", "name filter",
+      "get_by_placeholder", "get_by_alt_text", "get_by_title", "get_by_test_id", "data-testid",
+      "ARIA roles", "textbox", "radio", "heading", "dialog", "tab", "menuitem"
     ],
     summary: "get_by_label, get_by_role, CSS locators, and get_by_text — which to use depends on what the DOM actually exposes, including the get_by_label failure conditions.",
     related: ["playwright-browser-context-page", "playwright-dynamic-locators", "playwright-auto-waiting"],
@@ -160,7 +164,8 @@ window.TOPICS_INDEX = [
     tags: ["playwright", "auto-waiting", "assertions"],
     keyTerms: [
       "auto-waiting", "actionability checks", "visible", "stable", "receives events", "enabled",
-      "expect", "web-first assertions", "to_be_visible", "auto-retrying", "timeout", "synchronization"
+      "expect", "web-first assertions", "to_be_visible", "auto-retrying", "timeout", "synchronization",
+      "default timeout", "set_default_timeout", "30 seconds", "5 seconds"
     ],
     summary: "What Playwright's actionability checks actually verify before acting, and how auto-retrying web-first assertions remove explicit wait code entirely.",
     related: ["why-playwright-and-python", "playwright-locators", "playwright-browser-context-page"],
@@ -176,7 +181,7 @@ window.TOPICS_INDEX = [
     tags: ["playwright", "locators", "filtering"],
     keyTerms: [
       "filter", "has_text", "has_not_text", "scoped locator", "to_have_count", "dynamic script",
-      "index-based locator", "resilient script", "app-card"
+      "index-based locator", "resilient script", "app-card", "nth", "first", "last", "has="
     ],
     summary: "Scanning all matches, filtering by content instead of position, and scoping further searches inside an already-found element — via a product-cart example.",
     related: ["playwright-locators", "playwright-auto-waiting", "playwright-browser-context-page"],

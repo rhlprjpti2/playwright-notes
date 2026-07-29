@@ -108,6 +108,11 @@
           </div>
           <div class="quiz-feedback"></div>
         </div>
+
+        <div class="callout supplement">
+          <strong>Beyond this video <span class="src-tag">— the one exception to "must be referenced as an argument"</span></strong>
+          <code>@pytest.fixture(autouse=True)</code> is the one case where a fixture runs without being named as a test argument — it applies automatically to every test in its scope (function/class/module/session, same scope rules as normal). Used sparingly, for things every test genuinely needs regardless of whether it explicitly asks for them — e.g. a session-scoped autouse fixture that starts a browser once for an entire framework run.
+        </div>
       </section>
 
       <section id="scopes">

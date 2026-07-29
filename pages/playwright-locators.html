@@ -42,6 +42,7 @@
       <a href="#get-by-label">get_by_label</a>
       <a href="#get-by-role">get_by_role</a>
       <a href="#css">CSS locators</a>
+      <a href="#get-by-family">The full get_by_* family</a>
       <a href="#interview-qa">Interview Q&amp;A</a>
       <a href="#gotchas">Gotchas</a>
     </nav>
@@ -99,6 +100,11 @@ page.get_by_role("button", name="Sign In").click()
 page.get_by_role("link", name="Terms and Conditions").click()</code></pre>
         <p>Identifies an element by its accessibility/semantic role — <code>combobox</code>, <code>button</code>, <code>link</code>, <code>checkbox</code>, <code>alert</code>, <code>image</code>, and more. When multiple elements share the same role (e.g. several buttons on a page), the optional <code>name=</code> parameter filters down to the one whose visible name matches — role and filter are bundled into the single call.</p>
         <p>For dropdowns, <code>.select_option()</code> selects by the underlying HTML <code>&lt;option value="..."&gt;</code> attribute — which is not necessarily the same string as what's visually displayed to the user.</p>
+
+        <div class="callout supplement">
+          <strong>Beyond this video <span class="src-tag">— common ARIA roles, not just the 3 named in the course</span></strong>
+          The video names <code>combobox</code>, <code>button</code>, <code>link</code>, <code>checkbox</code>, <code>alert</code>, and <code>image</code>. The full role vocabulary is much larger — the ones you'll actually hit most often in real apps: <code>textbox</code>, <code>radio</code>, <code>heading</code>, <code>list</code> / <code>listitem</code>, <code>tab</code> / <code>tabpanel</code>, <code>dialog</code>, <code>table</code> / <code>row</code> / <code>cell</code>, <code>navigation</code>, <code>banner</code>, <code>search</code>, <code>menu</code> / <code>menuitem</code>, and <code>progressbar</code>. Any element with an implicit or explicit ARIA role can be targeted this way — worth knowing since interviewers sometimes ask "how would you locate X" for elements that aren't literally form controls.
+        </div>
       </section>
 
       <section id="css">
@@ -118,6 +124,21 @@ page.get_by_role("link", name="Terms and Conditions").click()</code></pre>
         <pre><code>page.locator("#terms").check()</code></pre>
         <p>To grab an element purely by its visible text (e.g. an alert/message block, without knowing its CSS class):</p>
         <pre><code>page.get_by_text("Incorrect username or password")</code></pre>
+      </section>
+
+      <section id="get-by-family">
+        <h2>The full get_by_* family</h2>
+        <p>The video covers <code>get_by_label</code>, <code>get_by_role</code>, and <code>get_by_text</code> — the three you'll use most. Playwright's locator API has a few more siblings worth knowing so you're not caught off guard if an interviewer asks about a case these three don't cleanly cover:</p>
+        <div class="callout supplement">
+          <strong>Beyond this video <span class="src-tag">— not mentioned in the course, but standard Playwright API</span></strong>
+          <ul style="margin:8px 0 0; padding-left:20px;">
+            <li><code>get_by_placeholder("Enter email")</code> — matches an input by its placeholder text, useful when there's no associated label at all.</li>
+            <li><code>get_by_alt_text("Company logo")</code> — matches an <code>&lt;img&gt;</code> by its <code>alt</code> attribute.</li>
+            <li><code>get_by_title("Close dialog")</code> — matches an element by its <code>title</code> attribute (the tooltip text).</li>
+            <li><code>get_by_test_id("submit-btn")</code> — matches a custom test-id attribute (<code>data-testid</code> by default). The most resilient option when a team deliberately adds test hooks, since it doesn't depend on visible text, styling, or DOM structure at all.</li>
+          </ul>
+        </div>
+        <p>Preference order most teams converge on, roughly: <code>get_by_role</code> (closest to how a real user/assistive tech perceives the page) → <code>get_by_label</code> / <code>get_by_placeholder</code> for form fields → <code>get_by_test_id</code> when the team maintains them → CSS as the last resort.</p>
       </section>
 
       <section id="interview-qa">

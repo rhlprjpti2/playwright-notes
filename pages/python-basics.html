@@ -49,6 +49,11 @@
         <p><code>print("Hello")</code> writes to the console — the equivalent of Java's <code>System.out.println</code>. Comments start with <code>#</code>; everything after it on that line is ignored by the interpreter.</p>
         <p>Variables need no declared type: <code>a = 3</code> is a complete, valid declaration. Unlike Java (<code>int a = 3;</code>), Python figures out the data type at runtime from whatever value you assign — the data types still exist under the hood, they're just never written explicitly at the point of declaration.</p>
         <p>Multiple variables can be declared and assigned on a single line: <code>b, c, d = 5, 6.4, "great"</code> — values are assigned respectively, in the order given, without needing three separate lines.</p>
+
+        <div class="callout supplement">
+          <strong>Beyond this video <span class="src-tag">— checking the type Python inferred</span></strong>
+          The course says types exist but aren't declared. The natural follow-up an interviewer may ask is how you'd <em>see</em> the inferred type — <code>type(c)</code> returns it at runtime (<code>&lt;class 'float'&gt;</code>). The core built-in types you'll meet immediately: <code>int</code>, <code>float</code>, <code>str</code>, <code>bool</code>. Python is <strong>dynamically</strong> typed (type determined at runtime, and a variable can later be reassigned to a different type) but also <strong>strongly</strong> typed (it won't silently coerce <code>"5" + 5</code> — that raises a <code>TypeError</code>). That distinction is a common interview question, and "dynamically typed" alone is only half the answer.
+        </div>
       </section>
 
       <section id="visual">

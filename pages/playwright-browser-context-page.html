@@ -93,6 +93,11 @@
 def test_playwright_shortcut(page: Page):
     page.goto("https://rahulshettyacademy.com")</code></pre>
         <p>The import isn't required for the fixture to work — it's global either way — but without it, the IDE has no idea what type <code>page</code> is, so you lose autocomplete on its methods.</p>
+
+        <div class="callout supplement">
+          <strong>Beyond this video <span class="src-tag">— other launch and context options worth knowing</span></strong>
+          The video only sets <code>headless=False</code>. Both <code>launch()</code> and <code>new_context()</code> accept more parameters that come up often in real usage: <code>slow_mo=500</code> (launch) slows every action down by that many milliseconds, useful for debugging alongside headed mode. <code>new_context(viewport={"width": 1280, "height": 720})</code> sets a fixed window size instead of the default. <code>new_context(storage_state="state.json")</code> restores a previously-saved login session (cookies + local storage) into a fresh context — the standard way to skip re-logging-in for every test.
+        </div>
       </section>
 
       <section id="comparison">

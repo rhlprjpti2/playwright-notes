@@ -102,6 +102,11 @@
 
 expect(page.get_by_text("Incorrect username or password")).to_be_visible()</code></pre>
         <p>This is what makes it safe to assert on something that appears with a short delay (e.g. an error message after a failed login) without writing any explicit wait beforehand.</p>
+
+        <div class="callout supplement">
+          <strong>Beyond this video <span class="src-tag">— the actual default timeouts, per Playwright's docs</span></strong>
+          The course estimates the global timeout as "roughly 7 to 10 seconds" without citing a source. The documented defaults are more specific and worth knowing precisely: <strong>actions</strong> (click, fill, check, etc.) default to a <strong>30-second</strong> actionability timeout, configurable via <code>page.set_default_timeout(ms)</code> or a per-call <code>timeout=</code> argument. <strong>Web-first assertions</strong> (<code>expect()</code>) default to a separate, shorter <strong>5-second</strong> timeout, configurable via assertion-level options or global test config. These are two independently configurable values, not one shared number.
+        </div>
       </section>
 
       <section id="interview-qa">
@@ -126,13 +131,17 @@ expect(page.get_by_text("Incorrect username or password")).to_be_visible()</code
           <summary>What genuinely differentiates Playwright's auto-waiting from Selenium, in one sentence for an interview?</summary>
           <div class="qa-body">Playwright treats waiting for actionability as a built-in, automatic, retrying part of every action and assertion, while Selenium treats it as something the test author must explicitly code — that shift is what removes synchronization code from Playwright test scripts entirely.</div>
         </details>
+        <details class="qa">
+          <summary>What are Playwright's actual default timeouts — for actions and for assertions?</summary>
+          <div class="qa-body">30 seconds for actions (click, fill, etc.), configurable via <code>page.set_default_timeout()</code> or a per-call <code>timeout=</code> argument. 5 seconds for web-first assertions (<code>expect()</code>), configured separately. They're two independent values — knowing this precisely (rather than "a few seconds") signals you've actually used the tool, not just watched a tutorial.</div>
+        </details>
       </section>
 
       <section id="gotchas">
         <h2>Gotchas</h2>
         <div class="callout warn">
           <strong>Watch out</strong>
-          This course gives the global timeout as roughly "7 to 10 seconds," stated informally ("I think") rather than cited from documentation. Don't quote that as an exact figure in an interview — verify the current default against Playwright's official docs rather than repeating an approximate, unconfirmed number.
+          The course gives the global timeout as roughly "7 to 10 seconds," stated informally ("I think") rather than cited from documentation — that was a guess, not a fact. The real defaults (see the supplement box above): 30s for actions, 5s for assertions, and they're independently configurable. Use the real numbers in an interview, not the video's estimate.
         </div>
         <div class="callout interview">
           <strong>Callback</strong>

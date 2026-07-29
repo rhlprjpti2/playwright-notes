@@ -94,6 +94,11 @@ nokia_product.get_by_role("button").click()
 page.get_by_text("Checkout").click()   # partial text match is enough</code></pre>
         <p>Note the scoping: <code>page.get_by_role("button")</code> would search the <em>entire page</em> and likely match many buttons. <code>iphone_product.get_by_role("button")</code> only searches within the already-filtered card, so it uniquely resolves without needing a <code>name=</code> filter — because the search space itself was already narrowed down to one card.</p>
 
+        <div class="callout supplement">
+          <strong>Beyond this video <span class="src-tag">— other filter and index options</span></strong>
+          The video uses <code>has_text</code> only. Also available: <code>.filter(has_not_text="Out of stock")</code> excludes matches containing that text; <code>.filter(has=page.get_by_role("button", name="Sold Out"))</code> filters by whether a matched element <em>contains</em> another locator, not just text. Separately, if you deliberately do want a specific position rather than filtering by content, <code>.nth(0)</code>, <code>.first</code>, and <code>.last</code> pick by index — the exact "fragile" approach this page argues against by default, but occasionally the right tool when position genuinely is the thing under test (e.g. "the most recent entry").
+        </div>
+
         <div class="quiz">
           <div class="quiz-q">Tomorrow, the store re-sorts its product grid and "iPhone X" moves from the 1st card to the 3rd. Does <code>page.locator("app-card").filter(has_text="iPhone X")</code> still work correctly?</div>
           <div class="quiz-opts">

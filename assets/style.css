@@ -308,7 +308,16 @@ a:hover { text-decoration: underline; }
 .callout.tip { border-left: 3px solid var(--accent); }
 .callout.warn { border-left: 3px solid var(--accent-3); }
 .callout.interview { border-left: 3px solid var(--accent-2); }
-.callout strong { display: block; margin-bottom: 4px; font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text); }
+.callout.supplement {
+  border: 1px dashed color-mix(in srgb, var(--accent-2) 55%, var(--border));
+  border-left: 3px dashed var(--accent-2);
+  background: color-mix(in srgb, var(--accent-2) 6%, var(--bg-elevated));
+}
+.callout.supplement strong { color: var(--accent-2); }
+/* Only the leading <strong> acts as the callout's label; inline <strong> in body
+   text keeps normal inline emphasis. */
+.callout > strong:first-child { display: block; margin-bottom: 4px; font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text); }
+.callout > strong:first-child .src-tag { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-faint); font-size: 11.5px; }
 
 pre {
   background: var(--code-bg);

@@ -8,6 +8,7 @@
 <script src="../assets/app.js"></script>
 <script src="../assets/diagrams.js"></script>
 <script src="../assets/interactive.js"></script>
+<script src="../assets/playground.js"></script>
 </head>
 <body>
 
@@ -39,6 +40,7 @@
       <div>On this page</div>
       <a href="#concept">Concept</a>
       <a href="#visual">Choosing a strategy</a>
+      <a href="#playground">Try it live</a>
       <a href="#get-by-label">get_by_label</a>
       <a href="#get-by-role">get_by_role</a>
       <a href="#css">CSS locators</a>
@@ -67,6 +69,121 @@
             ]
           });
         </script>
+      </section>
+
+      <section id="playground">
+        <h2>Try it live</h2>
+        <p class="lead">Below is a real mock login page rendered inside this notes page — actual DOM, not a picture. Click any locator and it genuinely runs against that DOM, highlighting whatever it matches. Green outline = one unique match, orange = multiple (ambiguous), red result = nothing found.</p>
+
+        <div class="playground" id="locator-pg"></div>
+        <script>
+          renderLocatorPlayground("locator-pg", {
+            pageHtml: `
+              <h3>Sign in to your account</h3>
+              <div class="pg-alert" role="alert">Incorrect username or password.</div>
+
+              <label for="username">Username</label>
+              <input type="text" id="username" name="username" placeholder="Enter your username">
+
+              <label>Password
+                <input type="password" name="password">
+              </label>
+
+              <label for="email">Email</label>
+              <input type="email" id="userEmail" name="email" placeholder="you@example.com">
+
+              <label for="role">I am a</label>
+              <select id="role" name="role">
+                <option value="stud">Student</option>
+                <option value="teach">Teacher</option>
+                <option value="consult">Consultant</option>
+              </select>
+
+              <div class="pg-check-row">
+                <input type="checkbox" id="terms" name="terms">
+                <label for="terms">I agree to the Terms</label>
+              </div>
+
+              <button type="submit">Sign In</button>
+              <button type="button" class="secondary" data-testid="reset-btn">Reset</button>
+
+              <p style="margin:14px 0 0;"><a href="#">Terms and Conditions</a></p>
+            `,
+            locators: [
+              {
+                display: 'get_by_label("Username")',
+                kind: "label", arg: "Username",
+                explain: "The label carries for=\"username\" and an input has id=\"username\" — the link is valid, so it resolves to that input.",
+                dom: '<label for="username">Username</label>\n<input type="text" id="username" name="username">\n\n<!-- for="username" matches id="username" -> resolves -->'
+              },
+              {
+                display: 'get_by_label("Password")',
+                kind: "label", arg: "Password",
+                explain: "No for= attribute here — but the input is nested *inside* the <label> tag, which satisfies the other valid linking rule.",
+                dom: '<label>Password\n  <input type="password" name="password">\n</label>\n\n<!-- input nested inside label -> resolves -->'
+              },
+              {
+                display: 'get_by_label("Email")',
+                kind: "label", arg: "Email",
+                explain: "",
+                dom: '<label for="email">Email</label>\n<input type="email" id="userEmail" ...>\n              ^^^^^^^^^\n<!-- for="email" != id="userEmail", and the input\n     is NOT nested inside the label -> 0 matches -->'
+              },
+              {
+                display: 'get_by_role("button")',
+                kind: "role", arg: "button",
+                explain: "Two buttons exist on this page, so this is ambiguous. In a real test Playwright raises a strict-mode violation rather than guessing which one you meant.",
+                dom: '<button type="submit">Sign In</button>\n<button type="button">Reset</button>\n\n<!-- both have role=button -> 2 matches -->'
+              },
+              {
+                display: 'get_by_role("button", name="Sign In")',
+                kind: "role", arg: "button", name: "Sign In",
+                explain: "Same role query, narrowed by accessible name — now it resolves to exactly one element. This is how you disambiguate.",
+                dom: '<button type="submit">Sign In</button>\n\n<!-- role=button AND accessible name="Sign In" -->'
+              },
+              {
+                display: 'get_by_role("combobox")',
+                kind: "role", arg: "combobox",
+                explain: "A <select> element has an implicit ARIA role of combobox — you don't need any role attribute in the HTML for this to work.",
+                dom: '<select id="role" name="role">\n  <option value="teach">Teacher</option>\n</select>\n\n<!-- implicit role=combobox -->'
+              },
+              {
+                display: 'get_by_role("link", name="Terms and Conditions")',
+                kind: "role", arg: "link", name: "Terms and Conditions",
+                explain: "An <a href> has the implicit role of link, narrowed here by its visible text.",
+                dom: '<a href="#">Terms and Conditions</a>'
+              },
+              {
+                display: 'page.locator("#terms")',
+                kind: "css", css: "#terms",
+                explain: "A raw CSS id selector — works regardless of labels or roles. Note it matches the checkbox itself, which is what .check() would act on.",
+                dom: '<input type="checkbox" id="terms" name="terms">\n\n<!-- #terms -> id selector -->'
+              },
+              {
+                display: 'get_by_text("Incorrect username")',
+                kind: "text", arg: "Incorrect username",
+                explain: "Partial/substring text matching is enough — you don't need the full string. This grabs the alert block containing that text.",
+                dom: '<div class="alert" role="alert">\n  Incorrect username or password.\n</div>'
+              },
+              {
+                display: 'get_by_placeholder("you@example.com")',
+                kind: "placeholder", arg: "you@example.com",
+                explain: "The rescue for the broken Email label above — placeholder text is a reliable fallback when a label linkage is missing or wrong.",
+                dom: '<input type="email" id="userEmail"\n       placeholder="you@example.com">'
+              },
+              {
+                display: 'get_by_test_id("reset-btn")',
+                kind: "testid", arg: "reset-btn",
+                explain: "Matches data-testid. Immune to text, styling and structure changes — which is why teams that maintain test ids prefer this for critical elements.",
+                dom: '<button type="button" data-testid="reset-btn">\n  Reset\n</button>'
+              }
+            ]
+          });
+        </script>
+
+        <div class="callout tip">
+          <strong>The two to actually play with</strong>
+          Click <code>get_by_label("Email")</code> — that's the exact for/id mismatch failure from the lecture, failing live. Then click <code>get_by_role("button")</code> to see an ambiguous match, and <code>get_by_role("button", name="Sign In")</code> to see it resolved. Those three explain most locator bugs you'll hit.
+        </div>
       </section>
 
       <section id="get-by-label">
@@ -144,20 +261,40 @@ page.get_by_role("link", name="Terms and Conditions").click()</code></pre>
       <section id="interview-qa">
         <h2>Interview Q&amp;A</h2>
         <details class="qa">
-          <summary>What two DOM conditions must hold for get_by_label to successfully find an element?</summary>
+          <summary><span class="q-level junior">Junior</span> What two DOM conditions must hold for get_by_label to successfully find an element?</summary>
           <div class="qa-body">Either the input element is nested inside the <code>&lt;label&gt;</code> tag itself, or the label's <code>for</code> attribute exactly matches the input's <code>id</code> attribute. If neither holds, get_by_label won't find it — even if a label is visually present on the page.</div>
         </details>
         <details class="qa">
-          <summary>How do you disambiguate multiple elements that share the same role, like several buttons on a page?</summary>
+          <summary><span class="q-level junior">Junior</span> How do you disambiguate multiple elements that share the same role, like several buttons on a page?</summary>
           <div class="qa-body">Pass the <code>name=</code> parameter to <code>get_by_role</code>, e.g. <code>get_by_role("button", name="Sign In")</code> — Playwright gets all elements with that role first, then filters to the one whose visible/accessible name matches.</div>
         </details>
         <details class="qa">
-          <summary>When would you fall back to a CSS locator instead of get_by_role or get_by_label?</summary>
+          <summary><span class="q-level mid">Mid</span> When would you fall back to a CSS locator instead of get_by_role or get_by_label?</summary>
           <div class="qa-body">When the element is a custom component with no semantic ARIA role attached — e.g. a plain <code>&lt;div&gt;</code>-based product card — or a form field with no associated label. CSS built from id/class attributes works regardless of role or label semantics.</div>
         </details>
         <details class="qa">
-          <summary>What's the difference between what select_option chooses and what's visually shown in a dropdown?</summary>
+          <summary><span class="q-level junior">Junior</span> What's the difference between what select_option chooses and what's visually shown in a dropdown?</summary>
           <div class="qa-body">select_option targets the underlying HTML <code>option value</code> attribute, which is not necessarily identical to the text visually displayed to the user in the dropdown UI.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> Name the full get_by_* family.</summary>
+          <div class="qa-body"><code>get_by_role</code>, <code>get_by_label</code>, <code>get_by_text</code>, <code>get_by_placeholder</code>, <code>get_by_alt_text</code>, <code>get_by_title</code>, and <code>get_by_test_id</code>. Plus the generic <code>locator()</code> which takes a raw CSS or XPath selector.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Rank the locator strategies by preference and justify the order.</summary>
+          <div class="qa-body">Roughly: <code>get_by_role</code> first, because it matches how a real user and assistive technology perceive the page — so it breaks only when actual user-facing behaviour changes. Then <code>get_by_label</code>/<code>get_by_placeholder</code> for form fields, still user-visible. Then <code>get_by_test_id</code> where the team maintains dedicated hooks — completely stable but invisible to users, so it tests nothing about accessibility. CSS/XPath last, because it couples tests to internal DOM structure and styling, which change for reasons that have nothing to do with behaviour.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level scenario">Scenario</span> A form field has a visible "Email" label on screen, but <code>get_by_label("Email")</code> finds nothing. Walk through your diagnosis.</summary>
+          <div class="qa-body">The label is rendering, so the problem is the association, not the text. Inspect the DOM and check the two valid linkages: (1) is the input nested inside the <code>&lt;label&gt;</code>? (2) does the label's <code>for</code> value exactly match the input's <code>id</code>? The classic failure is a near-miss like <code>for="email"</code> against <code>id="userEmail"</code> — visually fine, functionally unlinked. Fixes: correct the HTML if you own it (which also fixes real accessibility for screen-reader users), or work around it with <code>get_by_placeholder</code>, <code>get_by_role("textbox")</code>, or a CSS selector on the id.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level scenario">Scenario</span> Your <code>get_by_role("button")</code> call suddenly fails after a UI update that added a second button. What happened and how do you fix it?</summary>
+          <div class="qa-body">Playwright runs in strict mode by default — a locator resolving to multiple elements raises a strict-mode violation rather than silently acting on the first one. That's deliberate: it surfaces ambiguity instead of letting a test quietly click the wrong thing. Fix by narrowing: add <code>name=</code> (<code>get_by_role("button", name="Sign In")</code>), scope the search to a container first, or use <code>.filter()</code>. Reaching for <code>.first</code> "makes it pass" but reintroduces exactly the positional fragility you were avoiding.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> A team's suite is full of CSS selectors like <code>div.container &gt; div:nth-child(3) &gt; button</code> and breaks constantly. What do you change and how do you argue for it?</summary>
+          <div class="qa-body">Those selectors encode DOM structure, so any layout refactor breaks them even though behaviour is unchanged — high maintenance cost, zero behavioural signal. Migrate to role/label-based locators so tests bind to what users actually perceive, and introduce <code>data-testid</code> for genuinely ambiguous elements. The business argument is maintenance cost and trust: a suite that fails for non-bugs gets ignored, and an ignored suite provides no safety net. Practical rollout is incremental — convert as you touch tests, not a big-bang rewrite — and adding roles/labels often improves real accessibility as a side effect.</div>
         </details>
       </section>
 

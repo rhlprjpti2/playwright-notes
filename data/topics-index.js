@@ -175,6 +175,24 @@ window.TOPICS_INDEX = [
     lastUpdated: "2026-07-29"
   },
   {
+    slug: "first-real-test",
+    title: "Your First Real Test: Putting It Together",
+    file: "pages/first-real-test.html",
+    tags: ["playwright", "pytest", "practical", "framework"],
+    keyTerms: [
+      "project structure", "conftest.py", "pytest.ini", "requirements.txt", "folder layout",
+      "complete example", "runnable test", "logged_in_page", "credentials fixture", "markers",
+      "pytest --headed", "--slowmo", "--tracing", "show-trace", "PWDEBUG", "page.pause",
+      "storage_state", "pytest-xdist", "how to run tests", "worked example"
+    ],
+    summary: "The whole thing assembled: real folder structure, complete conftest.py and test files, run commands, and where every other topic actually lands in the code.",
+    related: ["pytest-fixtures", "playwright-locators", "playwright-auto-waiting", "playwright-dynamic-locators", "playwright-browser-context-page"],
+    sources: [
+      { title: "Synthesis of course material covered so far", addedDate: "2026-07-30" }
+    ],
+    lastUpdated: "2026-07-30"
+  },
+  {
     slug: "playwright-dynamic-locators",
     title: "Dynamic Locators, Filtering & Scoped Search",
     file: "pages/playwright-dynamic-locators.html",

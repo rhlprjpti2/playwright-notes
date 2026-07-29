@@ -280,28 +280,48 @@
       <section id="interview-qa">
         <h2>Interview Q&amp;A</h2>
         <details class="qa">
-          <summary>Does a Pytest fixture run automatically, like JUnit's @BeforeTest or TestNG's before-hooks?</summary>
+          <summary><span class="q-level mid">Mid</span> Does a Pytest fixture run automatically, like JUnit's @BeforeTest or TestNG's before-hooks?</summary>
           <div class="qa-body">No — this is a common trip-up for people coming from Java. A Pytest fixture only executes when a test function explicitly names it as an argument. Defining <code>@pytest.fixture</code> alone does nothing on its own; without the linkage, the fixture body never runs.</div>
         </details>
         <details class="qa">
-          <summary>Explain the four fixture scopes and how they differ.</summary>
+          <summary><span class="q-level junior">Junior</span> Explain the four fixture scopes and how they differ.</summary>
           <div class="qa-body"><code>function</code> (default) runs before every test that references it. <code>class</code> runs once per test class. <code>module</code> runs once per test file, no matter how many tests in that file use it. <code>session</code> runs exactly once across the entire test run, shared across all files — but this is only observable when running the full suite, since running one file in isolation looks identical to module scope.</div>
         </details>
         <details class="qa">
-          <summary>What is conftest.py and why does it need that exact filename?</summary>
+          <summary><span class="q-level junior">Junior</span> What is conftest.py and why does it need that exact filename?</summary>
           <div class="qa-body">It's a specially-recognized file Pytest automatically checks for fixture definitions not found in a test's own file. The filename is fixed — Pytest looks for it by that exact name in the same directory as the tests. It's used to centralize fixtures shared across multiple test files instead of duplicating them.</div>
         </details>
         <details class="qa">
-          <summary>How do you implement both setup and teardown in a single fixture?</summary>
+          <summary><span class="q-level mid">Mid</span> How do you implement both setup and teardown in a single fixture?</summary>
           <div class="qa-body">Use the <code>yield</code> keyword. Code before <code>yield</code> runs as setup; Pytest then pauses the fixture, runs the test, and once the test completes, resumes the fixture from the line after <code>yield</code> as teardown — all inside one function, no separate before/after methods needed.</div>
         </details>
         <details class="qa">
-          <summary>How do you run a single test function from the command line, and how do you run only a tagged subset?</summary>
+          <summary><span class="q-level junior">Junior</span> How do you run a single test function from the command line, and how do you run only a tagged subset?</summary>
           <div class="qa-body">Target a single function with the double-colon syntax: <code>pytest test_file.py::test_function_name</code>. For a tagged subset, mark tests with <code>@pytest.mark.&lt;tagname&gt;</code> (e.g. <code>@pytest.mark.smoke</code>) and run <code>pytest -m smoke</code> — tests without that mark are skipped as "deselected." This is Pytest's equivalent of Cucumber tags or TestNG groups.</div>
         </details>
         <details class="qa">
-          <summary>Can a fixture provide test data, not just perform setup actions?</summary>
+          <summary><span class="q-level junior">Junior</span> Can a fixture provide test data, not just perform setup actions?</summary>
           <div class="qa-body">Yes. A fixture can return a value (or yield one), and that value becomes accessible to the test through the fixture argument — commonly used to centrally supply data like credentials or tokens rather than hardcoding them per test.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What is <code>autouse=True</code> and when is it appropriate?</summary>
+          <div class="qa-body">It makes a fixture run for every test in its scope without any test naming it as an argument — the one exception to the normal linkage rule. Appropriate for genuinely universal concerns like global logging setup or a session-wide browser launch. Overusing it hurts readability, because a test's dependencies become invisible from its signature: someone reading the test can no longer tell what ran before it.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Can one fixture depend on another? How does Pytest resolve the chain?</summary>
+          <div class="qa-body">Yes — a fixture declares another fixture as a parameter exactly like a test does. Pytest builds the full dependency graph and instantiates them in order, caching each according to its scope. So a session-scoped fixture consumed by three function-scoped fixtures is still created only once.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level scenario">Scenario</span> A fixture has <code>scope="session"</code>, but you observe it running before every single test. What are the likely causes?</summary>
+          <div class="qa-body">Two common ones. First: it's being requested by a <em>narrower-scoped</em> fixture in a way that forces re-creation, or you're misreading output that's actually showing a different function-scoped fixture. Second and more likely: you're running one file at a time, where session and module scope are behaviourally indistinguishable — the difference only appears across a multi-file run. Verify by running the full suite with <code>-s</code> and counting the setup prints. Also confirm the argument is spelled <code>scope="session"</code> exactly; a typo silently falls back to the default function scope.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Teardown code after <code>yield</code> — does it still run if the test fails? What if the setup itself raises?</summary>
+          <div class="qa-body">If the test fails, teardown after <code>yield</code> still runs — that's the main advantage over cleanup written inline at the end of a test, which gets skipped on exception. If the fixture's own setup raises <em>before</em> reaching <code>yield</code>, the teardown half never executes, because execution never got there — so anything already allocated at that point can leak. For setup that acquires several resources, either split into separate fixtures (each with its own teardown) or guard with try/finally inside the fixture.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> When is session-scoped browser reuse the wrong choice?</summary>
+          <div class="qa-body">When tests can contaminate each other through shared browser state — cookies, localStorage, service workers, or an authenticated session leaking from one test into the next and creating order-dependent passes. The usual resolution isn't abandoning the session-scoped <em>browser</em> (which is expensive to launch), but giving each test its own <em>context</em> from that shared browser: cheap to create and fully isolated. Session-scoped browser + function-scoped context is the standard trade-off.</div>
         </details>
       </section>
 

@@ -140,24 +140,36 @@ def test_firefox_browser(playwright: Playwright):
       <section id="interview-qa">
         <h2>Interview Q&amp;A</h2>
         <details class="qa">
-          <summary>What's the difference between the `playwright` fixture and the `page` fixture in pytest-playwright?</summary>
+          <summary><span class="q-level junior">Junior</span> What's the difference between the `playwright` fixture and the `page` fixture in pytest-playwright?</summary>
           <div class="qa-body"><code>playwright</code> is the low-level global fixture you use to manually launch a specific browser engine, open a context, and open a page — full control over engine choice, headless/headed mode, and number of contexts. <code>page</code> is a higher-level convenience fixture that does all three steps internally, but with fixed assumptions: Chromium engine, headless by default, single context.</div>
         </details>
         <details class="qa">
-          <summary>Why open a new browser context instead of just using one for everything?</summary>
+          <summary><span class="q-level mid">Mid</span> Why open a new browser context instead of just using one for everything?</summary>
           <div class="qa-body">A context is isolated like an incognito window — its own cookies, cache, and session data. If you need to simulate multiple independent users logging in within the same test (or want a guaranteed-fresh session), you open separate contexts rather than risk one login's cookies leaking into a supposedly-fresh flow.</div>
         </details>
         <details class="qa">
-          <summary>When would you NOT use the page fixture shortcut?</summary>
+          <summary><span class="q-level mid">Mid</span> When would you NOT use the page fixture shortcut?</summary>
           <div class="qa-body">When you need a non-Chromium engine (Firefox/WebKit), when you need headed mode without relying on an external CLI flag, when a test needs multiple browser contexts at once (e.g. a multi-user or OTP-across-sessions flow), or when mixing UI and API testing in one script that requires switching contexts.</div>
         </details>
         <details class="qa">
-          <summary>How do you run a test in headed mode if you're using the page fixture shortcut?</summary>
+          <summary><span class="q-level junior">Junior</span> How do you run a test in headed mode if you're using the page fixture shortcut?</summary>
           <div class="qa-body">Pass <code>--headed</code> as an additional argument in the run configuration or CLI command (e.g. <code>pytest --headed</code>), since the fixture's internal launch call isn't directly editable the way it is in the manual 3-step approach.</div>
         </details>
         <details class="qa">
-          <summary>Why does testing against Playwright's Chromium engine effectively cover both Chrome and Edge?</summary>
+          <summary><span class="q-level junior">Junior</span> Why does testing against Playwright's Chromium engine effectively cover both Chrome and Edge?</summary>
           <div class="qa-body">Both Google Chrome and Microsoft Edge are built on the Chromium engine under the hood, so automating against Playwright's Chromium build simulates real-world behavior for both browsers.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Explain browser vs context vs page as a hierarchy, including the cost of each.</summary>
+          <div class="qa-body">A <strong>browser</strong> is an actual launched browser process — expensive (hundreds of ms to seconds), so you launch it once and reuse it. A <strong>context</strong> is an isolated session inside that process with its own cookies, storage and cache — cheap to create, which is what makes per-test isolation practical. A <strong>page</strong> is a tab inside a context; one context can hold several pages that share the same session state. The standard framework shape follows directly: session-scoped browser, function-scoped context, page per test.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level scenario">Scenario</span> You need to test a chat feature where User A sends a message and User B must receive it — in one test. How do you set that up?</summary>
+          <div class="qa-body">Two contexts from a single browser, not two browsers. Launch the browser once, then <code>ctx_a = browser.new_context()</code> and <code>ctx_b = browser.new_context()</code>, open a page in each, and log in as a different user per context. Because contexts are isolated, the two sessions won't share cookies or clobber each other's auth — while still being cheap since you only paid the browser-launch cost once. The <code>page</code> fixture can't do this, as it's locked to a single context.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Every test in a suite logs in through the UI, adding ~4 seconds each. How would you eliminate that?</summary>
+          <div class="qa-body">Authenticate once, then reuse the resulting session state. Log in in a session-scoped setup step and call <code>context.storage_state(path="state.json")</code> to persist cookies and local storage; each test then creates its context with <code>browser.new_context(storage_state="state.json")</code> and starts already authenticated — milliseconds instead of a full UI flow. Tests stay isolated because each still gets its own context. Keep a small number of tests that do exercise real UI login, since that path still needs coverage.</div>
         </details>
       </section>
 

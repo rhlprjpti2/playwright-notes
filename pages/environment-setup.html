@@ -124,27 +124,27 @@ pip install pytest-playwright</code></pre>
       <section id="interview-qa">
         <h2>Interview Q&amp;A</h2>
         <details class="qa">
-          <summary>What is pip, and how does it relate to concepts in other languages?</summary>
+          <summary><span class="q-level junior">Junior</span> What is pip, and how does it relate to concepts in other languages?</summary>
           <div class="qa-body">Pip is Python's built-in package installer/manager, bundled with every Python install. It's the equivalent of downloading jars in Java or installing node packages in JavaScript — Python just calls the downloaded external libraries "packages."</div>
         </details>
         <details class="qa">
-          <summary>Why does Playwright for Python need a separate Pytest plugin?</summary>
+          <summary><span class="q-level junior">Junior</span> Why does Playwright for Python need a separate Pytest plugin?</summary>
           <div class="qa-body">Playwright's Python tests are written on top of the Pytest testing framework/engine. The <code>pytest-playwright</code> plugin is what makes Pytest actually recognize and execute Playwright-based test code — without it, Pytest has no built-in awareness of Playwright.</div>
         </details>
         <details class="qa">
-          <summary>What's the difference between `pip install pytest-playwright` and `playwright install`?</summary>
+          <summary><span class="q-level junior">Junior</span> What's the difference between `pip install pytest-playwright` and `playwright install`?</summary>
           <div class="qa-body">The pip command installs the Python package/plugin itself. <code>playwright install</code> is a separate step that downloads the actual browser engine binaries (Chromium, Firefox, WebKit) that your tests run against — installing the plugin doesn't get you the browsers.</div>
         </details>
         <details class="qa">
-          <summary>Why does keeping the IDE's interpreter in sync with the system Python matter?</summary>
+          <summary><span class="q-level mid">Mid</span> Why does keeping the IDE's interpreter in sync with the system Python matter?</summary>
           <div class="qa-body">Packages installed via pip are stored inside whatever Python installation pip is attached to. If PyCharm's project interpreter points at a different Python installation than the one you used in the terminal, packages you installed from the terminal won't appear in the project — you'd have to reinstall them again through the IDE, or vice versa. Pointing both at the same interpreter keeps everything in sync regardless of where you install from.</div>
         </details>
         <details class="qa">
-          <summary>On a Mac, why use `which python3` / `pip3` instead of `which python` / `pip`?</summary>
+          <summary><span class="q-level junior">Junior</span> On a Mac, why use `which python3` / `pip3` instead of `which python` / `pip`?</summary>
           <div class="qa-body">Mac machines ship with Python 2 pre-installed by default. Plain `python`/`pip` commands can resolve to that legacy Python 2 rather than the Python 3 you separately installed, so Mac users should explicitly use the `python3`/`pip3` variants to target the right version. Windows machines don't have this issue since they don't ship with a default Python.</div>
         </details>
         <details class="qa">
-          <summary>Why use a virtual environment instead of installing packages system-wide?</summary>
+          <summary><span class="q-level mid">Mid</span> Why use a virtual environment instead of installing packages system-wide?</summary>
           <div class="qa-body">Isolation. Each project gets its own copy of Python plus its own independent set of installed packages, so Project A needing <code>pytest-playwright==0.5.2</code> and Project B needing a different version don't conflict. It also keeps a machine's system Python clean and makes a project's exact dependencies reproducible on another machine.</div>
         </details>
       </section>

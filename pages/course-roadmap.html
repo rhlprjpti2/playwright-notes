@@ -91,6 +91,7 @@
           <li>Playwright core locators (get_by_label, get_by_role, CSS) — <a href="playwright-locators.html">covered →</a></li>
           <li>Playwright auto-waiting &amp; web-first assertions — <a href="playwright-auto-waiting.html">covered →</a></li>
           <li>Dynamic locators, filtering &amp; scoped search — <a href="playwright-dynamic-locators.html">covered →</a></li>
+          <li>Putting it together: a complete runnable project — <a href="first-real-test.html">covered →</a></li>
           <li>API automation &amp; network interception — not yet covered</li>
           <li>Framework design (data-driven testing, parameterization, parallel/grouped runs, logging, reporting, screenshots) — not yet covered</li>
           <li>Page Object Model design pattern — not yet covered</li>
@@ -102,19 +103,19 @@
       <section id="interview-qa">
         <h2>Interview Q&amp;A</h2>
         <details class="qa">
-          <summary>Why learn Pytest before Playwright, specifically?</summary>
+          <summary><span class="q-level junior">Junior</span> Why learn Pytest before Playwright, specifically?</summary>
           <div class="qa-body">Playwright's Python test support is built directly on the Pytest framework — Pytest isn't a separate, optional tool alongside Playwright, it's the foundation the tests actually run on. Skipping it means not understanding fixtures, test discovery, and assertions that Playwright-Python code relies on.</div>
         </details>
         <details class="qa">
-          <summary>What does "framework design" cover beyond writing individual test scripts?</summary>
+          <summary><span class="q-level mid">Mid</span> What does "framework design" cover beyond writing individual test scripts?</summary>
           <div class="qa-body">Data-driven testing, parameterization, running tests in parallel or in groups, logging, reporting, automatic screenshots, and the Page Object Model design pattern for maintainable test code.</div>
         </details>
         <details class="qa">
-          <summary>How does BDD fit into a Playwright + Pytest framework?</summary>
+          <summary><span class="q-level mid">Mid</span> How does BDD fit into a Playwright + Pytest framework?</summary>
           <div class="qa-body">Through a separate Pytest plugin that lets you write Gherkin feature files, bringing Cucumber-style behavior-driven development on top of the existing Pytest/Playwright framework — it's layered on, not a replacement.</div>
         </details>
         <details class="qa">
-          <summary>Where does Jenkins fit in?</summary>
+          <summary><span class="q-level junior">Junior</span> Where does Jenkins fit in?</summary>
           <div class="qa-body">Once the framework and tests are built, Jenkins is used as the CI/CD tool to integrate the framework and schedule automated test job runs.</div>
         </details>
       </section>
@@ -138,6 +139,7 @@
           <a href="playwright-locators.html">Playwright Core Locators →</a>
           <a href="playwright-auto-waiting.html">Auto-Waiting &amp; Assertions →</a>
           <a href="playwright-dynamic-locators.html">Dynamic Locators &amp; Filtering →</a>
+          <a href="first-real-test.html">Your First Real Test →</a>
         </div>
       </div>
 

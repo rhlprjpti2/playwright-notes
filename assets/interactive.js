@@ -297,7 +297,61 @@ function renderStepDebugger(containerId, config) {
   render();
 }
 
+/**
+ * Auto-wires a difficulty filter above any Q&A section whose questions carry a
+ * <span class="q-level junior|mid|senior|scenario"> badge. No per-page setup:
+ * tag the questions, the filter builds itself from whatever levels are present.
+ */
+function initQaFilters() {
+  const LEVEL_ORDER = ["junior", "mid", "senior", "scenario"];
+  const LEVEL_LABEL = { junior: "Junior", mid: "Mid", senior: "Senior", scenario: "Scenario" };
+
+  document.querySelectorAll("section").forEach((section) => {
+    const items = Array.from(section.querySelectorAll(".qa"));
+    if (items.length === 0) return;
+
+    const levelsPresent = LEVEL_ORDER.filter((lvl) =>
+      items.some((qa) => qa.querySelector(`.q-level.${lvl}`))
+    );
+    if (levelsPresent.length < 2) return; // nothing meaningful to filter
+
+    const bar = document.createElement("div");
+    bar.className = "qa-filter";
+    bar.innerHTML = `<span class="qa-filter-label">Filter</span>`;
+
+    const makeBtn = (value, label) => {
+      const b = document.createElement("button");
+      b.className = "qa-filter-btn" + (value === "all" ? " active" : "");
+      b.textContent = label;
+      b.dataset.level = value;
+      b.addEventListener("click", () => {
+        bar.querySelectorAll(".qa-filter-btn").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        items.forEach((qa) => {
+          const match = value === "all" || !!qa.querySelector(`.q-level.${value}`);
+          qa.hidden = !match;
+          if (!match) qa.open = false;
+        });
+      });
+      return b;
+    };
+
+    const counts = { all: items.length };
+    levelsPresent.forEach((lvl) => {
+      counts[lvl] = items.filter((qa) => qa.querySelector(`.q-level.${lvl}`)).length;
+    });
+
+    bar.appendChild(makeBtn("all", `All (${counts.all})`));
+    levelsPresent.forEach((lvl) => bar.appendChild(makeBtn(lvl, `${LEVEL_LABEL[lvl]} (${counts[lvl]})`)));
+
+    const heading = section.querySelector("h2");
+    if (heading) heading.insertAdjacentElement("afterend", bar);
+    else section.insertBefore(bar, section.firstChild);
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initScrollProgress();
   initQuizzes();
+  initQaFilters();
 });

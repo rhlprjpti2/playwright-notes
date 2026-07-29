@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your First Real Test: Putting It Together · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Your First Real Test</div>
+    <h1>Your First Real Test: Putting It Together</h1>
+    <p class="lede">Every other page here teaches one piece in isolation. This is where the pieces become an actual runnable project — real folder structure, a complete <code>conftest.py</code>, complete test files, and the commands to run them. If you can write this from memory, you can do the practical round of an interview.</p>
+    <div class="card-tags">
+      <span>playwright</span>
+      <span>pytest</span>
+      <span>practical</span>
+      <span>framework</span>
+    </div>
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#structure">Project structure</a>
+      <a href="#conftest">conftest.py</a>
+      <a href="#tests">The test file</a>
+      <a href="#config">pytest.ini</a>
+      <a href="#running">Running it</a>
+      <a href="#mapping">Where each concept lands</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="structure">
+        <h2>Project structure</h2>
+        <p>A minimal but realistic layout. The important rule: <code>conftest.py</code> lives <em>with</em> the tests it serves, because Pytest resolves fixtures by directory.</p>
+        <div class="code-block">
+          <div class="cap">folder layout</div>
+<span class="code-line">playwright-python-framework/</span>
+<span class="code-line">├── tests/</span>
+<span class="code-line">│   ├── <span class="tok-fn">conftest.py</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-cm"># shared fixtures — browser, login, test data</span></span>
+<span class="code-line">│   ├── <span class="tok-fn">test_login.py</span> &nbsp;&nbsp;&nbsp;<span class="tok-cm"># login/auth scenarios</span></span>
+<span class="code-line">│   └── <span class="tok-fn">test_products.py</span><span class="tok-cm"># cart/checkout scenarios</span></span>
+<span class="code-line">├── <span class="tok-fn">pytest.ini</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-cm"># markers + default CLI options</span></span>
+<span class="code-line">└── <span class="tok-fn">requirements.txt</span> &nbsp;&nbsp;<span class="tok-cm"># pytest, pytest-playwright</span></span>
+        </div>
+        <div class="callout tip">
+          <strong>Why tests/ has its own conftest</strong>
+          Pytest looks for a fixture in the test's own file first, then in <code>conftest.py</code> <em>in the same directory</em> (and parent directories). Putting it inside <code>tests/</code> means every test file in that folder shares those fixtures without importing anything.
+        </div>
+      </section>
+
+      <section id="conftest">
+        <h2>conftest.py</h2>
+        <p>This is where <a href="pytest-fixtures.html">everything from the fixtures page</a> actually gets used. Note that <code>page</code> here is the fixture provided free by <code>pytest-playwright</code> — these custom fixtures build on top of it rather than replacing it.</p>
+        <div class="code-block">
+          <div class="cap">tests/conftest.py</div>
+<span class="code-line"><span class="tok-kw">import</span> pytest</span>
+<span class="code-line"><span class="tok-kw">from</span> playwright.sync_api <span class="tok-kw">import</span> Page</span>
+<span class="code-line"></span>
+<span class="code-line">BASE_URL = <span class="tok-str">"https://rahulshettyacademy.com/loginpagePractise/"</span></span>
+<span class="code-line"></span>
+<span class="code-line"></span>
+<span class="code-line"><span class="tok-kw">@pytest.fixture</span>(scope=<span class="tok-str">"session"</span>)</span>
+<span class="code-line"><span class="tok-kw">def</span> <span class="tok-fn">credentials</span>():</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-cm">"""Test data in one place — not hardcoded in every test."""</span></span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-kw">return</span> {<span class="tok-str">"username"</span>: <span class="tok-str">"rahulshettyacademy"</span>, <span class="tok-str">"password"</span>: <span class="tok-str">"learning"</span>}</span>
+<span class="code-line"></span>
+<span class="code-line"></span>
+<span class="code-line"><span class="tok-kw">@pytest.fixture</span></span>
+<span class="code-line"><span class="tok-kw">def</span> <span class="tok-fn">login_page</span>(page: Page):</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-cm">"""Fresh login page before each test that asks for it."""</span></span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;page.goto(BASE_URL)</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-kw">yield</span> page</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-cm"># teardown: pytest-playwright closes the context itself,</span></span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-cm"># so there is nothing to clean up here.</span></span>
+<span class="code-line"></span>
+<span class="code-line"></span>
+<span class="code-line"><span class="tok-kw">@pytest.fixture</span></span>
+<span class="code-line"><span class="tok-kw">def</span> <span class="tok-fn">logged_in_page</span>(login_page: Page, credentials):</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-cm">"""Signs in once, so authenticated tests don't repeat these 3 lines."""</span></span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;login_page.get_by_label(<span class="tok-str">"Username"</span>).fill(credentials[<span class="tok-str">"username"</span>])</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;login_page.get_by_label(<span class="tok-str">"Password"</span>).fill(credentials[<span class="tok-str">"password"</span>])</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;login_page.get_by_role(<span class="tok-str">"button"</span>, name=<span class="tok-str">"Sign In"</span>).click()</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-kw">return</span> login_page</span>
+        </div>
+        <p>Three things worth noticing, because they're exactly what an interviewer probes:</p>
+        <ul>
+          <li><strong>Fixtures depending on fixtures.</strong> <code>logged_in_page</code> takes <code>login_page</code>, which takes <code>page</code>. Pytest resolves that whole chain automatically — you never call them manually.</li>
+          <li><strong>Data lives in a fixture, not the test.</strong> Change the password once in <code>credentials</code> instead of in fifteen test files.</li>
+          <li><strong><code>yield</code> vs <code>return</code>.</strong> <code>login_page</code> uses <code>yield</code> because it has a teardown phase conceptually; <code>logged_in_page</code> just <code>return</code>s because it has nothing to undo.</li>
+        </ul>
+      </section>
+
+      <section id="tests">
+        <h2>The test file</h2>
+        <p>Now the payoff — the tests themselves are tiny, because setup lives in fixtures and Playwright's auto-waiting removes every explicit wait.</p>
+        <div class="code-block">
+          <div class="cap">tests/test_login.py</div>
+<span class="code-line"><span class="tok-kw">import</span> pytest</span>
+<span class="code-line"><span class="tok-kw">from</span> playwright.sync_api <span class="tok-kw">import</span> Page, expect</span>
+<span class="code-line"></span>
+<span class="code-line"></span>
+<span class="code-line"><span class="tok-kw">@pytest.mark.smoke</span></span>
+<span class="code-line"><span class="tok-kw">def</span> <span class="tok-fn">test_invalid_credentials_shows_error</span>(login_page: Page):</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;login_page.get_by_label(<span class="tok-str">"Username"</span>).fill(<span class="tok-str">"wrong_user"</span>)</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;login_page.get_by_label(<span class="tok-str">"Password"</span>).fill(<span class="tok-str">"wrong_pass"</span>)</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;login_page.get_by_role(<span class="tok-str">"button"</span>, name=<span class="tok-str">"Sign In"</span>).click()</span>
+<span class="code-line"></span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-cm"># no wait needed — expect() retries until it appears or times out</span></span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;expect(</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;login_page.get_by_text(<span class="tok-str">"Incorrect username or password."</span>)</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;).to_be_visible()</span>
+<span class="code-line"></span>
+<span class="code-line"></span>
+<span class="code-line"><span class="tok-kw">@pytest.mark.smoke</span></span>
+<span class="code-line"><span class="tok-kw">def</span> <span class="tok-fn">test_valid_login_reaches_shop</span>(logged_in_page: Page):</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-cm"># the fixture already signed in — this test only asserts the outcome</span></span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;expect(logged_in_page.get_by_role(<span class="tok-str">"heading"</span>, name=<span class="tok-str">"Shop Name"</span>)).to_be_visible()</span>
+<span class="code-line"></span>
+<span class="code-line"></span>
+<span class="code-line"><span class="tok-kw">def</span> <span class="tok-fn">test_add_two_products_to_cart</span>(logged_in_page: Page):</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-kw">for</span> product <span class="tok-kw">in</span> [<span class="tok-str">"iphone X"</span>, <span class="tok-str">"Blackberry"</span>]:</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-cm"># find by name, not position — survives re-ordering</span></span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;card = logged_in_page.locator(<span class="tok-str">"app-card"</span>).filter(has_text=product)</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;card.get_by_role(<span class="tok-str">"button"</span>, name=<span class="tok-str">"Add"</span>).click()</span>
+<span class="code-line"></span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;logged_in_page.get_by_role(<span class="tok-str">"button"</span>, name=<span class="tok-str">"Checkout"</span>).click()</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;expect(logged_in_page.locator(<span class="tok-str">"h4.media-heading"</span>)).to_have_count(<span class="tok-str">2</span>)</span>
+        </div>
+        <div class="callout interview">
+          <strong>What makes this "senior-looking" code</strong>
+          Zero <code>time.sleep()</code>. Zero hardcoded indexes. Credentials injected rather than inline. Setup shared via fixtures instead of copy-pasted. Assertions are web-first (<code>expect</code>), not bare Python <code>assert</code> on a snapshot value. Those five properties are what a reviewer scans for.
+        </div>
+      </section>
+
+      <section id="config">
+        <h2>pytest.ini</h2>
+        <p>Registers your custom markers (otherwise Pytest warns about unknown marks) and sets default CLI options so you don't retype them.</p>
+        <div class="code-block">
+          <div class="cap">pytest.ini</div>
+<span class="code-line">[pytest]</span>
+<span class="code-line">markers =</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;smoke: quick critical-path checks</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;regression: full suite, slower</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="tok-cm"># applied to every run unless overridden on the command line</span></span>
+<span class="code-line">addopts = -v</span>
+        </div>
+        <div class="callout tip">
+          <strong>Keep --headed out of the config file</strong>
+          Tempting to add <code>--headed</code> here, but it will then also run headed in CI, which usually has no display. Pass it ad-hoc when debugging instead.
+        </div>
+      </section>
+
+      <section id="running">
+        <h2>Running it</h2>
+        <p>Every command from <a href="pytest-fixtures.html#running">the Pytest page</a>, now against this actual project:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+            <tbody>
+              <tr><td><code>pytest</code></td><td>Runs every <code>test_*.py</code> found from the current directory down</td></tr>
+              <tr><td><code>pytest -s</code></td><td>Same, but shows <code>print()</code> output</td></tr>
+              <tr><td><code>pytest tests/test_login.py</code></td><td>Just that one file</td></tr>
+              <tr><td><code>pytest tests/test_login.py::test_valid_login_reaches_shop</code></td><td>One specific test function</td></tr>
+              <tr><td><code>pytest -m smoke</code></td><td>Only tests marked <code>@pytest.mark.smoke</code></td></tr>
+              <tr><td><code>pytest --headed</code></td><td>Watch the browser instead of running headless</td></tr>
+              <tr><td><code>pytest --headed --slowmo 500</code></td><td>Headed + half-second pause between actions — the debugging combo</td></tr>
+              <tr><td><code>pytest --browser firefox</code></td><td>Run against Firefox instead of Chromium (plugin flag — no code change needed)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout supplement">
+          <strong>Beyond this video <span class="src-tag">— debugging tools you'll be asked about</span></strong>
+          <code>pytest --tracing on</code> records a trace file you can open with <code>playwright show-trace trace.zip</code> — a full timeline with DOM snapshots per step. <code>PWDEBUG=1 pytest</code> opens Playwright Inspector to step through a test live. And <code>page.pause()</code> dropped into a test halts execution there with the Inspector open. If asked "how do you debug a failing Playwright test," these three are the expected answer.
+        </div>
+      </section>
+
+      <section id="mapping">
+        <h2>Where each concept lands</h2>
+        <p>Every topic page maps to a specific line in the code above — this is the "so where do I actually use it" answer:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Concept</th><th>Where it shows up here</th></tr></thead>
+            <tbody>
+              <tr><td><a href="pytest-fixtures.html">Fixture linkage</a></td><td><code>def test_...(login_page)</code> — naming it as an argument is what runs it</td></tr>
+              <tr><td><a href="pytest-fixtures.html#scopes">Fixture scope</a></td><td><code>scope="session"</code> on <code>credentials</code> — built once for the whole run</td></tr>
+              <tr><td><a href="pytest-fixtures.html#visual-yield">yield teardown</a></td><td><code>login_page</code> yields the page, resumes after the test finishes</td></tr>
+              <tr><td><a href="pytest-fixtures.html#conftest">conftest.py</a></td><td>The whole fixtures file — shared across every test file in <code>tests/</code></td></tr>
+              <tr><td><a href="playwright-browser-context-page.html">page fixture</a></td><td><code>login_page(page: Page)</code> — consuming the plugin's built-in fixture</td></tr>
+              <tr><td><a href="playwright-locators.html">get_by_label / get_by_role</a></td><td>Every interaction line in the login flow</td></tr>
+              <tr><td><a href="playwright-auto-waiting.html">Auto-waiting</a></td><td>The absence of any wait code — that's the feature</td></tr>
+              <tr><td><a href="playwright-dynamic-locators.html">filter + scoped search</a></td><td><code>.filter(has_text=product)</code> then <code>card.get_by_role(...)</code></td></tr>
+              <tr><td><a href="pytest-fixtures.html#running">Marks &amp; selective runs</a></td><td><code>@pytest.mark.smoke</code> + <code>pytest -m smoke</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Walk me through how you'd structure a Playwright + Pytest project from scratch.</summary>
+          <div class="qa-body">A <code>tests/</code> directory holding the test files plus a <code>conftest.py</code> for shared fixtures (browser/page setup, login, test data), a <code>pytest.ini</code> registering custom markers and default options, and <code>requirements.txt</code> pinning <code>pytest</code> and <code>pytest-playwright</code>. Fixtures go in conftest so they're shared by directory without imports; test data lives in fixtures rather than hardcoded in tests; and page interactions use semantic locators so tests survive UI churn.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> A fixture depends on another fixture. How does Pytest resolve that?</summary>
+          <div class="qa-body">Automatically, by name. <code>logged_in_page</code> declares <code>login_page</code> as a parameter, which itself declares <code>page</code>. Pytest walks that dependency chain and builds them in order before the test body runs — you never instantiate them yourself. Each is also cached per its scope, so a session-scoped dependency isn't rebuilt for every consumer.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Why put login in a fixture rather than a helper function you call at the top of each test?</summary>
+          <div class="qa-body">Three reasons. Scope control — a fixture can be session/module scoped to avoid repeating expensive setup, a plain function can't. Automatic teardown — <code>yield</code> gives you guaranteed cleanup even if the test fails, whereas a helper's cleanup is skipped on exception unless you wrap everything in try/finally. And composability — other fixtures can depend on it, letting Pytest build a dependency graph rather than you sequencing calls by hand.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> How would you debug a Playwright test that fails only in CI?</summary>
+          <div class="qa-body">Run with <code>--tracing on</code> so CI produces a trace artifact, then open it locally with <code>playwright show-trace</code> — it gives per-step DOM snapshots, network activity and console logs from the actual failing run. Locally, reproduce with <code>--headed --slowmo</code> or drop a <code>page.pause()</code> to step through with Inspector. Also check for the classic CI-only causes: different viewport size, missing <code>--headed</code> display assumptions, timezone/locale differences, and test-ordering dependencies exposed by parallel execution.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> How do you run only a subset of tests?</summary>
+          <div class="qa-body">By file (<code>pytest tests/test_login.py</code>), by single function using the double-colon syntax (<code>pytest tests/test_login.py::test_name</code>), or by marker (<code>pytest -m smoke</code>) after tagging tests with <code>@pytest.mark.smoke</code> and registering that marker in <code>pytest.ini</code>.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Your suite has 40 tests and each one logs in through the UI. It takes 25 minutes. How do you speed it up?</summary>
+          <div class="qa-body">Stop logging in through the UI repeatedly. Authenticate once, save the session with <code>context.storage_state(path="state.json")</code>, and have tests start from a context created with that stored state — turning a multi-second UI login into a near-instant state load. Beyond that: run tests in parallel with <code>pytest-xdist</code> (<code>-n auto</code>), keep the browser session-scoped rather than per-test, and reserve full UI login for the handful of tests actually testing login itself.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Unregistered markers warn</strong>
+          Using <code>@pytest.mark.smoke</code> without declaring <code>smoke</code> under <code>markers</code> in <code>pytest.ini</code> produces a <code>PytestUnknownMarkWarning</code> on every run. It still works — but it's noisy, and a typo'd marker name fails silently by matching nothing.
+        </div>
+        <div class="callout warn">
+          <strong>conftest.py is resolved by location, not import</strong>
+          You never <code>import conftest</code>. If fixtures aren't being found, the usual cause is the file sitting in the wrong directory relative to the tests, or being named something other than exactly <code>conftest.py</code>.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="pytest-fixtures.html">Pytest Fixtures &amp; Fundamentals →</a>
+          <a href="playwright-locators.html">Playwright Core Locators →</a>
+          <a href="playwright-auto-waiting.html">Auto-Waiting &amp; Assertions →</a>
+          <a href="playwright-dynamic-locators.html">Dynamic Locators &amp; Filtering →</a>
+          <a href="playwright-browser-context-page.html">Browser, Context &amp; Page →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Synthesis page — combines the course material covered so far into a runnable project. Code follows the patterns taught across the transcripts; the debugging tooling and storage_state notes are marked supplementary. — added 2026-07-30</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

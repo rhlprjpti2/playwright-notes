@@ -112,28 +112,44 @@ expect(page.get_by_text("Incorrect username or password")).to_be_visible()</code
       <section id="interview-qa">
         <h2>Interview Q&amp;A</h2>
         <details class="qa">
-          <summary>What does Playwright's automatic actionability check actually check for?</summary>
+          <summary><span class="q-level junior">Junior</span> What does Playwright's automatic actionability check actually check for?</summary>
           <div class="qa-body">Per this course: visible, stable (finished loading/animating), receives events (not obscured by another element), and enabled. Playwright verifies these before most actions, retrying automatically until they pass or a timeout is reached.</div>
         </details>
         <details class="qa">
-          <summary>How is this different from Selenium's approach to synchronization?</summary>
+          <summary><span class="q-level mid">Mid</span> How is this different from Selenium's approach to synchronization?</summary>
           <div class="qa-body">Selenium has no built-in auto-wait for actionability — an immediate check on a not-yet-rendered or not-yet-stable element simply fails. The developer must write explicit or implicit wait code by hand to compensate. Playwright performs these checks and retries internally, with no synchronization code required from the test author.</div>
         </details>
         <details class="qa">
-          <summary>Does auto-waiting apply only to actions like click/fill, or also to assertions?</summary>
+          <summary><span class="q-level junior">Junior</span> Does auto-waiting apply only to actions like click/fill, or also to assertions?</summary>
           <div class="qa-body">Both. Playwright's `expect()` assertions are "web-first" and auto-retrying — they recheck the condition repeatedly until it's true or the timeout is hit, rather than evaluating once immediately like a plain equality check would.</div>
         </details>
         <details class="qa">
-          <summary>If an element becomes ready in 2 seconds but the timeout is much longer, does Playwright wait out the full timeout?</summary>
+          <summary><span class="q-level mid">Mid</span> If an element becomes ready in 2 seconds but the timeout is much longer, does Playwright wait out the full timeout?</summary>
           <div class="qa-body">No — Playwright proceeds the instant all actionability checks succeed. It only consumes the full timeout when the checks keep failing all the way until the deadline.</div>
         </details>
         <details class="qa">
-          <summary>What genuinely differentiates Playwright's auto-waiting from Selenium, in one sentence for an interview?</summary>
+          <summary><span class="q-level mid">Mid</span> What genuinely differentiates Playwright's auto-waiting from Selenium, in one sentence for an interview?</summary>
           <div class="qa-body">Playwright treats waiting for actionability as a built-in, automatic, retrying part of every action and assertion, while Selenium treats it as something the test author must explicitly code — that shift is what removes synchronization code from Playwright test scripts entirely.</div>
         </details>
         <details class="qa">
-          <summary>What are Playwright's actual default timeouts — for actions and for assertions?</summary>
+          <summary><span class="q-level mid">Mid</span> What are Playwright's actual default timeouts — for actions and for assertions?</summary>
           <div class="qa-body">30 seconds for actions (click, fill, etc.), configurable via <code>page.set_default_timeout()</code> or a per-call <code>timeout=</code> argument. 5 seconds for web-first assertions (<code>expect()</code>), configured separately. They're two independent values — knowing this precisely (rather than "a few seconds") signals you've actually used the tool, not just watched a tutorial.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level scenario">Scenario</span> A colleague fixes a flaky test by adding <code>time.sleep(5)</code> before the assertion. Why is that wrong, and what do you do instead?</summary>
+          <div class="qa-body">It's wrong on both ends. It's <em>too slow</em> when the element appears in 200ms — you've now permanently added 5s to every run of that test. And it's <em>still flaky</em> when a slow CI machine takes 6s. It trades a fast intermittent failure for a slow intermittent failure. The right fix is a web-first assertion (<code>expect(locator).to_be_visible()</code>), which polls and continues the instant the condition holds, and only consumes the full timeout on genuine failure. If a specific step genuinely needs longer, raise that call's <code>timeout=</code> rather than blocking the thread.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level scenario">Scenario</span> A test passes locally but fails in CI with a timeout on a click. What's your diagnostic sequence?</summary>
+          <div class="qa-body">Auto-waiting means the element failed at least one actionability check for the entire timeout window — so ask which one. Grab a trace (<code>--tracing on</code>) and inspect the DOM snapshot at failure: is the element absent entirely (data/seed differences, slower backend), present but off-screen (smaller CI viewport — a real difference from a local maximized window), present but covered (a cookie banner or overlay that only appears in a fresh CI profile), or present but <code>disabled</code> (an async precondition that hadn't resolved yet)? Each points at a different fix; blanket-raising the timeout usually just makes the failure slower.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Given auto-waiting, is there ever a legitimate reason to wait explicitly?</summary>
+          <div class="qa-body">Yes, for conditions actionability checks don't cover. Actionability is about a specific element's state — it says nothing about, say, a network request having settled, an animation having finished before a visual snapshot, or a background job completing. For those, Playwright provides purpose-built waits (<code>wait_for_load_state</code>, <code>wait_for_response</code>, <code>expect_download</code>, <code>locator.wait_for(state=...)</code>). The rule isn't "never wait" — it's "never sleep a fixed duration." Wait on a condition, not on the clock.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Playwright checks that an element "receives events." What real bug class does that catch?</summary>
+          <div class="qa-body">Elements that are visually present and enabled but covered by something else at the click point — a modal overlay, a sticky header, a cookie banner, a toast notification. Playwright hit-tests the target point and confirms the click would actually reach that element rather than the thing on top of it. Without that check (Selenium's default position), the click silently lands on the overlay: the test reports a successful click, no exception is raised, and it fails confusingly several steps later. It converts a misleading downstream failure into a precise one at the real point of breakage.</div>
         </details>
       </section>
 

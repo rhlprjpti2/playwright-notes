@@ -120,20 +120,32 @@ expect(page.locator(".media-body")).to_have_count(2)</code></pre>
       <section id="interview-qa">
         <h2>Interview Q&amp;A</h2>
         <details class="qa">
-          <summary>Why scan-and-filter instead of clicking an element at a fixed index?</summary>
+          <summary><span class="q-level junior">Junior</span> Why scan-and-filter instead of clicking an element at a fixed index?</summary>
           <div class="qa-body">Resilience. If the page's display order changes — items re-sorted, a new item inserted — an index-based script targets the wrong element or breaks entirely. A filter-by-content script finds the correct element regardless of its position on the page.</div>
         </details>
         <details class="qa">
-          <summary>What's the difference between `page.locator(...).get_by_role(...)` and `product_locator.get_by_role(...)`?</summary>
+          <summary><span class="q-level mid">Mid</span> What's the difference between `page.locator(...).get_by_role(...)` and `product_locator.get_by_role(...)`?</summary>
           <div class="qa-body">Scope. The first searches the entire page for that role, which can return many matches. The second searches only within the previously-located element (`product_locator`), so it can resolve uniquely without further filtering — because the search space was already narrowed.</div>
         </details>
         <details class="qa">
-          <summary>How do you assert on the number of elements a locator matched?</summary>
+          <summary><span class="q-level junior">Junior</span> How do you assert on the number of elements a locator matched?</summary>
           <div class="qa-body"><code>expect(locator).to_have_count(n)</code> — a web-first assertion, so it auto-retries like other Playwright assertions rather than checking the count exactly once immediately.</div>
         </details>
         <details class="qa">
-          <summary>What's the difference between get_by_role's `name=` filter and a separate `.filter(has_text=...)` call?</summary>
+          <summary><span class="q-level mid">Mid</span> What's the difference between get_by_role's `name=` filter and a separate `.filter(has_text=...)` call?</summary>
           <div class="qa-body"><code>name=</code> is bundled directly into <code>get_by_role</code> and specifically matches the element's accessible name. <code>.filter()</code> is a separate, more general-purpose chained method usable on any locator (not just role-based ones), and can match on text content via <code>has_text</code> (there's also <code>has_text</code>/<code>has_not_text</code>/<code>has</code> variants for different filter conditions).</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Are Playwright locators evaluated when you create them?</summary>
+          <div class="qa-body">No — locators are lazy. Creating one just describes <em>how</em> to find an element; the DOM query runs at the moment you act or assert on it, and re-runs on each auto-wait retry. That's why a locator stored in a variable still works after the page updates, and why locators don't go stale the way a Selenium <code>WebElement</code> reference does.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level scenario">Scenario</span> You must click "Delete" on the row for user "jsmith" in a table where rows load in unpredictable order. How do you write it?</summary>
+          <div class="qa-body">Filter to the row by its content, then scope the button search inside that row: <code>page.get_by_role("row").filter(has_text="jsmith").get_by_role("button", name="Delete").click()</code>. The row is identified by the data that makes it unique, not its index, and the Delete button is found <em>within</em> that row — so it can't accidentally hit another row's Delete even though every row has one. This is the canonical shape of this whole pattern.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> When is using <code>.nth()</code> or <code>.first</code> actually the correct choice rather than a smell?</summary>
+          <div class="qa-body">When position itself is the thing under test, not an incidental detail. Examples: asserting that a "sort by newest" control genuinely puts the newest item first, verifying a top-ranked search result, or checking pagination boundaries. The distinction is intent — <code>.first</code> is legitimate when your assertion is <em>about</em> ordering, and a smell when you're just using position as a lazy proxy for identity. A useful tell: if reordering the data should keep the test passing, filtering by content is right; if reordering <em>should</em> fail the test, position is right.</div>
         </details>
       </section>
 

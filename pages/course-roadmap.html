@@ -83,6 +83,18 @@
       <section id="checklist">
         <h2>Coverage checklist</h2>
         <p>What's actually been turned into notes so far vs. what's still ahead:</p>
+        <div class="progress-strip" id="visited-strip" style="display:none;"></div>
+        <script>
+          (function () {
+            const strip = document.getElementById("visited-strip");
+            if (typeof pwLoad !== "function") return;
+            const visited = Object.keys(pwLoad("pw-notes-visited"));
+            if (visited.length === 0) return;
+            strip.style.display = "flex";
+            strip.innerHTML = `<span>You've visited <b>${visited.length}</b> topic page${visited.length === 1 ? "" : "s"} so far</span>
+              <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${Math.min(100, visited.length * 10)}%"></div></div>`;
+          })();
+        </script>
         <ul>
           <li>Why Playwright / Why Python — <a href="why-playwright-and-python.html">covered →</a></li>
           <li>Environment setup (Python, pip, PyCharm) — <a href="environment-setup.html">covered →</a></li>

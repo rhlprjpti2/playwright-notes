@@ -98,15 +98,16 @@
       <section id="visual">
         <h2>Step 2: The layered architecture</h2>
         <p>Once constraints are clear, lay out the framework as layers, not as a tool list. Each layer has a job and can be reasoned about independently — this is what separates "I'd use Playwright" from an actual architecture.</p>
-        <div class="diagram" id="flow-arch"></div>
+        <div class="diagram" id="layer-arch"></div>
         <script>
-          renderFlowDiagram("flow-arch", {
-            steps: [
-              { label: "Test Scripts", sub: "what engineers write daily", desc: "The actual test cases — thin, readable, business-intent-focused. If this layer contains raw locators or waits, the layers below aren't doing their job." },
-              { label: "Framework Core", sub: "POM / fixtures / page interactions", desc: "Reusable page objects or screenplay-style actors, fixtures for setup/teardown, and the abstractions that keep test scripts thin. This is where most framework design work actually lives." },
-              { label: "Driver / SDK", sub: "Playwright, API clients", desc: "The actual automation engines — browser driver for UI, HTTP client for API-level tests. Swappable in principle if the layer above is well-abstracted." },
-              { label: "Data & Config", sub: "test data, environments, secrets", desc: "Environment config, seeded/factory test data, secrets management. Frequently the source of flakiness when shared across parallel runs — isolate per-test where possible." },
-              { label: "Execution & Reporting", sub: "CI orchestration, dashboards", desc: "Parallelization/sharding, retry policy, and where results surface — a dashboard stakeholders actually look at, not just a CI log." }
+          renderLayerStack("layer-arch", {
+            playLabel: "Trace a test run",
+            layers: [
+              { name: "Test Scripts", sub: "what engineers write daily", desc: "The actual test cases — thin, readable, business-intent-focused. If this layer contains raw locators or waits, the layers below aren't doing their job." },
+              { name: "Framework Core", sub: "POM / fixtures / page interactions", desc: "Reusable page objects or screenplay-style actors, fixtures for setup/teardown, and the abstractions that keep test scripts thin. This is where most framework design work actually lives." },
+              { name: "Driver / SDK", sub: "Playwright, API clients", desc: "The actual automation engines — browser driver for UI, HTTP client for API-level tests. Swappable in principle if the layer above is well-abstracted." },
+              { name: "Data & Config", sub: "test data, environments, secrets", desc: "Environment config, seeded/factory test data, secrets management. Frequently the source of flakiness when shared across parallel runs — isolate per-test where possible." },
+              { name: "Execution & Reporting", sub: "CI orchestration, dashboards", desc: "Parallelization/sharding, retry policy, and where results surface — a dashboard stakeholders actually look at, not just a CI log." }
             ]
           });
         </script>

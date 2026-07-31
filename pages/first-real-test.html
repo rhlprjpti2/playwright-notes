@@ -42,6 +42,7 @@
       <a href="#structure">Project structure</a>
       <a href="#conftest">conftest.py</a>
       <a href="#tests">The test file</a>
+      <a href="#watch-it-run">Watch it run</a>
       <a href="#config">pytest.ini</a>
       <a href="#running">Running it</a>
       <a href="#mapping">Where each concept lands</a>
@@ -151,6 +152,64 @@
         <div class="callout interview">
           <strong>What makes this "senior-looking" code</strong>
           Zero <code>time.sleep()</code>. Zero hardcoded indexes. Credentials injected rather than inline. Setup shared via fixtures instead of copy-pasted. Assertions are web-first (<code>expect</code>), not bare Python <code>assert</code> on a snapshot value. Those five properties are what a reviewer scans for.
+        </div>
+      </section>
+
+      <section id="watch-it-run">
+        <h2>Watch it run</h2>
+        <p class="lead">Every other page on this site animates one concept in isolation. This is the same mechanics, but for the full chain — fixture resolution, locator fills, and auto-waiting, all inside one real test run.</p>
+
+        <div class="sim" id="full-run-sim"></div>
+        <script>
+          renderStepDebugger("full-run-sim", {
+            title: "test_valid_login_reaches_shop · full run",
+            terminalPrompt: "$ pytest tests/test_login.py::test_valid_login_reaches_shop -s",
+            legend: [
+              { label: "fixture setup", color: "var(--success)" },
+              { label: "resolved / paused", color: "#e0c14a" },
+              { label: "test body", color: "var(--accent-3)" }
+            ],
+            codeBlocks: [
+              {
+                caption: "tests/conftest.py",
+                lines: [
+                  { id: "frln1", zone: "setup", html: '<span class="ln">1</span> <span class="tok-kw">@pytest.fixture</span>(scope=<span class="tok-str">"session"</span>)' },
+                  { id: "frln2", zone: "setup", html: '<span class="ln">2</span> <span class="tok-kw">def</span> <span class="tok-fn">credentials</span>():' },
+                  { id: "frln3", zone: "setup", html: '<span class="ln">3</span> &nbsp;&nbsp;<span class="tok-kw">return</span> {<span class="tok-str">"username"</span>: ..., <span class="tok-str">"password"</span>: ...}' },
+                  { id: "frln4", zone: "setup", html: '<span class="ln">4</span> <span class="tok-kw">def</span> <span class="tok-fn">login_page</span>(page):' },
+                  { id: "frln5", zone: "setup", html: '<span class="ln">5</span> &nbsp;&nbsp;page.goto(BASE_URL); <span class="tok-kw">yield</span> page' },
+                  { id: "frln6", zone: "setup", html: '<span class="ln">6</span> <span class="tok-kw">def</span> <span class="tok-fn">logged_in_page</span>(login_page, credentials):' },
+                  { id: "frln7", html: '<span class="ln">7</span> &nbsp;&nbsp;login_page.get_by_label(<span class="tok-str">"Username"</span>).fill(...)' },
+                  { id: "frln8", html: '<span class="ln">8</span> &nbsp;&nbsp;login_page.get_by_label(<span class="tok-str">"Password"</span>).fill(...)' },
+                  { id: "frln9", html: '<span class="ln">9</span> &nbsp;&nbsp;login_page.get_by_role(<span class="tok-str">"button"</span>, name=<span class="tok-str">"Sign In"</span>).click()' },
+                  { id: "frln10", html: '<span class="ln">10</span> &nbsp;&nbsp;<span class="tok-kw">return</span> login_page' }
+                ]
+              },
+              {
+                caption: "tests/test_login.py",
+                lines: [
+                  { id: "frln11", html: '<span class="ln">11</span> <span class="tok-kw">def</span> <span class="tok-fn">test_valid_login_reaches_shop</span>(logged_in_page):' },
+                  { id: "frln12", html: '<span class="ln">12</span> &nbsp;&nbsp;expect(logged_in_page.get_by_role(<span class="tok-str">"heading"</span>, name=<span class="tok-str">"Shop Name"</span>)).to_be_visible()' }
+                ]
+              }
+            ],
+            steps: [
+              { lineIds: ["frln11"], desc: "pytest collects the test — it needs logged_in_page, which itself needs login_page and credentials. The whole chain resolves before the test body runs a single line.", term: '<span class="tag-setup">▸ collecting test_valid_login_reaches_shop</span>' },
+              { lineIds: ["frln1", "frln2", "frln3"], desc: "credentials is session-scoped — first time it's needed this run, so it executes now. Every other test in the session reuses this same value without re-running it.", term: '<span class="tag-setup">▸ credentials fixture — session-scoped, running once</span>' },
+              { lineIds: ["frln4", "frln5"], desc: "login_page runs next — navigates to the login URL, then yields the page object rather than returning (there's an implicit teardown phase waiting after the test).", term: '<span class="tag-setup">▸ login_page fixture — page.goto(BASE_URL)</span>' },
+              { lineIds: ["frln7", "frln8"], desc: "logged_in_page fills the credentials it received as an argument — get_by_label resolves each field exactly as covered on the Locators page.", term: '<span class="tag-test">▸ filling Username, Password</span>' },
+              { lineIds: ["frln9"], desc: "Sign In button is already actionable — click executes immediately. Same actionability checks covered on the Auto-Waiting page, just not visibly retrying this time.", term: '<span class="tag-test">▸ click "Sign In" — actionability checks pass immediately</span>' },
+              { lineIds: ["frln10"], desc: "logged_in_page returns the now-authenticated page — the value the test itself receives as its argument.", term: '<span class="tag-pause">✓ logged_in_page fixture resolved</span>' },
+              { lineIds: ["frln12"], desc: "Test body finally runs — one line, because all setup already happened in the fixture chain. The heading isn't rendered yet (page still finishing its post-login navigation), so this retries.", term: '<span class="tag-setup">▸ expect(...).to_be_visible() — attempt 1</span>' },
+              { lineIds: ["frln12"], desc: "Attempt 2: heading now rendered — check passes, with zero explicit wait code written anywhere in this test.", term: '<span class="tag-test">✓ visible? yes — PASSED</span>' },
+              { lineIds: ["frln5"], desc: "Test finished — execution jumps back into login_page right after yield. pytest-playwright's own plugin closes the browser context; there's nothing left to clean up manually.", term: '<span class="tag-teardown">▸ login_page resumes after yield — context closed by plugin</span>' }
+            ]
+          });
+        </script>
+
+        <div class="callout interview">
+          <strong>The point of this simulator</strong>
+          Every step above links back to a page that covers it in depth — <a href="pytest-fixtures.html">fixture resolution &amp; session scope</a>, <a href="playwright-locators.html">get_by_label / get_by_role</a>, <a href="playwright-auto-waiting.html">the retry loop</a>. This is what "putting it together" actually looks like end to end, not just in prose.
         </div>
       </section>
 

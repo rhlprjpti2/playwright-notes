@@ -46,6 +46,11 @@
       <div class="qhub-chips" id="topic-chips"></div>
     </div>
 
+    <div class="qhub-filter-group">
+      <span class="qhub-filter-label">Mastery</span>
+      <div class="qhub-chips" id="mastery-chips"></div>
+    </div>
+
     <div class="qhub-toolbar">
       <span class="qhub-count" id="q-count"></span>
       <div class="qhub-actions">
@@ -73,11 +78,29 @@
 
   let activeLevel = "all";
   let activeTopic = "all";
+  let activeMastery = "all";
   let query = "";
 
   const listEl = document.getElementById("q-list");
   const emptyEl = document.getElementById("q-empty");
   const countEl = document.getElementById("q-count");
+
+  function stripTags(s) {
+    const d = document.createElement("div");
+    d.innerHTML = s;
+    return d.textContent || "";
+  }
+
+  // Same hash input as pwQuestionText() uses for live topic-page Q&As (tag-stripped,
+  // whitespace-collapsed question text) so mastery marked on either side matches up.
+  ALL.forEach((item) => {
+    item.qaId = "qa-" + pgHash(stripTags(item.q).replace(/\s+/g, " ").trim());
+  });
+
+  function refreshMastery() {
+    const masteryState = typeof pwLoad === "function" ? pwLoad(PW_QA_MASTERY_KEY) : {};
+    ALL.forEach((item) => { item.mastery = masteryState[item.qaId] || "unmarked"; });
+  }
 
   function countBy(items, key) {
     const map = {};
@@ -124,21 +147,26 @@
       (v) => { activeTopic = v; },
       () => activeTopic
     );
-  }
-
-  function stripTags(s) {
-    const d = document.createElement("div");
-    d.innerHTML = s;
-    return d.textContent || "";
+    const masteryCounts = countBy(ALL, "mastery");
+    const MASTERY_LABEL = { known: "Known", shaky: "Shaky", unmarked: "Unmarked" };
+    buildChips(
+      "mastery-chips", ["known", "shaky", "unmarked"].filter((m) => masteryCounts[m]),
+      (m) => MASTERY_LABEL[m],
+      (m) => masteryCounts[m],
+      (v) => { activeMastery = v; },
+      () => activeMastery
+    );
   }
 
   function render() {
+    refreshMastery();
     refreshChips();
 
     const q = query.trim().toLowerCase();
     const filtered = ALL.filter((item) => {
       if (activeLevel !== "all" && item.level !== activeLevel) return false;
       if (activeTopic !== "all" && item.topic !== activeTopic) return false;
+      if (activeMastery !== "all" && item.mastery !== activeMastery) return false;
       if (q) {
         const hay = (stripTags(item.q) + " " + stripTags(item.a) + " " + item.topicLabel).toLowerCase();
         if (!hay.includes(q)) return false;
@@ -168,6 +196,8 @@
         </div>`;
       listEl.appendChild(d);
     });
+
+    if (typeof initQaMastery === "function") initQaMastery();
   }
 
   document.getElementById("q-search").addEventListener("input", (e) => {
@@ -179,6 +209,10 @@
   });
   document.getElementById("collapse-all").addEventListener("click", () => {
     listEl.querySelectorAll("details").forEach((d) => (d.open = false));
+  });
+  document.addEventListener("pw-mastery-change", () => {
+    refreshMastery();
+    refreshChips();
   });
   document.getElementById("reset-filters").addEventListener("click", () => {
     activeLevel = "all";

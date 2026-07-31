@@ -13,6 +13,17 @@ function toggleTheme() {
   localStorage.setItem("pw-notes-theme", next);
 }
 
+/* Category accent color, purely for fast visual scanning of the card grid —
+   priority-ordered so a card with multiple matching tags picks the most
+   specific bucket (e.g. "practical" wins over "playwright"). */
+function categoryColorFor(tags) {
+  const t = tags || [];
+  if (t.includes("system-design") || t.includes("lead-sdet") || t.includes("practical")) return "var(--success)";
+  if (t.includes("playwright")) return "var(--accent)";
+  if (t.includes("pytest")) return "var(--accent-3)";
+  return "var(--accent-2)";
+}
+
 /* ---------- Hub page ---------- */
 function initHub() {
   const grid = document.getElementById("grid");
@@ -33,6 +44,23 @@ function initHub() {
   statTopics.innerHTML = `<b>${topics.length}</b> topic${topics.length === 1 ? "" : "s"}`;
   const totalSources = topics.reduce((sum, t) => sum + (t.sources ? t.sources.length : 0), 0);
   statSources.innerHTML = `<b>${totalSources}</b> video${totalSources === 1 ? "" : "s"} processed`;
+
+  const visitedSlugs = typeof pwLoad === "function" ? Object.keys(pwLoad("pw-notes-visited")) : [];
+  if (typeof pwProgressSummary === "function") {
+    const summary = pwProgressSummary(topics.length);
+    const strip = document.getElementById("progress-strip");
+    if (summary && strip) {
+      const pct = topics.length ? Math.round((summary.visited / topics.length) * 100) : 0;
+      strip.style.display = "flex";
+      strip.innerHTML = `
+        <span><b>${summary.visited}</b> of ${topics.length} topics visited</span>
+        <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+        ${summary.quizTotal ? `<span><b>${summary.quizCorrect}</b>/${summary.quizTotal} quiz answers correct</span>` : ""}
+        ${summary.known ? `<span><b>${summary.known}</b> questions known</span>` : ""}
+        ${summary.shaky ? `<span><b>${summary.shaky}</b> still shaky</span>` : ""}
+      `;
+    }
+  }
 
   allTags.forEach(tag => {
     const pill = document.createElement("span");
@@ -77,7 +105,11 @@ function initHub() {
       card.href = t.file;
       card.className = "card";
       card.style.animationDelay = `${i * 40}ms`;
+      const slug = (t.file || "").replace(/^pages\//, "").replace(/\.html$/, "");
+      const isVisited = visitedSlugs.includes(slug);
+      card.style.borderTop = `3px solid ${categoryColorFor(t.tags)}`;
       card.innerHTML = `
+        ${isVisited ? '<span class="card-visited-badge" title="Visited">&#10003;</span>' : ""}
         <div class="card-title">${t.title}</div>
         <div class="card-summary">${t.summary || ""}</div>
         <div class="card-tags">${(t.tags || []).map(tag => `<span>${tag}</span>`).join("")}</div>

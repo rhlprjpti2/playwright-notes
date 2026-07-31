@@ -56,6 +56,16 @@
 
 html { scroll-behavior: smooth; }
 
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  html { scroll-behavior: auto; }
+}
+
 body {
   margin: 0;
   background: var(--bg);
@@ -206,6 +216,7 @@ a:hover { text-decoration: underline; }
   padding: 24px 0 60px;
 }
 .card {
+  position: relative;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -373,6 +384,11 @@ table.compare td { color: var(--text-dim); }
 table.compare tr:last-child td { border-bottom: none; }
 table.compare td.highlight { color: var(--accent); font-weight: 560; }
 table.compare td.muted { color: var(--text-faint); }
+table.compare td.col-spotlight, table.compare th.col-spotlight {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  transition: background .3s ease, opacity .3s ease;
+}
+table.compare td.col-dim, table.compare th.col-dim { opacity: .38; transition: opacity .3s ease; }
 
 .qa {
   border: 1px solid var(--border);
@@ -1109,6 +1125,123 @@ footer.site-footer {
 @media (max-width: 620px) {
   .qhub-filter-group { flex-direction: column; gap: 6px; }
   .qhub-filter-label { padding-top: 0; }
+}
+
+/* ---------- Layer-stack diagram (vertical, for architecture content) ---------- */
+.layer-stack-controls { display: flex; gap: 10px; margin-bottom: 16px; }
+.layer-stack-controls button {
+  font-family: var(--font-mono); font-size: 12.5px; padding: 7px 14px; border-radius: 7px;
+  border: 1.5px solid var(--border); background: var(--bg-card); color: var(--text);
+  cursor: pointer; transition: border-color .15s ease;
+}
+.layer-stack-controls button:hover:not(:disabled) { border-color: var(--accent); }
+.layer-stack-controls button:disabled { opacity: .4; cursor: default; }
+.layer-stack { display: flex; flex-direction: column; align-items: stretch; max-width: 480px; margin: 0 auto; }
+.layer-box {
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  background: var(--bg-card);
+  text-align: center;
+  transition: all .35s ease;
+  opacity: .55;
+}
+.layer-name { display: block; font-weight: 650; font-size: 14.5px; color: var(--text); }
+.layer-sub { display: block; font-size: 11.5px; color: var(--text-faint); margin-top: 3px; }
+.layer-box.active {
+  opacity: 1;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-card));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+  transform: scale(1.02);
+}
+.layer-box.done { opacity: .75; border-color: var(--success); }
+.layer-connector {
+  width: 2px; height: 22px; background: var(--border); margin: 0 auto; position: relative;
+  transition: background .3s ease;
+}
+.layer-connector::after {
+  content: ""; position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+  border-top: 6px solid var(--border); border-left: 5px solid transparent; border-right: 5px solid transparent;
+  transition: border-color .3s ease;
+}
+.layer-connector.done { background: var(--success); }
+.layer-connector.done::after { border-top-color: var(--success); }
+.layer-desc {
+  margin-top: 16px; min-height: 40px; font-size: 13.5px; color: var(--text-dim);
+  padding: 12px 14px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border);
+  max-width: 480px; margin-left: auto; margin-right: auto;
+}
+
+/* ---------- Interaction legend + first-visit hint ---------- */
+.legend-bar {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  padding: 10px 0 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-faint); }
+.legend-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 5px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--accent); font-size: 10px; flex-shrink: 0;
+}
+@keyframes first-visit-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); }
+  50% { box-shadow: 0 0 0 10px transparent; }
+}
+.first-visit-hint { animation: first-visit-pulse 1.2s ease-in-out 2; border-radius: var(--radius); }
+
+.restored-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  font-weight: 400;
+  margin-left: 6px;
+  text-transform: none;
+}
+
+/* ---------- Q&A mastery self-tracking ---------- */
+.qa-mastery-bar { display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); }
+.qa-mastery-btn {
+  font-size: 11.5px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.qa-mastery-btn:hover { border-color: var(--text-dim); color: var(--text-dim); }
+.qa-mastery-btn.know.active { border-color: var(--success); background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); }
+.qa-mastery-btn.shaky.active { border-color: var(--accent-3); background: color-mix(in srgb, var(--accent-3) 15%, transparent); color: var(--accent-3); }
+.qa.mastery-known { border-left: 3px solid var(--success); }
+.qa.mastery-shaky { border-left: 3px solid var(--accent-3); }
+
+/* ---------- Progress summary (hub + roadmap) ---------- */
+.progress-strip {
+  display: flex; flex-wrap: wrap; gap: 18px; align-items: center;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  margin: 18px 0;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+.progress-strip b { color: var(--text); }
+.progress-bar-track { flex: 1; min-width: 140px; height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: 999px; transition: width .5s ease; }
+.card-visited-badge {
+  position: absolute; top: 12px; right: 12px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: color-mix(in srgb, var(--success) 22%, var(--bg-card));
+  border: 1px solid var(--success);
+  color: var(--success);
+  font-size: 11px;
+  display: flex; align-items: center; justify-content: center;
 }
 
 @media (max-width: 760px) {

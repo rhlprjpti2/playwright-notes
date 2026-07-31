@@ -84,8 +84,13 @@
       <section id="comparison">
         <h2>Playwright vs Selenium vs Cypress</h2>
         <p>The highlighted cells below are what the video actually stated. The rest were gaps left as "not covered" — now filled in below the table as clearly-marked supplementary knowledge, rather than left blank.</p>
+        <div class="toggle-row" id="compare-spotlight">
+          <button class="toggle-btn" data-col="2">Spotlight Playwright</button>
+          <button class="toggle-btn" data-col="3">Spotlight Selenium</button>
+          <button class="toggle-btn" data-col="4">Spotlight Cypress</button>
+        </div>
         <div class="table-wrap">
-          <table class="compare">
+          <table class="compare" id="compare-table">
             <thead>
               <tr><th>Aspect</th><th>Playwright</th><th>Selenium</th><th>Cypress</th></tr>
             </thead>
@@ -99,6 +104,28 @@
             </tbody>
           </table>
         </div>
+        <script>
+          (function () {
+            const buttons = document.querySelectorAll("#compare-spotlight .toggle-btn");
+            const table = document.getElementById("compare-table");
+            buttons.forEach((btn) => {
+              btn.addEventListener("click", () => {
+                const already = btn.classList.contains("selected");
+                buttons.forEach((b) => b.classList.remove("selected"));
+                table.querySelectorAll("td, th").forEach((cell) => cell.classList.remove("col-spotlight", "col-dim"));
+                if (already) return;
+                btn.classList.add("selected");
+                const col = btn.dataset.col;
+                table.querySelectorAll("tr").forEach((row) => {
+                  Array.from(row.children).forEach((cell, i) => {
+                    if (i === 0) return;
+                    cell.classList.add(String(i + 1) === col ? "col-spotlight" : "col-dim");
+                  });
+                });
+              });
+            });
+          })();
+        </script>
         <div class="callout supplement">
           <strong>Beyond this video <span class="src-tag">— the table cells above, not stated in the course</span></strong>
           One correction worth internalizing: Cypress is <em>not</em> actually weak on auto-waiting — it has real built-in retry-ability, similar in spirit to Playwright's web-first assertions. If asked to compare the three tools, don't lump Cypress in with Selenium on this point; the genuine three-way differentiator for Playwright is combined web+API testing and multi-language support, not auto-waiting alone.

@@ -29,25 +29,125 @@ function initScrollProgress() {
   update();
 }
 
+/* ---------- Persistence: quiz answers, Q&A mastery, visited topics ---------- */
+/* All under one localStorage namespace. Nothing here is sent anywhere —
+   it's purely client-side memory of what you've engaged with. */
+
+function pgHash(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  return Math.abs(h).toString(36);
+}
+
+function pwLoad(key) {
+  try { return JSON.parse(localStorage.getItem(key) || "{}"); } catch (e) { return {}; }
+}
+function pwSave(key, obj) {
+  try { localStorage.setItem(key, JSON.stringify(obj)); } catch (e) { /* storage unavailable — fail silently */ }
+}
+
+const PW_QUIZ_KEY = "pw-notes-quiz-state";
+const PW_QA_MASTERY_KEY = "pw-notes-qa-mastery";
+const PW_VISITED_KEY = "pw-notes-visited";
+
+function pwTrackVisit() {
+  const slug = location.pathname.split("/").pop().replace(/\.html$/, "");
+  if (!slug || slug === "index") return;
+  const visited = pwLoad(PW_VISITED_KEY);
+  visited[slug] = Date.now();
+  pwSave(PW_VISITED_KEY, visited);
+}
+
+/** Strips difficulty/topic badges out of a Q&A summary so the remaining question
+ *  text hashes identically whether read from a topic page or the aggregated hub. */
+function pwQuestionText(node) {
+  const clone = node.cloneNode(true);
+  clone.querySelectorAll(".q-level, .qhub-topic").forEach((n) => n.remove());
+  return clone.textContent.replace(/\s+/g, " ").trim();
+}
+
 function initQuizzes() {
+  const state = pwLoad(PW_QUIZ_KEY);
+
   document.querySelectorAll(".quiz").forEach((quiz) => {
+    const qEl = quiz.querySelector(".quiz-q");
+    const id = "quiz-" + pgHash(pwQuestionText(qEl || quiz));
     const opts = quiz.querySelectorAll(".quiz-opt");
     const feedback = quiz.querySelector(".quiz-feedback");
-    opts.forEach((opt) => {
-      opt.addEventListener("click", () => {
-        const correct = opt.dataset.correct === "true";
-        opts.forEach((o) => (o.disabled = true));
-        opt.classList.add(correct ? "correct" : "wrong");
-        if (!correct) {
-          const rightOne = Array.from(opts).find((o) => o.dataset.correct === "true");
-          if (rightOne) rightOne.classList.add("correct");
-        }
-        if (feedback) {
-          feedback.classList.add("show", correct ? "correct" : "wrong");
-          feedback.textContent = correct
-            ? (opt.dataset.feedback || "Correct.")
-            : (quiz.dataset.wrongFeedback || "Not quite — re-check the section above.");
-        }
+
+    function applyAnswer(chosenOpt, persist) {
+      const correct = chosenOpt.dataset.correct === "true";
+      opts.forEach((o) => (o.disabled = true));
+      chosenOpt.classList.add(correct ? "correct" : "wrong");
+      if (!correct) {
+        const rightOne = Array.from(opts).find((o) => o.dataset.correct === "true");
+        if (rightOne) rightOne.classList.add("correct");
+      }
+      if (feedback) {
+        feedback.classList.add("show", correct ? "correct" : "wrong");
+        feedback.textContent = correct
+          ? (chosenOpt.dataset.feedback || "Correct.")
+          : (quiz.dataset.wrongFeedback || "Not quite — re-check the section above.");
+      }
+      if (persist) {
+        state[id] = { chosenIndex: Array.from(opts).indexOf(chosenOpt), correct, ts: Date.now() };
+        pwSave(PW_QUIZ_KEY, state);
+      }
+    }
+
+    if (state[id] && opts[state[id].chosenIndex]) {
+      applyAnswer(opts[state[id].chosenIndex], false);
+      if (qEl && !qEl.querySelector(".restored-badge")) {
+        qEl.insertAdjacentHTML("beforeend", ' <span class="restored-badge">answered previously</span>');
+      }
+    }
+
+    opts.forEach((opt) => opt.addEventListener("click", () => applyAnswer(opt, true)));
+  });
+}
+
+/** Adds "I know this" / "Still shaky" self-assessment to every Q&A on the page,
+ *  restoring prior state and tagging the card with a mastery color. Safe to call
+ *  repeatedly (e.g. after the Interview Questions hub re-renders on a filter change). */
+function initQaMastery() {
+  const mastery = pwLoad(PW_QA_MASTERY_KEY);
+
+  document.querySelectorAll(".qa").forEach((qa) => {
+    if (qa.dataset.masteryWired) return;
+    qa.dataset.masteryWired = "1";
+
+    const summary = qa.querySelector("summary");
+    const body = qa.querySelector(".qa-body");
+    if (!summary || !body) return;
+
+    const id = "qa-" + pgHash(pwQuestionText(summary));
+    qa.dataset.qaId = id;
+
+    const bar = document.createElement("div");
+    bar.className = "qa-mastery-bar";
+    bar.innerHTML =
+      '<button class="qa-mastery-btn know" data-val="known">I know this</button>' +
+      '<button class="qa-mastery-btn shaky" data-val="shaky">Still shaky</button>';
+    body.appendChild(bar);
+
+    function applyVisual(val) {
+      qa.classList.remove("mastery-known", "mastery-shaky");
+      if (val === "known") qa.classList.add("mastery-known");
+      if (val === "shaky") qa.classList.add("mastery-shaky");
+      bar.querySelectorAll(".qa-mastery-btn").forEach((b) => b.classList.toggle("active", b.dataset.val === val));
+    }
+
+    applyVisual(mastery[id]);
+
+    bar.querySelectorAll(".qa-mastery-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const val = btn.dataset.val;
+        const newVal = mastery[id] === val ? undefined : val;
+        if (newVal) mastery[id] = newVal; else delete mastery[id];
+        pwSave(PW_QA_MASTERY_KEY, mastery);
+        applyVisual(newVal);
+        document.dispatchEvent(new CustomEvent("pw-mastery-change"));
       });
     });
   });
@@ -350,8 +450,144 @@ function initQaFilters() {
   });
 }
 
+/**
+ * Small always-visible key explaining the interaction vocabulary — only inserted
+ * if the page actually has one of these widgets, and only the relevant items show.
+ */
+function initInteractionLegend() {
+  const header = document.querySelector(".topic-header");
+  if (!header) return;
+
+  const present = [
+    { sel: ".playground, .sim, .demo", icon: "&#9654;", label: "Click to run" },
+    { sel: ".quiz", icon: "&#10003;", label: "Quiz — click an answer" },
+    { sel: ".qa", icon: "&#9733;", label: '"I know this" tracks what you\'ve reviewed' },
+    { sel: ".callout.supplement", icon: "&#43;", label: "Beyond the source video" }
+  ].filter((item) => document.querySelector(item.sel));
+
+  if (present.length === 0) return;
+
+  const bar = document.createElement("div");
+  bar.className = "legend-bar";
+  bar.innerHTML = present
+    .map((i) => `<span class="legend-item"><span class="legend-icon">${i.icon}</span>${i.label}</span>`)
+    .join("");
+  header.insertAdjacentElement("afterend", bar);
+}
+
+/** One-time (site-wide, not per-page) pulse on the first interactive element a
+ *  visitor encounters, so the interaction vocabulary is discoverable without
+ *  requiring the legend to be read first. Never repeats once seen. */
+function initFirstVisitHint() {
+  const HINT_KEY = "pw-notes-hint-seen";
+  if (localStorage.getItem(HINT_KEY)) return;
+  const target = document.querySelector(".playground, .sim, .demo, .quiz");
+  if (!target) return;
+  target.classList.add("first-visit-hint");
+  setTimeout(() => target.classList.remove("first-visit-hint"), 3600);
+  localStorage.setItem(HINT_KEY, "1");
+}
+
+/** Reads visited/quiz/mastery state and renders a small progress line — used on
+ *  index.html and course-roadmap.html. Returns null if there's nothing to show yet. */
+function pwProgressSummary(totalTopics) {
+  const visited = Object.keys(pwLoad(PW_VISITED_KEY)).length;
+  const quizState = pwLoad(PW_QUIZ_KEY);
+  const quizCorrect = Object.values(quizState).filter((q) => q.correct).length;
+  const quizTotal = Object.keys(quizState).length;
+  const mastery = pwLoad(PW_QA_MASTERY_KEY);
+  const known = Object.values(mastery).filter((v) => v === "known").length;
+  const shaky = Object.values(mastery).filter((v) => v === "shaky").length;
+  if (visited === 0 && quizTotal === 0 && known === 0 && shaky === 0) return null;
+  return { visited, totalTopics, quizCorrect, quizTotal, known, shaky };
+}
+
+/**
+ * renderLayerStack("container-id", {
+ *   playLabel: "Trace a request",
+ *   layers: [{ name: "Test Scripts", sub: "what engineers write daily", desc: "..." }, ...]
+ * });
+ * A vertical stack (top layer first) with a play button that traces a single
+ * pass top-to-bottom, pausing at each layer with its description — distinct
+ * from the horizontal step-through flow diagram used elsewhere, appropriate
+ * for genuinely layered/architectural content.
+ */
+function renderLayerStack(containerId, config) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const layers = config.layers || [];
+
+  el.innerHTML = `
+    <div class="layer-stack-controls">
+      <button class="btn-run">&#9654; ${config.playLabel || "Trace a request"}</button>
+      <button class="btn-reset" disabled>&#8635; Reset</button>
+    </div>
+    <div class="layer-stack"></div>
+    <div class="layer-desc">Click play to trace how a request flows down through each layer.</div>
+  `;
+  const stack = el.querySelector(".layer-stack");
+  const desc = el.querySelector(".layer-desc");
+  const runBtn = el.querySelector(".btn-run");
+  const resetBtn = el.querySelector(".btn-reset");
+
+  layers.forEach((l, i) => {
+    if (i > 0) {
+      const connector = document.createElement("div");
+      connector.className = "layer-connector";
+      stack.appendChild(connector);
+    }
+    const box = document.createElement("div");
+    box.className = "layer-box";
+    box.innerHTML = `<span class="layer-name">${l.name}</span><span class="layer-sub">${l.sub || ""}</span>`;
+    stack.appendChild(box);
+  });
+
+  const boxes = stack.querySelectorAll(".layer-box");
+  const connectors = stack.querySelectorAll(".layer-connector");
+  let running = false;
+
+  function reset() {
+    boxes.forEach((b) => b.classList.remove("active", "done"));
+    connectors.forEach((c) => c.classList.remove("done"));
+    desc.textContent = "Click play to trace how a request flows down through each layer.";
+    runBtn.disabled = false;
+    resetBtn.disabled = true;
+    running = false;
+  }
+
+  runBtn.addEventListener("click", () => {
+    if (running) return;
+    running = true;
+    reset();
+    runBtn.disabled = true;
+    let i = 0;
+    const tick = () => {
+      if (i > 0) {
+        boxes[i - 1].classList.remove("active");
+        boxes[i - 1].classList.add("done");
+        if (connectors[i - 1]) connectors[i - 1].classList.add("done");
+      }
+      if (i >= layers.length) {
+        resetBtn.disabled = false;
+        running = false;
+        return;
+      }
+      boxes[i].classList.add("active");
+      desc.textContent = layers[i].desc || "";
+      i++;
+      setTimeout(tick, 1300);
+    };
+    tick();
+  });
+  resetBtn.addEventListener("click", reset);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initScrollProgress();
   initQuizzes();
   initQaFilters();
+  initQaMastery();
+  initInteractionLegend();
+  initFirstVisitHint();
+  pwTrackVisit();
 });

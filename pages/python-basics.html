@@ -71,6 +71,40 @@
           });
         </script>
 
+        <div class="demo" id="type-inspector">
+          <div class="demo-label">type(x) — click a value to inspect what Python actually stores</div>
+          <div class="toggle-row" id="type-inspector-values"></div>
+          <div class="result-panel" id="type-inspector-result">
+            <div class="head"><span class="dot"></span> <span class="verdict">Pick a value above</span></div>
+            <div class="result-detail"></div>
+          </div>
+        </div>
+        <script>
+          (function () {
+            const values = [
+              { label: "3", type: "int", detail: "type(3) → <class 'int'>" },
+              { label: "6.4", type: "float", detail: "type(6.4) → <class 'float'>" },
+              { label: '"great"', type: "str", detail: "type(\"great\") → <class 'str'>" },
+              { label: "True", type: "bool", detail: "type(True) → <class 'bool'>" }
+            ];
+            const row = document.getElementById("type-inspector-values");
+            const panel = document.getElementById("type-inspector-result");
+            values.forEach((v) => {
+              const btn = document.createElement("button");
+              btn.className = "toggle-btn";
+              btn.textContent = v.label;
+              btn.addEventListener("click", () => {
+                row.querySelectorAll(".toggle-btn").forEach((b) => b.classList.remove("selected"));
+                btn.classList.add("selected");
+                panel.className = "result-panel pass";
+                panel.querySelector(".verdict").textContent = `<class '${v.type}'>`;
+                panel.querySelector(".result-detail").textContent = v.detail;
+              });
+              row.appendChild(btn);
+            });
+          })();
+        </script>
+
         <div class="quiz">
           <div class="quiz-q">Given `b, c, d = 5, 6.4, "great"`, what is the data type of `c`, and where was that type declared?</div>
           <div class="quiz-opts">

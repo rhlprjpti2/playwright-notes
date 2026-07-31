@@ -8,6 +8,7 @@
 <script src="../assets/app.js"></script>
 <script src="../assets/diagrams.js"></script>
 <script src="../assets/interactive.js"></script>
+<script src="../assets/playground.js"></script>
 </head>
 <body>
 
@@ -40,6 +41,7 @@
       <div>On this page</div>
       <a href="#concept">Concept</a>
       <a href="#visual">The scan-and-filter pattern</a>
+      <a href="#playground">Try it live</a>
       <a href="#worked-example">Worked example</a>
       <a href="#count">Asserting on count</a>
       <a href="#interview-qa">Interview Q&amp;A</a>
@@ -81,6 +83,89 @@
             ]
           });
         </script>
+      </section>
+
+      <section id="playground">
+        <h2>Try it live</h2>
+        <p class="lead">A real 4-card product grid, same shape as the course example. Click each locator and watch it genuinely resolve against this DOM — including the unscoped version, so you can see exactly why it goes ambiguous.</p>
+
+        <div class="playground" id="cart-pg"></div>
+        <script>
+          renderLocatorPlayground("cart-pg", {
+            pageHtml: `
+              <h3>Products</h3>
+              <div class="product-grid">
+                <app-card>
+                  <p class="card-title">iPhone X</p>
+                  <p class="price">$899.00</p>
+                  <button>ADD TO CART</button>
+                </app-card>
+                <app-card>
+                  <p class="card-title">Nokia Edge</p>
+                  <p class="price">$199.00</p>
+                  <button>ADD TO CART</button>
+                </app-card>
+                <app-card>
+                  <p class="card-title">Samsung Note 8</p>
+                  <p class="price">$499.00</p>
+                  <button>ADD TO CART</button>
+                </app-card>
+                <app-card>
+                  <p class="card-title">Sony Xperia</p>
+                  <p class="price">$349.00</p>
+                  <button>ADD TO CART</button>
+                </app-card>
+              </div>
+            `,
+            locators: [
+              {
+                display: 'page.locator("app-card")',
+                kind: "chain", steps: [{ type: "css", css: "app-card" }],
+                explain: "Returns every card on the page — all 4, not just one. This is the starting point, not the destination.",
+                dom: '<app-card>...</app-card>  x4\n\n<!-- tag selector -> every matching element -->'
+              },
+              {
+                display: 'page.get_by_role("button")  — unscoped',
+                kind: "role", arg: "button",
+                explain: "Every card has its own Add button, so this matches all 4 across the whole page — exactly the ambiguity that makes unscoped searches fragile once there's more than one of something.",
+                dom: '<button>ADD TO CART</button>  x4\n\n<!-- searched the ENTIRE page, found 4 -->'
+              },
+              {
+                display: 'page.locator("app-card").filter(has_text="iPhone X")',
+                kind: "chain",
+                steps: [{ type: "css", css: "app-card" }, { type: "filterText", text: "iPhone X" }],
+                explain: "Playwright checked all 4 cards' text content and kept only the one containing \"iPhone X\" — resolves to exactly one card, regardless of where it sits in the grid.",
+                dom: '<app-card>\n  <p class="card-title">iPhone X</p>\n  ...\n</app-card>\n\n<!-- filtered: only this one contains "iPhone X" -->'
+              },
+              {
+                display: 'iphone_card.get_by_role("button")  — scoped',
+                kind: "chain",
+                steps: [{ type: "css", css: "app-card" }, { type: "filterText", text: "iPhone X" }, { type: "role", arg: "button" }],
+                explain: "Same get_by_role(\"button\") as above — but because the search started from the already-filtered iPhone card instead of the whole page, it resolves to exactly one button with no ambiguity and no name= filter needed.",
+                dom: '<app-card> <!-- iPhone X card only -->\n  <button>ADD TO CART</button>\n</app-card>\n\n<!-- searched INSIDE one card, found 1 -->'
+              },
+              {
+                display: 'page.locator("app-card").filter(has_text="Nokia Edge")',
+                kind: "chain",
+                steps: [{ type: "css", css: "app-card" }, { type: "filterText", text: "Nokia Edge" }],
+                explain: "Same pattern, different product — this is what makes the technique reusable rather than a one-off hack for iPhone X specifically.",
+                dom: '<app-card>\n  <p class="card-title">Nokia Edge</p>\n</app-card>'
+              },
+              {
+                display: 'nokia_card.get_by_role("button")  — scoped',
+                kind: "chain",
+                steps: [{ type: "css", css: "app-card" }, { type: "filterText", text: "Nokia Edge" }, { type: "role", arg: "button" }],
+                explain: "Scoped to the Nokia card only — clicking this can never accidentally hit iPhone X's or Samsung's Add button, even if the grid re-sorts tomorrow.",
+                dom: '<app-card> <!-- Nokia Edge card only -->\n  <button>ADD TO CART</button>\n</app-card>'
+              }
+            ]
+          });
+        </script>
+
+        <div class="callout tip">
+          <strong>The pair to compare</strong>
+          Click the unscoped <code>get_by_role("button")</code> (4 matches, orange) right after the scoped <code>iphone_card.get_by_role("button")</code> (1 match, green). Same call, same page — the only difference is what it's searching <em>inside</em>. That contrast is the entire lesson on this page.
+        </div>
       </section>
 
       <section id="worked-example">

@@ -40,9 +40,36 @@ function pgAccessibleName(el) {
   return (el.textContent || "").trim();
 }
 
+/**
+ * Resolves a multi-step chain like:
+ *   page.locator("app-card").filter(has_text="iPhone X").get_by_role("button")
+ * Each step narrows the candidate list produced by the previous step —
+ * mirrors how scoped Playwright locators actually work (search space shrinks
+ * with each call, rather than each call re-searching the whole page).
+ */
+function pgResolveChain(steps, root) {
+  let candidates = [root];
+  for (const step of steps) {
+    if (step.type === "css") {
+      candidates = candidates.flatMap((el) => Array.from(el.querySelectorAll(step.css)));
+    } else if (step.type === "filterText") {
+      const needle = step.text.toLowerCase();
+      candidates = candidates.filter((el) => (el.textContent || "").toLowerCase().includes(needle));
+    } else if (step.type === "role") {
+      const sel = PG_ROLE_SELECTORS[step.arg];
+      candidates = sel ? candidates.flatMap((el) => Array.from(el.querySelectorAll(sel))) : [];
+    }
+  }
+  return candidates;
+}
+
 /** Resolve one locator against a root element. Returns {elements, note}. */
 function pgResolve(locator, root) {
   const { kind, arg, name, css } = locator;
+
+  if (kind === "chain") {
+    return { elements: pgResolveChain(locator.steps, root) };
+  }
 
   if (kind === "css") {
     return { elements: Array.from(root.querySelectorAll(css)) };

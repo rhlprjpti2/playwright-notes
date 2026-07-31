@@ -69,6 +69,48 @@
             ]
           });
         </script>
+
+        <div class="mock-frame">
+          <div class="mock-frame-label">Illustrative reconstruction of PyCharm's project interpreter picker — not a live screenshot</div>
+          <div class="mock-window">
+            <div class="mock-titlebar">
+              <span>New Project</span>
+              <span class="mock-winctrls"><i></i><i></i><i class="close"></i></span>
+            </div>
+            <div class="mock-body">
+              <div class="mock-field">
+                <span class="mock-field-label">Location</span>
+                <div class="mock-input-row">
+                  <span class="mock-input">D:\Projects\pytest-python-framework</span>
+                  <button class="mock-btn small">...</button>
+                </div>
+              </div>
+              <div class="mock-field-label" style="margin-top:14px;">Python Interpreter</div>
+              <div class="mock-radio-row">
+                <span class="mock-radio"></span> New environment using <span class="mock-inline-dropdown" style="margin-left:4px;">Virtualenv ▾</span>
+              </div>
+              <div class="mock-radio-row mock-spotlight">
+                <span class="mock-radio checked"></span> Custom environment
+              </div>
+              <div class="mock-field" style="margin-left:24px; margin-top:8px;">
+                <span class="mock-field-label">Environment</span>
+                <span class="mock-inline-dropdown">Existing ▾</span>
+              </div>
+              <div class="mock-field mock-spotlight" style="margin-left:24px; padding:8px; border-radius:5px;">
+                <span class="mock-field-label">Interpreter</span>
+                <div class="mock-input-row">
+                  <span class="mock-input mono">...AppData\Local\Programs\Python\Python312\python.exe</span>
+                  <button class="mock-btn small">...</button>
+                </div>
+              </div>
+              <div class="mock-btn-row" style="justify-content:flex-end; margin-top:18px;">
+                <button class="mock-btn">Cancel</button>
+                <button class="mock-btn primary">Create</button>
+              </div>
+            </div>
+          </div>
+          <div class="mock-caption">Custom environment → Existing → browse to the exact <code>python.exe</code> path <code>where python</code> gave you in the verify step. That match is what keeps terminal pip installs and the IDE in sync.</div>
+        </div>
       </section>
 
       <section id="platform-notes">
@@ -85,6 +127,34 @@
               <tr><td>PATH setup</td><td>Check "Add python.exe to PATH" during install — installer sets the environment variable for you</td><td class="muted">not covered in this video</td></tr>
             </tbody>
           </table>
+        </div>
+
+        <div class="mock-frame">
+          <div class="mock-frame-label">Illustrative reconstruction of the Windows Python installer — not a live screenshot</div>
+          <div class="mock-window">
+            <div class="mock-titlebar">
+              <span class="mock-titlebar-icon"></span>
+              <span>Python 3.12.6 (64-bit) Setup</span>
+              <span class="mock-winctrls"><i></i><i></i><i class="close"></i></span>
+            </div>
+            <div class="mock-body">
+              <h4>Install Python 3.12.6 (64-bit)</h4>
+              <div class="mock-btn-row">
+                <button class="mock-btn primary">Install Now</button>
+                <button class="mock-btn">Customize installation</button>
+              </div>
+              <div class="mock-check-row mock-spotlight">
+                <span class="mock-check">&#10003;</span> Add python.exe to PATH
+              </div>
+              <div class="mock-check-row">
+                <span class="mock-check" style="background:#fff; color:transparent;"></span> Use admin privileges when installing py.exe
+              </div>
+              <div class="mock-btn-row" style="justify-content:flex-end; margin-top:16px;">
+                <button class="mock-btn">Cancel</button>
+              </div>
+            </div>
+          </div>
+          <div class="mock-caption">This is the one checkbox on the whole screen that matters for the rest of this page — check it, and the installer sets your system PATH for you instead of you editing environment variables by hand afterward.</div>
         </div>
 
         <div class="quiz">

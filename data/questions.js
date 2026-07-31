@@ -133,6 +133,70 @@ window.ALL_QUESTIONS = [
   "file": "pages/first-real-test.html"
  },
  {
+  "q": "Walk me through how you'd design a test automation strategy for a new product from scratch.",
+  "a": "Start by clarifying constraints — team size, release cadence, surfaces to test, timeline. Then lay out the architecture in layers (test scripts, framework core, driver/SDK, data/config, execution/reporting) rather than naming tools first. Define a target test-pyramid ratio justified by the specifics given, design staged CI/CD gates (fast blocking pre-merge, broader blocking pre-deploy, non-blocking scheduled full regression), and close with rollout: how this gets built incrementally by a real team without freezing releases, plus concrete exit criteria.",
+  "level": "senior",
+  "topic": "framework-system-design",
+  "topicLabel": "Framework &amp; System Design",
+  "file": "pages/framework-system-design.html"
+ },
+ {
+  "q": "A team says \"our E2E suite is too flaky, let's just delete the flaky tests.\" How do you respond?",
+  "a": "Deleting flaky tests removes coverage along with the flakiness, trading a known problem for an unknown risk. Better: quarantine flaky tests into a non-blocking pipeline stage with tracked tickets, diagnose root cause (bad waits, shared mutable test data, genuine race conditions, or environment instability), and fix or rewrite based on that diagnosis. Track flake rate as a visible metric so \"flaky\" becomes measurable rather than a vibe. Only delete a test after confirming the behavior it covers is tested elsewhere.",
+  "level": "senior",
+  "topic": "framework-system-design",
+  "topicLabel": "Framework &amp; System Design",
+  "file": "pages/framework-system-design.html"
+ },
+ {
+  "q": "Leadership wants to cut the E2E suite runtime from 3 hours to 20 minutes in one sprint. What do you do?",
+  "a": "Push back on the timeline honestly while offering a real interim step. A structural fix (rebalancing the pyramid, moving logic to API-level tests) takes longer than one sprint to do safely. What's achievable fast: aggressive parallelization/sharding of the existing suite (if tests are independent), trimming the blocking path to a small critical-path smoke set while moving full regression to a non-blocking scheduled run, and quarantining known-flaky tests immediately. Frame it as \"here's what closes the gap this sprint, here's the two-quarter plan for the rest\" rather than either refusing or overpromising.",
+  "level": "scenario",
+  "topic": "framework-system-design",
+  "topicLabel": "Framework &amp; System Design",
+  "file": "pages/framework-system-design.html"
+ },
+ {
+  "q": "You're the new Lead SDET and the team resents the current framework but leadership sees testing as a cost center, not an investment. How do you get buy-in for a rebuild?",
+  "a": "Lead with numbers leadership already cares about, not testing philosophy: current suite runtime, deploy frequency it's blocking, defect escape rate, engineer-hours lost to flaky-test investigation. Propose an incremental plan with measurable milestones rather than a \"give me two quarters and trust me\" rebuild — e.g. quarantine flaky tests this month (immediate stability win), rebalance pyramid on new features going forward (no big-bang risk), report flake-rate and runtime trend monthly. Buy-in follows visible, incremental proof, not an upfront pitch.",
+  "level": "scenario",
+  "topic": "framework-system-design",
+  "topicLabel": "Framework &amp; System Design",
+  "file": "pages/framework-system-design.html"
+ },
+ {
+  "q": "How do you decide what to automate vs what stays manual?",
+  "a": "Risk-based, not coverage-percentage-based: automate what's repeated often, high business impact if broken, and stable enough that the automation won't itself become high-maintenance churn. Exploratory testing, one-off validations, and UI still actively being redesigned are usually poor automation candidates early. The test pyramid ratio is a starting heuristic, not the actual decision criterion — the criterion is expected ROI per test.",
+  "level": "mid",
+  "topic": "framework-system-design",
+  "topicLabel": "Framework &amp; System Design",
+  "file": "pages/framework-system-design.html"
+ },
+ {
+  "q": "What's the difference between Page Object Model and the Screenplay pattern, and when would you choose one over the other?",
+  "a": "POM models the UI — one class per page/component, encapsulating locators and actions. It's simple and well understood, and fine for small-to-mid frameworks. Screenplay models the <em>user</em> — actors with abilities performing tasks, composed from smaller interactions — which scales better for large frameworks with many user roles/journeys and encourages more reusable, composable test code, at the cost of more upfront design complexity. For a 15-engineer team building fresh, POM is usually the pragmatic choice; Screenplay earns its complexity at larger scale or with many distinct user personas.",
+  "level": "mid",
+  "topic": "framework-system-design",
+  "topicLabel": "Framework &amp; System Design",
+  "file": "pages/framework-system-design.html"
+ },
+ {
+  "q": "How do you introduce contract testing (e.g. Pact) into an organization with 40 microservices and no existing practice?",
+  "a": "Don't roll it out everywhere at once — pick one high-traffic, frequently-changing consumer/provider pair with a known history of integration breakage as the pilot. Prove the value there (fewer integration incidents, faster feedback than full E2E) before expanding. Organizationally, contract tests need to live with the consumer team and run in the provider's CI as a required check — that ownership model has to be agreed on explicitly, or contracts rot unmaintained. Position it as replacing some brittle cross-service E2E coverage, not as additional work on top of it.",
+  "level": "senior",
+  "topic": "framework-system-design",
+  "topicLabel": "Framework &amp; System Design",
+  "file": "pages/framework-system-design.html"
+ },
+ {
+  "q": "How would you measure whether a test automation investment is actually paying off?",
+  "a": "Track trends, not snapshots: suite runtime over time, flake rate, defect escape rate (bugs found in production that automation should have caught), time-to-feedback on a PR, and engineer-hours spent investigating false failures. The strongest ROI story ties a specific metric's improvement to a specific change you made — \"flake rate dropped from 12% to 3% after quarantining and fixing the shared-test-data issue\" is far more persuasive than \"we now have 500 more tests.\"",
+  "level": "senior",
+  "topic": "framework-system-design",
+  "topicLabel": "Framework &amp; System Design",
+  "file": "pages/framework-system-design.html"
+ },
+ {
   "q": "What does Playwright's automatic actionability check actually check for?",
   "a": "Per this course: visible, stable (finished loading/animating), receives events (not obscured by another element), and enabled. Playwright verifies these before most actions, retrying automatically until they pass or a timeout is reached.",
   "level": "junior",

@@ -193,6 +193,24 @@ window.TOPICS_INDEX = [
     lastUpdated: "2026-07-30"
   },
   {
+    slug: "framework-system-design",
+    title: "Framework & System Design: A Worked Exercise",
+    file: "pages/framework-system-design.html",
+    tags: ["system-design", "lead-sdet", "strategy", "leadership"],
+    keyTerms: [
+      "test automation strategy", "framework design", "system design round", "test pyramid",
+      "flaky tests", "quarantine", "CI/CD gates", "quality gates", "sharding", "parallelization",
+      "Screenplay pattern", "Page Object Model", "contract testing", "Pact", "ROI", "buy-in",
+      "rollout", "leadership", "behavioral questions", "STAR", "Lead SDET", "Staff SDET"
+    ],
+    summary: "Not from the course — a worked 'design a test automation strategy' exercise plus leadership/behavioral prep for Lead/Staff SDET loops.",
+    related: ["first-real-test", "pytest-fixtures", "interview-questions", "course-roadmap"],
+    sources: [
+      { title: "Original content — written for Lead/Staff SDET interview prep, not sourced from a transcript", addedDate: "2026-07-30" }
+    ],
+    lastUpdated: "2026-07-30"
+  },
+  {
     slug: "playwright-dynamic-locators",
     title: "Dynamic Locators, Filtering & Scoped Search",
     file: "pages/playwright-dynamic-locators.html",

@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Framework &amp; System Design: A Worked Exercise · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Framework &amp; System Design</div>
+    <h1>Framework &amp; System Design: A Worked Exercise</h1>
+    <p class="lede">The round the rest of this site doesn't prepare you for. Tool knowledge gets you through a technical screen; this round is what actually gets asked at Lead/Staff SDET level — "design a test automation strategy for X" — and it's evaluated on structured thinking under ambiguity, not on knowing Playwright syntax.</p>
+    <div class="card-tags">
+      <span>system-design</span>
+      <span>lead-sdet</span>
+      <span>strategy</span>
+      <span>leadership</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Not from the course <span class="src-tag">— original content for Lead/Staff-level prep</span></strong>
+    Every other page on this site is built from your video transcripts. This one isn't — the course teaches hands-on Playwright, not framework architecture or engineering leadership, and a Lead SDET loop tests both. This page is written directly, not sourced from any video, so it can drift out of sync with "what the course covers" — treat it as a separate prep track layered on top of the technical foundation the rest of the site gives you.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">What this round actually evaluates</a>
+      <a href="#prompt">The prompt</a>
+      <a href="#clarify">Step 1: Clarify before designing</a>
+      <a href="#visual">Step 2: The layered architecture</a>
+      <a href="#strategy">Step 3: Test strategy &amp; the pyramid</a>
+      <a href="#scaling">Step 4: Scaling &amp; flaky tests</a>
+      <a href="#cicd">Step 5: CI/CD &amp; quality gates</a>
+      <a href="#rollout">Step 6: Rollout &amp; team</a>
+      <a href="#reusable">The reusable structure</a>
+      <a href="#variants">Other prompts you might get</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>What this round actually evaluates</h2>
+        <p>A technical screen asks "do you know how to use the tool." A design round asks "can you make defensible engineering trade-offs under ambiguous, incomplete requirements, and communicate them clearly." The interviewer usually cares less about which specific tool you land on than about <em>how</em> you got there — did you ask clarifying questions, did you consider constraints (team size, release cadence, existing tech debt), did you justify trade-offs, did you think about rollout and people, not just architecture.</p>
+        <p>The failure mode almost everyone falls into: hearing "design a test framework" and immediately describing Page Object Model and Playwright syntax. That answers a question nobody asked. The rest of this page works through one full example the way it should actually be handled.</p>
+      </section>
+
+      <section id="prompt">
+        <h2>The prompt</h2>
+        <div class="callout tip">
+          <strong>A realistic version of this question</strong>
+          "You're joining as Lead SDET at a mid-size e-commerce company. 15 engineers, releasing to production daily. There's a web app, a mobile app, and roughly 40 backend microservices. The existing test suite is Selenium-based, takes 3 hours to run, and nobody trusts it — it's flaky enough that failures get re-run rather than investigated. Design the test automation strategy for the next two quarters."
+        </div>
+        <p>Notice what's actually given: team size, release cadence, three different surfaces to test (web/mobile/API), and a specific, named pain point (flaky + slow + distrusted). Good answers use every one of those details. Weak answers ignore them and give a generic "here's my ideal framework" answer that would be identical regardless of the prompt.</p>
+      </section>
+
+      <section id="clarify">
+        <h2>Step 1: Clarify before designing</h2>
+        <p>Before proposing anything, ask questions out loud. This is the single highest-signal move in the round — it demonstrates you don't design in a vacuum, and it often surfaces the actual constraint the interviewer wants you to discover.</p>
+        <ul>
+          <li>What's the current test coverage split — how much is unit vs integration vs E2E today?</li>
+          <li>Is the 3-hour suite blocking every deploy, or is it a nightly/separate gate?</li>
+          <li>What's actually causing the flakiness — is it known (bad waits, shared test data, environment issues) or unexamined?</li>
+          <li>Is there budget/headcount for this, or is it "improve it with the team you already have"?</li>
+          <li>Any constraints already in place — existing CI tooling, cloud vs on-prem, compliance requirements?</li>
+        </ul>
+        <div class="quiz">
+          <div class="quiz-q">An interviewer opens with "design a test framework for our platform" and gives no other detail. What's the strongest first move?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">Start describing your ideal framework — Playwright, POM, CI integration — to show depth of knowledge</button>
+            <button class="quiz-opt" data-correct="true">Ask clarifying questions first — team size, release cadence, current pain points, constraints — before proposing anything</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="visual">
+        <h2>Step 2: The layered architecture</h2>
+        <p>Once constraints are clear, lay out the framework as layers, not as a tool list. Each layer has a job and can be reasoned about independently — this is what separates "I'd use Playwright" from an actual architecture.</p>
+        <div class="diagram" id="flow-arch"></div>
+        <script>
+          renderFlowDiagram("flow-arch", {
+            steps: [
+              { label: "Test Scripts", sub: "what engineers write daily", desc: "The actual test cases — thin, readable, business-intent-focused. If this layer contains raw locators or waits, the layers below aren't doing their job." },
+              { label: "Framework Core", sub: "POM / fixtures / page interactions", desc: "Reusable page objects or screenplay-style actors, fixtures for setup/teardown, and the abstractions that keep test scripts thin. This is where most framework design work actually lives." },
+              { label: "Driver / SDK", sub: "Playwright, API clients", desc: "The actual automation engines — browser driver for UI, HTTP client for API-level tests. Swappable in principle if the layer above is well-abstracted." },
+              { label: "Data & Config", sub: "test data, environments, secrets", desc: "Environment config, seeded/factory test data, secrets management. Frequently the source of flakiness when shared across parallel runs — isolate per-test where possible." },
+              { label: "Execution & Reporting", sub: "CI orchestration, dashboards", desc: "Parallelization/sharding, retry policy, and where results surface — a dashboard stakeholders actually look at, not just a CI log." }
+            ]
+          });
+        </script>
+        <div class="callout interview">
+          <strong>Interview framing</strong>
+          Naming these layers explicitly — even briefly — signals architectural thinking in about 30 seconds. It's the fastest way to convert "I know Playwright" into "I can design a system."
+        </div>
+      </section>
+
+      <section id="strategy">
+        <h2>Step 3: Test strategy &amp; the pyramid</h2>
+        <p>Given three surfaces (web, mobile, 40 microservices) and a distrusted 3-hour E2E suite, the strategic move is shifting weight <em>down</em> the pyramid, not just making the top layer faster.</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Layer</th><th>Target proportion</th><th>Why, given this prompt</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">Unit</td><td>~60-70%</td><td>Fastest feedback, cheapest to maintain — should already exist per-service; if it doesn't, that's a finding worth stating.</td></tr>
+              <tr><td class="highlight">Integration / API</td><td>~20-30%</td><td>40 microservices means most business logic is verifiable at the API layer without a browser at all — far cheaper than UI and catches most regressions.</td></tr>
+              <tr><td class="highlight">E2E / UI</td><td>~5-10%</td><td>Reserved for genuine cross-service user journeys (checkout, login) — not every feature. This is where the 3-hour suite's real problem usually is: too much business logic pushed up into slow, flaky UI tests instead of tested at the API layer.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Stating a target ratio and explaining <em>why</em> — tied back to specifics in the prompt — is worth more than naming the pyramid as a concept everyone already knows.</p>
+      </section>
+
+      <section id="scaling">
+        <h2>Step 4: Scaling &amp; the flaky-test problem</h2>
+        <p>The prompt names flakiness as the actual pain point — a strong answer addresses it directly, not just implicitly through "using a better tool."</p>
+        <ul>
+          <li><strong>Diagnose before fixing.</strong> Categorize failures for two weeks: true regressions vs environment issues vs genuinely flaky tests vs bad test design. You can't fix what you haven't measured.</li>
+          <li><strong>Quarantine, don't ignore.</strong> A test that fails intermittently gets tagged and moved to a non-blocking pipeline stage with a tracked ticket — not silently re-run until green, which is the exact behavior described in the prompt as the current failure mode.</li>
+          <li><strong>Parallelize with isolated data.</strong> Sharding a suite across workers only helps if tests don't share mutable state — this is usually where "faster" attempts break correctness instead.</li>
+          <li><strong>Track flakiness as a metric.</strong> A per-test flake rate, visible on a dashboard, turns "the suite is untrustworthy" from a vague feeling into a number you can drive toward zero and report on.</li>
+        </ul>
+      </section>
+
+      <section id="cicd">
+        <h2>Step 5: CI/CD &amp; quality gates</h2>
+        <p>With a daily release cadence, the 3-hour suite is almost certainly blocking or slowing deploys. The design answer is staged gates, not one monolithic run:</p>
+        <ul>
+          <li><strong>Pre-merge (fast, blocking):</strong> unit + relevant integration tests for the changed service, minutes not hours.</li>
+          <li><strong>Post-merge / pre-deploy (blocking):</strong> broader integration suite, sharded and parallelized.</li>
+          <li><strong>Post-deploy smoke (blocking, fast):</strong> a small, hand-picked E2E set covering critical paths only — login, checkout — not the full regression suite.</li>
+          <li><strong>Full regression (non-blocking, scheduled):</strong> the complete E2E suite runs nightly or on a schedule, feeding the flakiness dashboard, without sitting in the deploy path at all.</li>
+        </ul>
+        <div class="callout warn">
+          <strong>Common mistake</strong>
+          Proposing to just "make the existing 3-hour suite faster" (more parallelization, bigger machines) without restructuring what runs where. That treats the symptom, not the cause — the prompt already tells you the suite isn't trusted even when it does finish.
+        </div>
+      </section>
+
+      <section id="rollout">
+        <h2>Step 6: Rollout &amp; team</h2>
+        <p>This is the part almost every candidate skips, and it's exactly what distinguishes Lead-level from senior-IC-level answers: a design that can't actually be rolled out with a real team, mid-release-cadence, isn't a complete answer.</p>
+        <ul>
+          <li><strong>Incremental, not big-bang.</strong> You can't freeze a daily-release product for a framework rewrite. New tests get written against the new architecture; existing Selenium tests get migrated opportunistically or left running in parallel until coverage is proven equivalent.</li>
+          <li><strong>Ownership model.</strong> Who owns framework core vs who writes test scripts — usually the platform/SDET team owns the former, feature engineers contribute the latter, with review standards enforced through code review, not tribal knowledge.</li>
+          <li><strong>Define "done" early.</strong> Concrete exit criteria for the two-quarter window — e.g. suite runtime under 20 minutes for the blocking path, flake rate under 2%, X% of business logic covered at API level — turn a vague initiative into something reportable to stakeholders.</li>
+        </ul>
+      </section>
+
+      <section id="reusable">
+        <h2>The reusable structure</h2>
+        <p>The same six steps apply to almost any "design X" prompt this round throws at you — memorize the shape, not this specific answer:</p>
+        <div class="flow-steps" style="list-style:none; padding-left:0; margin:16px 0;">
+          <li style="padding:8px 0; border-bottom:1px solid var(--border);"><strong>1. Clarify</strong> — constraints, current state, what's actually broken</li>
+          <li style="padding:8px 0; border-bottom:1px solid var(--border);"><strong>2. Architect in layers</strong> — scripts, framework core, driver/SDK, data/config, execution/reporting</li>
+          <li style="padding:8px 0; border-bottom:1px solid var(--border);"><strong>3. Strategy</strong> — where does coverage live (pyramid), and why given these constraints specifically</li>
+          <li style="padding:8px 0; border-bottom:1px solid var(--border);"><strong>4. Address the named pain directly</strong> — don't just describe an ideal system, solve the stated problem</li>
+          <li style="padding:8px 0; border-bottom:1px solid var(--border);"><strong>5. Pipeline design</strong> — staged gates, what blocks vs what doesn't</li>
+          <li style="padding:8px 0;"><strong>6. Rollout &amp; people</strong> — how this actually ships with a real team under real constraints</li>
+        </div>
+      </section>
+
+      <section id="variants">
+        <h2>Other prompts you might get</h2>
+        <p>Same six-step structure applies to all of these — only the specifics change:</p>
+        <ul>
+          <li>"Design a test strategy for a greenfield mobile app with no existing tests."</li>
+          <li>"Our end-to-end suite takes 6 hours and blocks every release — fix it."</li>
+          <li>"How would you introduce contract testing between 15 teams' microservices?"</li>
+          <li>"Design an automation strategy for a system you can't fully control the release cadence of (third-party integration heavy)."</li>
+          <li>"You've inherited a team of 5 SDETs and a framework nobody likes. What do you do in the first 90 days?" <span style="color:var(--text-faint);">— a leadership variant of the same prompt, answered with the same structure plus people/process weighting.</span></li>
+        </ul>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Walk me through how you'd design a test automation strategy for a new product from scratch.</summary>
+          <div class="qa-body">Start by clarifying constraints — team size, release cadence, surfaces to test, timeline. Then lay out the architecture in layers (test scripts, framework core, driver/SDK, data/config, execution/reporting) rather than naming tools first. Define a target test-pyramid ratio justified by the specifics given, design staged CI/CD gates (fast blocking pre-merge, broader blocking pre-deploy, non-blocking scheduled full regression), and close with rollout: how this gets built incrementally by a real team without freezing releases, plus concrete exit criteria.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> A team says "our E2E suite is too flaky, let's just delete the flaky tests." How do you respond?</summary>
+          <div class="qa-body">Deleting flaky tests removes coverage along with the flakiness, trading a known problem for an unknown risk. Better: quarantine flaky tests into a non-blocking pipeline stage with tracked tickets, diagnose root cause (bad waits, shared mutable test data, genuine race conditions, or environment instability), and fix or rewrite based on that diagnosis. Track flake rate as a visible metric so "flaky" becomes measurable rather than a vibe. Only delete a test after confirming the behavior it covers is tested elsewhere.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level scenario">Scenario</span> Leadership wants to cut the E2E suite runtime from 3 hours to 20 minutes in one sprint. What do you do?</summary>
+          <div class="qa-body">Push back on the timeline honestly while offering a real interim step. A structural fix (rebalancing the pyramid, moving logic to API-level tests) takes longer than one sprint to do safely. What's achievable fast: aggressive parallelization/sharding of the existing suite (if tests are independent), trimming the blocking path to a small critical-path smoke set while moving full regression to a non-blocking scheduled run, and quarantining known-flaky tests immediately. Frame it as "here's what closes the gap this sprint, here's the two-quarter plan for the rest" rather than either refusing or overpromising.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level scenario">Scenario</span> You're the new Lead SDET and the team resents the current framework but leadership sees testing as a cost center, not an investment. How do you get buy-in for a rebuild?</summary>
+          <div class="qa-body">Lead with numbers leadership already cares about, not testing philosophy: current suite runtime, deploy frequency it's blocking, defect escape rate, engineer-hours lost to flaky-test investigation. Propose an incremental plan with measurable milestones rather than a "give me two quarters and trust me" rebuild — e.g. quarantine flaky tests this month (immediate stability win), rebalance pyramid on new features going forward (no big-bang risk), report flake-rate and runtime trend monthly. Buy-in follows visible, incremental proof, not an upfront pitch.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> How do you decide what to automate vs what stays manual?</summary>
+          <div class="qa-body">Risk-based, not coverage-percentage-based: automate what's repeated often, high business impact if broken, and stable enough that the automation won't itself become high-maintenance churn. Exploratory testing, one-off validations, and UI still actively being redesigned are usually poor automation candidates early. The test pyramid ratio is a starting heuristic, not the actual decision criterion — the criterion is expected ROI per test.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What's the difference between Page Object Model and the Screenplay pattern, and when would you choose one over the other?</summary>
+          <div class="qa-body">POM models the UI — one class per page/component, encapsulating locators and actions. It's simple and well understood, and fine for small-to-mid frameworks. Screenplay models the <em>user</em> — actors with abilities performing tasks, composed from smaller interactions — which scales better for large frameworks with many user roles/journeys and encourages more reusable, composable test code, at the cost of more upfront design complexity. For a 15-engineer team building fresh, POM is usually the pragmatic choice; Screenplay earns its complexity at larger scale or with many distinct user personas.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> How do you introduce contract testing (e.g. Pact) into an organization with 40 microservices and no existing practice?</summary>
+          <div class="qa-body">Don't roll it out everywhere at once — pick one high-traffic, frequently-changing consumer/provider pair with a known history of integration breakage as the pilot. Prove the value there (fewer integration incidents, faster feedback than full E2E) before expanding. Organizationally, contract tests need to live with the consumer team and run in the provider's CI as a required check — that ownership model has to be agreed on explicitly, or contracts rot unmaintained. Position it as replacing some brittle cross-service E2E coverage, not as additional work on top of it.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> How would you measure whether a test automation investment is actually paying off?</summary>
+          <div class="qa-body">Track trends, not snapshots: suite runtime over time, flake rate, defect escape rate (bugs found in production that automation should have caught), time-to-feedback on a PR, and engineer-hours spent investigating false failures. The strongest ROI story ties a specific metric's improvement to a specific change you made — "flake rate dropped from 12% to 3% after quarantining and fixing the shared-test-data issue" is far more persuasive than "we now have 500 more tests."</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Watch out</strong>
+          Naming a tool in the first sentence ("I'd use Playwright with a POM framework...") before asking a single clarifying question is the single most common way candidates lose points in this round — it signals pattern-matching to a memorized answer rather than actual reasoning.
+        </div>
+        <div class="callout warn">
+          <strong>Watch out</strong>
+          Describing an architecture in the abstract without ever tying it back to the specific numbers/pain points given in the prompt (team size, release cadence, the named problem) reads as a generic rehearsed answer, not a response to this question.
+        </div>
+        <div class="callout warn">
+          <strong>Watch out</strong>
+          Stopping at architecture and skipping rollout/people entirely is the most common way to miss the "Lead" bar specifically — a senior IC can design a good architecture; a Lead has to also explain how it survives contact with a real team and real deadlines.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="first-real-test.html">Your First Real Test →</a>
+          <a href="pytest-fixtures.html">Pytest Fixtures &amp; Fundamentals →</a>
+          <a href="interview-questions.html">All Interview Questions →</a>
+          <a href="course-roadmap.html">Course Roadmap →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Original content, not sourced from a course transcript — written for Lead/Staff SDET interview preparation specifically. Cross-check against your own experience and current industry practice before an interview; this reflects general, widely-used patterns, not a single authoritative standard. — added 2026-07-30</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

@@ -39,7 +39,9 @@
     <nav class="toc">
       <div>On this page</div>
       <a href="#concept">Concept</a>
+      <a href="#two-windows">Two windows, two objects</a>
       <a href="#visual">The expect_popup closure</a>
+      <a href="#api">expect_popup() in depth</a>
       <a href="#code">Full example</a>
       <a href="#text-content">Reading text with text_content()</a>
       <a href="#leads-to">Where this leads</a>
@@ -52,6 +54,83 @@
       <section id="concept">
         <h2>Concept</h2>
         <p>A <code>page</code> object is scoped to whatever page was open when it was created — by default, that's the page your browser context started on. Clicking a link that opens a separate window or tab does <em>not</em> automatically give your existing <code>page</code> variable access to it. The new window is invisible to it. To work with that new window, you have to explicitly tell Playwright to listen for it, capture the moment it appears, and pull out a brand-new <code>page</code> object scoped to that window specifically.</p>
+      </section>
+
+      <section id="two-windows">
+        <h2>Two windows, two objects</h2>
+        <p class="lead">The code debugger below shows execution order. This shows the thing execution order can't: <strong>two real windows existing at once</strong>, and which variable controls which. The last two steps are the whole lesson — same locator call, opposite outcomes, purely because of which object it was called on.</p>
+
+        <div class="window-flow" id="popup-windows"></div>
+        <script>
+          renderWindowFlow("popup-windows", {
+            introText: "Step through to watch the popup open and see which page object controls which window.",
+            windows: [
+              {
+                key: "parent",
+                title: "rahulshettyacademy.com/loginpagePractise",
+                body: `
+                  <h5>Login Page Practise</h5>
+                  <p>Enter your credentials to sign in.</p>
+                  <p><span class="wf-link">Free Access to InterviewQues/ResumeAssistance/Material</span></p>
+                `
+              },
+              {
+                key: "child",
+                title: "rahulshettyacademy.com/documents-request",
+                body: `
+                  <h5>Documents Request</h5>
+                  <p>Please share your details.</p>
+                  <p>Contact us at <span class="wf-email">mentor@rahulshettyacademy.com</span> for assistance.</p>
+                `
+              }
+            ],
+            steps: [
+              {
+                desc: "Only one window exists. <code>page</code> was created for this window and is scoped to it permanently — that scope never widens on its own.",
+                visible: ["parent"], focus: "parent",
+                pointers: [{ name: "page", target: "parent" }]
+              },
+              {
+                desc: "<code>with page.expect_popup()</code> arms a listener, then the click runs inside that block. Nothing has opened yet — Playwright is watching this action's outcome.",
+                visible: ["parent"], focus: "parent",
+                pointers: [{ name: "page", target: "parent" }],
+                highlight: { window: "parent", sel: ".wf-link" }
+              },
+              {
+                desc: "The click opens a second browser window. It genuinely exists now — but no variable in your test refers to it yet. <code>page</code> still points only at the original.",
+                visible: ["parent", "child"], focus: "child",
+                pointers: [{ name: "page", target: "parent", tone: "stale" }]
+              },
+              {
+                desc: "<code>child_page = new_page_info.value</code> pulls the captured Page object out of the listener. Now a second variable exists, scoped to the second window.",
+                visible: ["parent", "child"], focus: "child",
+                pointers: [
+                  { name: "page", target: "parent" },
+                  { name: "child_page", target: "child" }
+                ]
+              },
+              {
+                desc: "<code>child_page.locator('.red').text_content()</code> searches inside the child window — where the email actually is. Found immediately.",
+                visible: ["parent", "child"], focus: "child",
+                pointers: [
+                  { name: "page", target: "parent" },
+                  { name: "child_page", target: "child" }
+                ],
+                highlight: { window: "child", sel: ".wf-email" },
+                verdict: { tone: "pass", text: "✓ child_page.locator('.red') — found" }
+              },
+              {
+                desc: "Now the mistake: <code>page.locator('.red')</code> searches the <em>parent</em> window, because that's all <code>page</code> has ever known about. The element isn't there. Auto-waiting retries until the timeout, then fails — the same retry behaviour as any other missing element, not a special popup error.",
+                visible: ["parent", "child"], focus: "parent",
+                pointers: [
+                  { name: "page", target: "parent" },
+                  { name: "child_page", target: "child", tone: "stale" }
+                ],
+                verdict: { tone: "fail", text: "✗ page.locator('.red') — searching the wrong window, times out" }
+              }
+            ]
+          });
+        </script>
       </section>
 
       <section id="visual">
@@ -98,6 +177,72 @@
           <div class="quiz-opts">
             <button class="quiz-opt" data-correct="false">It still works — Playwright automatically checks all open pages for a match</button>
             <button class="quiz-opt" data-correct="true">It retries via auto-waiting, can't find the element on the base page, and eventually fails with a timeout — page never learned the child window exists</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="api">
+        <h2>expect_popup() in depth</h2>
+        <p>The lecture uses this method but doesn't document it. Since "explain how <code>expect_popup</code> works" is a fair interview question, here's the actual API surface.</p>
+
+        <h3>Signature &amp; return</h3>
+        <div class="code-block">
+          <div class="cap">playwright.sync_api.Page</div>
+          <span class="code-line">page.expect_popup(<span class="tok-cm">*</span>, predicate=<span class="tok-kw">None</span>, timeout=<span class="tok-kw">None</span>) <span class="tok-cm"># -> EventContextManager[Page]</span></span>
+        </div>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Part</th><th>What it is</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">Returns</td><td>An <em>event context manager</em> — not a Page. You must use it in a <code>with</code> block, then read <code>.value</code> afterward to get the actual <code>Page</code>.</td></tr>
+              <tr><td class="highlight"><code>.value</code></td><td>Available only <em>after</em> the <code>with</code> block exits. Blocks until the popup is captured, then returns the new <code>Page</code> object.</td></tr>
+              <tr><td class="highlight"><code>timeout</code></td><td>Milliseconds to wait for a popup before raising <code>TimeoutError</code>. Defaults to the context's standard timeout (30s unless changed). <code>0</code> disables the timeout.</td></tr>
+              <tr><td class="highlight"><code>predicate</code></td><td>An optional filter <code>lambda popup: ...</code> — the listener ignores popups that don't satisfy it. This is how you target a specific window when several could open.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Why a context manager and not just a wait?</h3>
+        <p>This is the genuinely interesting part, and a strong interview answer. The obvious-looking alternative has a <strong>race condition</strong>:</p>
+        <div class="code-block">
+          <div class="cap">the broken approach — do not do this</div>
+          <span class="code-line">page.locator(<span class="tok-str">".blinking-text"</span>).click() &nbsp;<span class="tok-cm"># popup may open THIS instant</span></span>
+          <span class="code-line">child = page.wait_for_popup() &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-cm"># too late — event already fired, we missed it</span></span>
+        </div>
+        <p>Clicking first and listening second means the popup event can fire in the gap between the two lines, and the listener never sees it — the test then hangs until timeout, intermittently, depending on machine speed. That's a classic flaky test.</p>
+        <p>The <code>with</code> block eliminates the gap by construction: the listener is subscribed <em>before</em> the triggering action runs, so the event cannot be missed regardless of timing. Every Playwright <code>expect_*</code> method (<code>expect_download</code>, <code>expect_request</code>, <code>expect_navigation</code>, …) follows this same pattern for the same reason.</p>
+        <div class="callout interview">
+          <strong>Interview framing</strong>
+          If asked "why is it a <code>with</code> block?", the answer isn't "that's the syntax" — it's <em>race-condition avoidance</em>: subscribe before the trigger so a fast-firing event can't be missed. Naming that shows you understand the design, not just the usage.
+        </div>
+
+        <h3>Related methods</h3>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Method</th><th>When you'd reach for it</th></tr></thead>
+            <tbody>
+              <tr><td><code>page.expect_popup()</code></td><td>The standard case — one popup, triggered by a known action.</td></tr>
+              <tr><td><code>page.on("popup", handler)</code></td><td>The lower-level event API <code>expect_popup</code> wraps. Fires a callback for <em>every</em> popup — useful for logging or auto-closing unexpected windows across a whole session.</td></tr>
+              <tr><td><code>context.pages</code></td><td>A list of every page currently open in the context. Good for finding a specific window after the fact, or asserting how many are open.</td></tr>
+              <tr><td><code>context.expect_page()</code></td><td>Context-level equivalent — catches a new page opened by <em>any</em> page in the context, not just the one you called it on.</td></tr>
+              <tr><td><code>child_page.wait_for_load_state()</code></td><td>The popup Page is returned as soon as it's created, which may be before its content has loaded. Call this when you need the page fully ready.</td></tr>
+              <tr><td><code>child_page.close()</code></td><td>Closes the popup. Worth doing in long test runs so windows don't accumulate.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout supplement">
+          <strong>Beyond this video <span class="src-tag">— everything in this section</span></strong>
+          The lecture demonstrates <code>expect_popup()</code> working but doesn't cover its signature, the <code>timeout</code>/<code>predicate</code> parameters, the race-condition rationale, or any of the related methods above. That's all standard documented Playwright API, added here because it's exactly what a follow-up interview question probes.
+        </div>
+
+        <div class="quiz">
+          <div class="quiz-q">Why does Playwright use <code>with page.expect_popup():</code> instead of letting you click first and then call a wait method?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">Purely a Python style convention for readability</button>
+            <button class="quiz-opt" data-correct="true">To avoid a race condition — the listener must be subscribed before the trigger fires, or a fast popup event can be missed entirely</button>
+            <button class="quiz-opt" data-correct="false">Because the with block automatically closes the popup when it exits</button>
           </div>
           <div class="quiz-feedback"></div>
         </div>
@@ -164,7 +309,19 @@ print(text)</code></pre>
         </details>
         <details class="qa">
           <summary><span class="q-level mid">Mid</span> If two different links could each open a different popup, how would you distinguish which new page you got?</summary>
-          <div class="qa-body">expect_popup() alone just captures whatever popup opened as a result of the wrapped action — fine when only one link is in play. For distinguishing between multiple possible popups, inspect properties of the resulting page (its URL, title, or content) after capturing it, or use `context.pages` to enumerate every currently-open page in the context and filter for the one matching what you expect.</div>
+          <div class="qa-body">expect_popup() alone just captures whatever popup opened as a result of the wrapped action — fine when only one link is in play. For distinguishing between multiple possible popups, pass a <code>predicate</code> (e.g. <code>lambda p: "documents" in p.url</code>) so the listener only accepts a matching window, inspect properties of the resulting page after capturing it, or use <code>context.pages</code> to enumerate every currently-open page and filter for the one you expect.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Why is expect_popup() a context manager rather than a method you call after the click?</summary>
+          <div class="qa-body">Race-condition avoidance. If you clicked first and then called a wait method, the popup event could fire in the gap between those two statements — the listener would never see it, and the test would hang until timeout, intermittently, depending on machine speed. The <code>with</code> block subscribes the listener <em>before</em> the triggering action executes, so the event cannot be missed regardless of timing. Every Playwright <code>expect_*</code> method (expect_download, expect_request, expect_navigation) uses this pattern for the same reason.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What does expect_popup() actually return, and when is .value available?</summary>
+          <div class="qa-body">It returns an event context manager, not a Page. <code>.value</code> is only meaningful after the <code>with</code> block exits — at that point it blocks until the popup has been captured and returns the new <code>Page</code> object. It also accepts <code>timeout</code> (ms before raising TimeoutError, defaulting to the context timeout) and <code>predicate</code> (a filter so only a matching popup is accepted).</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> You capture a popup and immediately query an element on it, but get intermittent failures. What's a likely cause beyond using the wrong page object?</summary>
+          <div class="qa-body">The popup <code>Page</code> is returned as soon as the window is created, which can be before its content has finished loading. Auto-waiting covers element actionability, but if the page is still navigating, the DOM you're querying may not be the final one. Calling <code>child_page.wait_for_load_state()</code> (optionally with <code>"networkidle"</code>) before querying makes the readiness explicit rather than relying on timing.</div>
         </details>
       </section>
 

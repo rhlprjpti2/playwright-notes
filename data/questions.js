@@ -374,8 +374,32 @@ window.ALL_QUESTIONS = [
  },
  {
   "q": "If two different links could each open a different popup, how would you distinguish which new page you got?",
-  "a": "expect_popup() alone just captures whatever popup opened as a result of the wrapped action — fine when only one link is in play. For distinguishing between multiple possible popups, inspect properties of the resulting page (its URL, title, or content) after capturing it, or use `context.pages` to enumerate every currently-open page in the context and filter for the one matching what you expect.",
+  "a": "expect_popup() alone just captures whatever popup opened as a result of the wrapped action — fine when only one link is in play. For distinguishing between multiple possible popups, pass a <code>predicate</code> (e.g. <code>lambda p: \"documents\" in p.url</code>) so the listener only accepts a matching window, inspect properties of the resulting page after capturing it, or use <code>context.pages</code> to enumerate every currently-open page and filter for the one you expect.",
   "level": "mid",
+  "topic": "playwright-child-windows",
+  "topicLabel": "Child Windows &amp; Popups",
+  "file": "pages/playwright-child-windows.html"
+ },
+ {
+  "q": "Why is expect_popup() a context manager rather than a method you call after the click?",
+  "a": "Race-condition avoidance. If you clicked first and then called a wait method, the popup event could fire in the gap between those two statements — the listener would never see it, and the test would hang until timeout, intermittently, depending on machine speed. The <code>with</code> block subscribes the listener <em>before</em> the triggering action executes, so the event cannot be missed regardless of timing. Every Playwright <code>expect_*</code> method (expect_download, expect_request, expect_navigation) uses this pattern for the same reason.",
+  "level": "senior",
+  "topic": "playwright-child-windows",
+  "topicLabel": "Child Windows &amp; Popups",
+  "file": "pages/playwright-child-windows.html"
+ },
+ {
+  "q": "What does expect_popup() actually return, and when is .value available?",
+  "a": "It returns an event context manager, not a Page. <code>.value</code> is only meaningful after the <code>with</code> block exits — at that point it blocks until the popup has been captured and returns the new <code>Page</code> object. It also accepts <code>timeout</code> (ms before raising TimeoutError, defaulting to the context timeout) and <code>predicate</code> (a filter so only a matching popup is accepted).",
+  "level": "mid",
+  "topic": "playwright-child-windows",
+  "topicLabel": "Child Windows &amp; Popups",
+  "file": "pages/playwright-child-windows.html"
+ },
+ {
+  "q": "You capture a popup and immediately query an element on it, but get intermittent failures. What's a likely cause beyond using the wrong page object?",
+  "a": "The popup <code>Page</code> is returned as soon as the window is created, which can be before its content has finished loading. Auto-waiting covers element actionability, but if the page is still navigating, the DOM you're querying may not be the final one. Calling <code>child_page.wait_for_load_state()</code> (optionally with <code>\"networkidle\"</code>) before querying makes the readiness explicit rather than relying on timing.",
+  "level": "senior",
   "topic": "playwright-child-windows",
   "topicLabel": "Child Windows &amp; Popups",
   "file": "pages/playwright-child-windows.html"

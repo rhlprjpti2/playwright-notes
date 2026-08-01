@@ -582,6 +582,116 @@ function renderLayerStack(containerId, config) {
   resetBtn.addEventListener("click", reset);
 }
 
+/**
+ * renderWindowFlow("container-id", { windows: [...], steps: [...] })
+ *
+ * Side-by-side mock browser windows with variable-pointer badges, for concepts
+ * where *which window a variable points at* is the actual lesson — child
+ * windows/popups, multi-context flows. Shows spatially what a code-and-terminal
+ * debugger can't: two windows existing simultaneously, and which one each page
+ * object controls.
+ *
+ * windows: [{ key, title, body }]           body = HTML string for the mock page
+ * steps:   [{ desc, visible:[keys], focus, pointers:[{name,target,tone}],
+ *             highlight:{window,sel}, verdict:{tone,text} }]
+ */
+function renderWindowFlow(containerId, config) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const wins = config.windows || [];
+  const steps = config.steps || [];
+
+  el.innerHTML = `
+    <div class="wf-controls">
+      <button class="btn-back" disabled>&#9668; Back</button>
+      <button class="btn-step">Step &#9658;</button>
+      <button class="btn-auto">&#9654; Autoplay</button>
+      <button class="btn-reset" disabled>&#8635; Reset</button>
+      <span class="wf-step-label"></span>
+    </div>
+    <div class="wf-stage">
+      ${wins.map((w) => `
+        <div class="wf-window" data-key="${w.key}">
+          <div class="wf-chrome">
+            <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+            <span class="wf-url">${w.title}</span>
+          </div>
+          <div class="wf-page">${w.body}</div>
+          <div class="wf-pointers"></div>
+        </div>`).join("")}
+    </div>
+    <div class="wf-desc"></div>
+  `;
+
+  const stage = el.querySelector(".wf-stage");
+  const desc = el.querySelector(".wf-desc");
+  const label = el.querySelector(".wf-step-label");
+  const backBtn = el.querySelector(".btn-back");
+  const stepBtn = el.querySelector(".btn-step");
+  const autoBtn = el.querySelector(".btn-auto");
+  const resetBtn = el.querySelector(".btn-reset");
+
+  let index = 0;
+  let playing = false;
+
+  function render() {
+    const step = index > 0 ? steps[index - 1] : null;
+
+    wins.forEach((w) => {
+      const node = stage.querySelector(`.wf-window[data-key="${w.key}"]`);
+      const visible = step ? (step.visible || []).includes(w.key) : (w.key === wins[0].key);
+      node.classList.toggle("wf-hidden", !visible);
+      node.classList.toggle("wf-focus", !!step && step.focus === w.key);
+      node.querySelectorAll(".wf-hit").forEach((n) => n.classList.remove("wf-hit"));
+      node.querySelector(".wf-pointers").innerHTML = "";
+    });
+
+    if (step) {
+      (step.pointers || []).forEach((p) => {
+        const target = stage.querySelector(`.wf-window[data-key="${p.target}"] .wf-pointers`);
+        if (target) {
+          target.insertAdjacentHTML(
+            "beforeend",
+            `<span class="wf-pointer ${p.tone || ""}"><code>${p.name}</code> &rarr; this window</span>`
+          );
+        }
+      });
+      if (step.highlight) {
+        const node = stage.querySelector(`.wf-window[data-key="${step.highlight.window}"] ${step.highlight.sel}`);
+        if (node) node.classList.add("wf-hit");
+      }
+      desc.className = "wf-desc" + (step.verdict ? " " + step.verdict.tone : "");
+      desc.innerHTML = (step.verdict ? `<b>${step.verdict.text}</b><br>` : "") + step.desc;
+    } else {
+      desc.className = "wf-desc";
+      desc.textContent = config.introText || "Step through to see how each page object maps to a window.";
+    }
+
+    label.textContent = index === 0 ? `Ready — step 0 of ${steps.length}` : `Step ${index} of ${steps.length}`;
+    backBtn.disabled = index === 0;
+    resetBtn.disabled = index === 0;
+    const atEnd = index === steps.length;
+    stepBtn.disabled = atEnd || playing;
+    autoBtn.disabled = atEnd || playing;
+    stepBtn.textContent = atEnd ? "Done ✓" : "Step ▸";
+  }
+
+  stepBtn.addEventListener("click", () => { if (index < steps.length) { index++; render(); } });
+  backBtn.addEventListener("click", () => { if (index > 0) { index--; render(); } });
+  autoBtn.addEventListener("click", () => {
+    playing = true; render();
+    const tick = () => {
+      if (index >= steps.length) { playing = false; render(); return; }
+      index++; render();
+      setTimeout(tick, 1700);
+    };
+    tick();
+  });
+  resetBtn.addEventListener("click", () => { index = 0; playing = false; render(); });
+
+  render();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initScrollProgress();
   initQuizzes();

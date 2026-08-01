@@ -92,7 +92,7 @@
         <pre><code>from playwright.sync_api import Page
 
 def test_playwright_shortcut(page: Page):
-    page.goto("https://rahulshettyacademy.com")</code></pre>
+    page.goto("https://shop.example.com")</code></pre>
         <p>The import isn't required for the fixture to work — it's global either way — but without it, the IDE has no idea what type <code>page</code> is, so you lose autocomplete on its methods.</p>
 
         <div class="callout supplement">
@@ -134,7 +134,7 @@ def test_playwright_shortcut(page: Page):
 def test_firefox_browser(playwright: Playwright):
     firefox_browser = playwright.firefox.launch(headless=False)
     page = firefox_browser.new_page()
-    page.goto("https://rahulshettyacademy.com")</code></pre>
+    page.goto("https://shop.example.com")</code></pre>
         <p>For a single page, the context step can be skipped — <code>browser.new_page()</code> works directly and uses a single default context.</p>
       </section>
 

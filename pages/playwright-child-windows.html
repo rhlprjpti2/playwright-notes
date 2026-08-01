@@ -70,7 +70,7 @@
             windows: [
               {
                 key: "parent",
-                title: "rahulshettyacademy.com/loginpagePractise",
+                title: "shop.example.com/login",
                 body: `
                   <h5>Login Page Practise</h5>
                   <p>Enter your credentials to sign in.</p>
@@ -79,11 +79,11 @@
               },
               {
                 key: "child",
-                title: "rahulshettyacademy.com/documents-request",
+                title: "shop.example.com/support-request",
                 body: `
                   <h5>Documents Request</h5>
                   <p>Please share your details.</p>
-                  <p>Contact us at <span class="wf-email">mentor@rahulshettyacademy.com</span> for assistance.</p>
+                  <p class="wf-email">Please email us at support@shop.example.com with any questions</p>
                 `
               }
             ],
@@ -156,7 +156,7 @@
                 lines: [
                   { id: "cwln1", zone: "setup", html: '<span class="ln">1</span> page.goto(BASE_URL)' },
                   { id: "cwln2", html: '<span class="ln">2</span> <span class="tok-kw">with</span> page.expect_popup() <span class="tok-kw">as</span> new_page_info:' },
-                  { id: "cwln3", html: '<span class="ln">3</span> &nbsp;&nbsp;&nbsp;&nbsp;page.locator(<span class="tok-str">".blinking-text"</span>).click()' },
+                  { id: "cwln3", html: '<span class="ln">3</span> &nbsp;&nbsp;&nbsp;&nbsp;page.locator(<span class="tok-str">".support-link"</span>).click()' },
                   { id: "cwln4", zone: "teardown", html: '<span class="ln">4</span> child_page = new_page_info.value' },
                   { id: "cwln5", zone: "teardown", html: '<span class="ln">5</span> text = child_page.locator(<span class="tok-str">".red"</span>).text_content()' },
                   { id: "cwln6", zone: "teardown", html: '<span class="ln">6</span> <span class="tok-fn">print</span>(text)' }
@@ -166,7 +166,7 @@
             steps: [
               { lineIds: ["cwln1"], desc: "Land on the base page — the only page object that exists so far.", term: '<span class="tag-setup">▸ page.goto(BASE_URL)</span>' },
               { lineIds: ["cwln2"], desc: "with page.expect_popup() arms a listener. Everything indented inside this block is now being watched for a new window opening — nothing pauses yet.", term: '<span class="tag-setup">▸ listener armed — watching for a popup</span>' },
-              { lineIds: ["cwln3"], desc: "The click executes. The listener checks the outcome of this step: did it open a new page? Playwright waits to find out.", term: '<span class="tag-pause">▸ .blinking-text clicked — checking for a new page…</span>' },
+              { lineIds: ["cwln3"], desc: "The click executes. The listener checks the outcome of this step: did it open a new page? Playwright waits to find out.", term: '<span class="tag-pause">▸ .support-link clicked — checking for a new page…</span>' },
               { lineIds: ["cwln3"], desc: "A new browser tab genuinely opens as a result of the click. The listener detects it and captures the new page's info into new_page_info.", term: '<span class="tag-pause">✓ popup detected — captured into new_page_info</span>' },
               { lineIds: ["cwln4"], desc: "Now outside the with block, .value pulls the actual Page object out of what the listener captured. child_page is a fully independent page object, scoped to the new window.", term: '<span class="tag-test">▸ child_page = new_page_info.value</span>' },
               { lineIds: ["cwln5"], desc: "child_page.locator(...) searches inside the new window only. The original page object still only knows about the base page — it has no awareness this child window exists.", term: '<span class="tag-test">▸ child_page.locator(".red").text_content()</span>' },
@@ -210,7 +210,7 @@
         <p>This is the genuinely interesting part, and a strong interview answer. The obvious-looking alternative has a <strong>race condition</strong>:</p>
         <div class="code-block">
           <div class="cap">the broken approach — do not do this</div>
-          <span class="code-line">page.locator(<span class="tok-str">".blinking-text"</span>).click() &nbsp;<span class="tok-cm"># popup may open THIS instant</span></span>
+          <span class="code-line">page.locator(<span class="tok-str">".support-link"</span>).click() &nbsp;<span class="tok-cm"># popup may open THIS instant</span></span>
           <span class="code-line">child = page.wait_for_popup() &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-cm"># too late — event already fired, we missed it</span></span>
         </div>
         <p>Clicking first and listening second means the popup event can fire in the gap between the two lines, and the listener never sees it — the test then hangs until timeout, intermittently, depending on machine speed. That's a classic flaky test.</p>
@@ -257,7 +257,7 @@
         <pre><code>page.goto(BASE_URL)
 
 with page.expect_popup() as new_page_info:
-    page.locator(".blinking-text").click()   # triggers the popup
+    page.locator(".support-link").click()   # triggers the popup
 
 child_page = new_page_info.value             # the new window's page object
 
@@ -283,16 +283,16 @@ print(text)</code></pre>
           renderStringPipeline("extract-pipeline", {
             initialExpr: 'text = child_page.locator(".red").text_content()',
             introText: "The full text pulled from the child window. The goal: extract just the email address.",
-            initialParts: [{ t: "Please email us at mentor@rahulshettyacademy.com with any questions", tone: "keep" }],
+            initialParts: [{ t: "Please email us at support@shop.example.com with any questions", tone: "keep" }],
             steps: [
               {
                 code: 'text.split("at")',
                 parts: [
                   { t: "Please email us ", tone: "keep" },
                   { t: "at", tone: "delim" },
-                  { t: " mentor@rahulshettyacademy.com with any questions", tone: "keep" }
+                  { t: " support@shop.example.com with any questions", tone: "keep" }
                 ],
-                result: { label: "returns", value: "['Please email us ', ' mentor@rahulshettyacademy.com with any questions']", tone: "neutral" },
+                result: { label: "returns", value: "['Please email us ', ' support@shop.example.com with any questions']", tone: "neutral" },
                 note: 'Splitting on the <b>word</b> <code>"at"</code> — not the <code>@</code> symbol. The delimiter is consumed and removed, leaving two list items: everything left of it at index <code>[0]</code>, everything right of it at index <code>[1]</code>.'
               },
               {
@@ -301,16 +301,16 @@ print(text)</code></pre>
                   { t: "Please email us ", tone: "drop" },
                   { t: "at", tone: "drop" },
                   { t: " ", tone: "space" },
-                  { t: "mentor@rahulshettyacademy.com with any questions", tone: "keep" }
+                  { t: "support@shop.example.com with any questions", tone: "keep" }
                 ],
-                result: { label: "words[1]", value: "' mentor@rahulshettyacademy.com with any questions'", tone: "neutral" },
+                result: { label: "words[1]", value: "' support@shop.example.com with any questions'", tone: "neutral" },
                 note: 'Index <code>[0]</code> is discarded. But look closely at what <code>words[1]</code> actually starts with — a <b>leading space</b>, left behind because the original text read <code>"us <u>at</u> mentor"</code>. Invisible in normal output, and about to cause the bug.'
               },
               {
                 code: 'words[1].split(" ")[0]   # the naive attempt',
                 parts: [
                   { t: " ", tone: "delim" },
-                  { t: "mentor@rahulshettyacademy.com with any questions", tone: "drop" }
+                  { t: "support@shop.example.com with any questions", tone: "drop" }
                 ],
                 result: { label: "returns", value: "''  (empty string)", tone: "fail" },
                 note: '<b>This is where the test fails.</b> The very first space in the string is that leading one — so <code>split(" ")</code> breaks there, and index <code>[0]</code> is everything to its left, which is <b>nothing at all</b>. You get an empty string, and the assertion fails with a confusing message.'
@@ -319,25 +319,25 @@ print(text)</code></pre>
                 code: 'words[1].strip()',
                 parts: [
                   { t: "·", tone: "drop" },
-                  { t: "mentor@rahulshettyacademy.com with any questions", tone: "keep" }
+                  { t: "support@shop.example.com with any questions", tone: "keep" }
                 ],
-                result: { label: "returns", value: "'mentor@rahulshettyacademy.com with any questions'", tone: "neutral" },
+                result: { label: "returns", value: "'support@shop.example.com with any questions'", tone: "neutral" },
                 note: '<code>strip()</code> removes whitespace from <b>both</b> ends of a string — leading and trailing. Now the string genuinely begins with <code>m</code>, so the first real space is the one after <code>.com</code>, exactly where we want to split.'
               },
               {
                 code: 'words[1].strip().split(" ")',
                 parts: [
-                  { t: "mentor@rahulshettyacademy.com", tone: "hit" },
+                  { t: "support@shop.example.com", tone: "hit" },
                   { t: " ", tone: "delim" },
                   { t: "with any questions", tone: "drop" }
                 ],
-                result: { label: "returns", value: "['mentor@rahulshettyacademy.com', 'with', 'any', 'questions']", tone: "neutral" },
+                result: { label: "returns", value: "['support@shop.example.com', 'with', 'any', 'questions']", tone: "neutral" },
                 note: 'Now the split lands in the right place. Note <code>split(" ")</code> splits on <b>every</b> occurrence, producing four items — not just two. We only care about the first.'
               },
               {
                 code: 'email = words[1].strip().split(" ")[0]',
-                parts: [{ t: "mentor@rahulshettyacademy.com", tone: "hit" }],
-                result: { label: "email", value: "'mentor@rahulshettyacademy.com'", tone: "pass" },
+                parts: [{ t: "support@shop.example.com", tone: "hit" }],
+                result: { label: "email", value: "'support@shop.example.com'", tone: "pass" },
                 note: 'Index <code>[0]</code> gives exactly the email address. The full chain: <code>text.split("at")[1].strip().split(" ")[0]</code>.'
               }
             ]
@@ -363,7 +363,7 @@ print(text)</code></pre>
       <section id="assertions">
         <h2>Plain <code>assert</code> vs Playwright's <code>expect()</code></h2>
         <p>With the email extracted, the lecture compares it using a <strong>pure Pytest assertion</strong> — no Playwright involved:</p>
-        <pre><code>assert email == "mentor@rahulshettyacademy.com"</code></pre>
+        <pre><code>assert email == "support@shop.example.com"</code></pre>
         <p>This is a genuinely different tool from the <code>expect()</code> assertions on the <a href="playwright-auto-waiting.html">Auto-Waiting</a> page, and knowing when each applies is an easy interview differentiator:</p>
         <div class="table-wrap">
           <table class="compare">

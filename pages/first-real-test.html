@@ -79,13 +79,13 @@
 <span class="code-line"><span class="tok-kw">import</span> pytest</span>
 <span class="code-line"><span class="tok-kw">from</span> playwright.sync_api <span class="tok-kw">import</span> Page</span>
 <span class="code-line"></span>
-<span class="code-line">BASE_URL = <span class="tok-str">"https://rahulshettyacademy.com/loginpagePractise/"</span></span>
+<span class="code-line">BASE_URL = <span class="tok-str">"https://shop.example.com/login"</span></span>
 <span class="code-line"></span>
 <span class="code-line"></span>
 <span class="code-line"><span class="tok-kw">@pytest.fixture</span>(scope=<span class="tok-str">"session"</span>)</span>
 <span class="code-line"><span class="tok-kw">def</span> <span class="tok-fn">credentials</span>():</span>
 <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-cm">"""Test data in one place — not hardcoded in every test."""</span></span>
-<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-kw">return</span> {<span class="tok-str">"username"</span>: <span class="tok-str">"rahulshettyacademy"</span>, <span class="tok-str">"password"</span>: <span class="tok-str">"learning"</span>}</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-kw">return</span> {<span class="tok-str">"username"</span>: <span class="tok-str">"demo_user"</span>, <span class="tok-str">"password"</span>: <span class="tok-str">"demo_pass123"</span>}</span>
 <span class="code-line"></span>
 <span class="code-line"></span>
 <span class="code-line"><span class="tok-kw">@pytest.fixture</span></span>
@@ -137,7 +137,7 @@
 <span class="code-line"><span class="tok-kw">@pytest.mark.smoke</span></span>
 <span class="code-line"><span class="tok-kw">def</span> <span class="tok-fn">test_valid_login_reaches_shop</span>(logged_in_page: Page):</span>
 <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="tok-cm"># the fixture already signed in — this test only asserts the outcome</span></span>
-<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;expect(logged_in_page.get_by_role(<span class="tok-str">"heading"</span>, name=<span class="tok-str">"Shop Name"</span>)).to_be_visible()</span>
+<span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;expect(logged_in_page.get_by_role(<span class="tok-str">"heading"</span>, name=<span class="tok-str">"Storefront"</span>)).to_be_visible()</span>
 <span class="code-line"></span>
 <span class="code-line"></span>
 <span class="code-line"><span class="tok-kw">def</span> <span class="tok-fn">test_add_two_products_to_cart</span>(logged_in_page: Page):</span>
@@ -189,7 +189,7 @@
                 caption: "tests/test_login.py",
                 lines: [
                   { id: "frln11", html: '<span class="ln">11</span> <span class="tok-kw">def</span> <span class="tok-fn">test_valid_login_reaches_shop</span>(logged_in_page):' },
-                  { id: "frln12", html: '<span class="ln">12</span> &nbsp;&nbsp;expect(logged_in_page.get_by_role(<span class="tok-str">"heading"</span>, name=<span class="tok-str">"Shop Name"</span>)).to_be_visible()' }
+                  { id: "frln12", html: '<span class="ln">12</span> &nbsp;&nbsp;expect(logged_in_page.get_by_role(<span class="tok-str">"heading"</span>, name=<span class="tok-str">"Storefront"</span>)).to_be_visible()' }
                 ]
               }
             ],

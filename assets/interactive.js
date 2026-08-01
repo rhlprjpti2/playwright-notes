@@ -748,9 +748,11 @@ function renderStringPipeline(containerId, config) {
   function renderParts(parts) {
     return (parts || [])
       .map((p) => {
-        if (p.tone === "space") {
-          // render each space as a visible middot so the bug is actually visible
-          return `<span class="sp-seg space">${"·".repeat(Math.max(1, p.t.length))}</span>`;
+        // Any whitespace-only segment renders as visible middots, whatever its
+        // tone. This matters most when the split point IS the invisible space —
+        // showing it as a literal " " would hide the exact thing being taught.
+        if (p.tone === "space" || /^\s+$/.test(p.t)) {
+          return `<span class="sp-seg ${p.tone || "space"}">${"·".repeat(Math.max(1, p.t.length))}</span>`;
         }
         const safe = p.t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         return `<span class="sp-seg ${p.tone || "keep"}">${safe}</span>`;

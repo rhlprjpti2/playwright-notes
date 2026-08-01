@@ -29,6 +29,7 @@ TOPIC_LABELS = {
     "playwright-auto-waiting": "Auto-Waiting",
     "playwright-dynamic-locators": "Dynamic Locators",
     "first-real-test": "First Real Test",
+    "playwright-child-windows": "Child Windows &amp; Popups",
     "framework-system-design": "Framework &amp; System Design",
 }
 

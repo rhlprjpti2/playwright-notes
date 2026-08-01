@@ -341,6 +341,46 @@ window.ALL_QUESTIONS = [
   "file": "pages/playwright-browser-context-page.html"
  },
  {
+  "q": "Why doesn't your existing page object automatically work on a new tab/window that a click opens?",
+  "a": "A page object is scoped to the specific page it was created on — by default, the page your browser context started on. Playwright doesn't automatically expand that scope when a click happens to open a new window; you have to explicitly listen for the new page and capture a separate page object for it.",
+  "level": "junior",
+  "topic": "playwright-child-windows",
+  "topicLabel": "Child Windows &amp; Popups",
+  "file": "pages/playwright-child-windows.html"
+ },
+ {
+  "q": "Walk through what page.expect_popup() actually does, step by step.",
+  "a": "It's a context manager that arms an event listener before the action that might open a popup runs. The action (e.g. a click) executes inside the `with` block; if it results in a new page/window opening, the listener captures that new page's info. After the block exits, `.value` on the captured object returns the actual new Page instance, which you then use for all further interaction with that window.",
+  "level": "mid",
+  "topic": "playwright-child-windows",
+  "topicLabel": "Child Windows &amp; Popups",
+  "file": "pages/playwright-child-windows.html"
+ },
+ {
+  "q": "What's the difference between text_content() and a visibility assertion like to_be_visible()?",
+  "a": "to_be_visible() checks a boolean condition — is the element rendered and visible — and is what you use for assertions. text_content() actually retrieves and returns the element's text content as a string, for when you need to read, print, log, or further process that text in code rather than just confirm it exists.",
+  "level": "junior",
+  "topic": "playwright-child-windows",
+  "topicLabel": "Child Windows &amp; Popups",
+  "file": "pages/playwright-child-windows.html"
+ },
+ {
+  "q": "You use the correct child_page for the new window, but a teammate's code uses the original page and their test times out with \"element not found.\" How do you explain what's happening?",
+  "a": "The original page object never gained any knowledge that a new window opened — it's still scoped to the base page. When their code searches for an element that only exists in the popup, Playwright's auto-waiting kicks in exactly as designed: it retries, checking visibility repeatedly, and since the element genuinely doesn't exist on that page, it eventually times out and fails. It's not a bug or a special popup-related error — it's the standard actionability-timeout behavior failing for a completely mundane reason: wrong page object.",
+  "level": "scenario",
+  "topic": "playwright-child-windows",
+  "topicLabel": "Child Windows &amp; Popups",
+  "file": "pages/playwright-child-windows.html"
+ },
+ {
+  "q": "If two different links could each open a different popup, how would you distinguish which new page you got?",
+  "a": "expect_popup() alone just captures whatever popup opened as a result of the wrapped action — fine when only one link is in play. For distinguishing between multiple possible popups, inspect properties of the resulting page (its URL, title, or content) after capturing it, or use `context.pages` to enumerate every currently-open page in the context and filter for the one matching what you expect.",
+  "level": "mid",
+  "topic": "playwright-child-windows",
+  "topicLabel": "Child Windows &amp; Popups",
+  "file": "pages/playwright-child-windows.html"
+ },
+ {
   "q": "Why scan-and-filter instead of clicking an element at a fixed index?",
   "a": "Resilience. If the page's display order changes — items re-sorted, a new item inserted — an index-based script targets the wrong element or breaks entirely. A filter-by-content script finds the correct element regardless of its position on the page.",
   "level": "junior",

@@ -149,7 +149,7 @@ window.TOPICS_INDEX = [
       "ARIA roles", "textbox", "radio", "heading", "dialog", "tab", "menuitem"
     ],
     summary: "get_by_label, get_by_role, CSS locators, and get_by_text — which to use depends on what the DOM actually exposes, including the get_by_label failure conditions.",
-    related: ["playwright-browser-context-page", "playwright-dynamic-locators", "playwright-auto-waiting"],
+    related: ["playwright-browser-context-page", "playwright-dynamic-locators", "playwright-auto-waiting", "playwright-child-windows"],
     sources: [
       { title: "Handling Core Locators: Labels, Roles & Combo Boxes", addedDate: "2026-07-29" },
       { title: "get_by_label Limitations", addedDate: "2026-07-29" },
@@ -207,6 +207,22 @@ window.TOPICS_INDEX = [
     related: ["first-real-test", "pytest-fixtures", "interview-questions", "course-roadmap"],
     sources: [
       { title: "Original content — written for Lead/Staff SDET interview prep, not sourced from a transcript", addedDate: "2026-07-30" }
+    ],
+    lastUpdated: "2026-07-30"
+  },
+  {
+    slug: "playwright-child-windows",
+    title: "Handling Child Windows & Popups",
+    file: "pages/playwright-child-windows.html",
+    tags: ["playwright", "popups", "multi-page"],
+    keyTerms: [
+      "expect_popup", "child window", "popup", "new_page_info", "child_page", "text_content",
+      "page.on(\"popup\")", "context.pages", "multi-page", "with block", "closure", "event listener"
+    ],
+    summary: "A page object only knows the page it was created on — expect_popup() is how you listen for a new window and get a page object scoped to it.",
+    related: ["playwright-browser-context-page", "playwright-locators", "playwright-auto-waiting"],
+    sources: [
+      { title: "Handling Child Windows / Popups in Playwright", addedDate: "2026-07-30" }
     ],
     lastUpdated: "2026-07-30"
   },

@@ -45,7 +45,9 @@
       <a href="#get-by-label">get_by_label</a>
       <a href="#get-by-role">get_by_role</a>
       <a href="#css">CSS locators</a>
-      <a href="#get-by-family">The full get_by_* family</a>
+      <a href="#get-by-placeholder">get_by_placeholder</a>
+      <a href="#actions">Actions beyond click/fill</a>
+      <a href="#get-by-family">The rest of the family</a>
       <a href="#interview-qa">Interview Q&amp;A</a>
       <a href="#gotchas">Gotchas</a>
     </nav>
@@ -244,13 +246,45 @@ page.get_by_role("link", name="Terms and Conditions").click()</code></pre>
         <pre><code>page.get_by_text("Incorrect username or password")</code></pre>
       </section>
 
+      <section id="get-by-placeholder">
+        <h2>get_by_placeholder</h2>
+        <p>The natural fallback when a field has <em>no</em> label at all — common on search boxes and compact forms where the placeholder text is the only visible hint:</p>
+        <pre><code>page.get_by_placeholder("Hide/Show Example").fill("some text")</code></pre>
+        <p>It's also the practical rescue for the broken-label case from earlier on this page: when <code>for</code>/<code>id</code> don't line up, the placeholder is often still a clean, unique handle — no CSS selector required.</p>
+        <div class="callout tip">
+          <strong>Placeholder is not text</strong>
+          A placeholder is a greyed-out hint that disappears when you type. It is <em>not</em> the element's text content, so <code>get_by_text()</code> won't find it — that's why it needs its own dedicated locator.
+        </div>
+      </section>
+
+      <section id="actions">
+        <h2>Actions beyond click and fill</h2>
+        <p>Once a locator resolves, several actions beyond <code>.click()</code> and <code>.fill()</code> come up regularly:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Action</th><th>What it's for</th></tr></thead>
+            <tbody>
+              <tr><td><code>.hover()</code></td><td class="highlight">Moves the mouse over an element <em>without</em> clicking — the way to open mega-menus and hover-triggered dropdowns before clicking an item inside them.</td></tr>
+              <tr><td><code>.check()</code> / <code>.uncheck()</code></td><td>Semantic checkbox/radio actions. Unlike <code>.click()</code>, they verify the resulting state rather than blindly toggling.</td></tr>
+              <tr><td><code>.select_option()</code></td><td>Chooses from a <code>&lt;select&gt;</code> by its underlying <code>value</code> attribute.</td></tr>
+              <tr><td><code>.text_content()</code></td><td>Returns the element's text as a string — see <a href="playwright-child-windows.html#text-content">Child Windows</a>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>The hover-then-click pattern, in full:</p>
+        <pre><code>page.locator("#mousehover").hover()                       # opens the menu
+page.get_by_role("link", name="Top").click()              # click an item inside it</code></pre>
+        <div class="callout tip">
+          <strong>Why hover needs to be explicit</strong>
+          Auto-waiting checks that an element is visible and actionable — but a menu item that only renders on hover isn't visible until you hover. Playwright won't infer that a hover is required, so the hover has to be its own step.
+        </div>
+      </section>
+
       <section id="get-by-family">
-        <h2>The full get_by_* family</h2>
-        <p>The video covers <code>get_by_label</code>, <code>get_by_role</code>, and <code>get_by_text</code> — the three you'll use most. Playwright's locator API has a few more siblings worth knowing so you're not caught off guard if an interviewer asks about a case these three don't cleanly cover:</p>
+        <h2>The rest of the get_by_* family</h2>
         <div class="callout supplement">
-          <strong>Beyond this video <span class="src-tag">— not mentioned in the course, but standard Playwright API</span></strong>
+          <strong>Beyond this video <span class="src-tag">— standard Playwright API, not covered in the course</span></strong>
           <ul style="margin:8px 0 0; padding-left:20px;">
-            <li><code>get_by_placeholder("Enter email")</code> — matches an input by its placeholder text, useful when there's no associated label at all.</li>
             <li><code>get_by_alt_text("Company logo")</code> — matches an <code>&lt;img&gt;</code> by its <code>alt</code> attribute.</li>
             <li><code>get_by_title("Close dialog")</code> — matches an element by its <code>title</code> attribute (the tooltip text).</li>
             <li><code>get_by_test_id("submit-btn")</code> — matches a custom test-id attribute (<code>data-testid</code> by default). The most resilient option when a team deliberately adds test hooks, since it doesn't depend on visible text, styling, or DOM structure at all.</li>
@@ -276,6 +310,14 @@ page.get_by_role("link", name="Terms and Conditions").click()</code></pre>
         <details class="qa">
           <summary><span class="q-level junior">Junior</span> What's the difference between what select_option chooses and what's visually shown in a dropdown?</summary>
           <div class="qa-body">select_option targets the underlying HTML <code>option value</code> attribute, which is not necessarily identical to the text visually displayed to the user in the dropdown UI.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> A search box has no label and no text content. How do you locate it?</summary>
+          <div class="qa-body"><code>get_by_placeholder("...")</code> matches on the greyed-out hint text inside the field. It's the right choice when no label exists, and also a clean workaround when a label exists but its <code>for</code>/<code>id</code> linkage is broken. Note a placeholder isn't the element's text content, so <code>get_by_text()</code> won't find it.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> How do you click an item in a menu that only appears on mouse hover?</summary>
+          <div class="qa-body">Two steps: <code>.hover()</code> on the trigger element to open the menu, then a normal locator + <code>.click()</code> on the item inside it. Auto-waiting won't infer that a hover is needed — it checks whether an element is visible and actionable, and a hover-only menu item genuinely isn't visible until the hover happens, so the hover must be its own explicit step.</div>
         </details>
         <details class="qa">
           <summary><span class="q-level junior">Junior</span> Name the full get_by_* family.</summary>
@@ -318,6 +360,8 @@ page.get_by_role("link", name="Terms and Conditions").click()</code></pre>
           <a href="playwright-dynamic-locators.html">Dynamic Locators &amp; Filtering →</a>
           <a href="playwright-auto-waiting.html">Playwright Auto-Waiting &amp; Assertions →</a>
           <a href="playwright-child-windows.html">Handling Child Windows &amp; Popups →</a>
+          <a href="playwright-web-tables.html">Dynamic Web Tables →</a>
+          <a href="playwright-frames.html">Frames &amp; iFrames →</a>
         </div>
       </div>
 

@@ -230,6 +230,56 @@ window.TOPICS_INDEX = [
     lastUpdated: "2026-07-30"
   },
   {
+    slug: "playwright-web-tables",
+    title: "Dynamic Web Tables",
+    file: "pages/playwright-web-tables.html",
+    tags: ["playwright", "tables", "locators", "logic"],
+    keyTerms: [
+      "web table", "dynamic table", "th", "td", "tr", "count", "nth", "filter", "has_text",
+      "for loop", "break", "f-string", "scoped locator", "to_have_text", "all_text_contents",
+      "dynamic column", "dynamic row", "table interview question"
+    ],
+    summary: "The classic table interview question — resolving both the column index and the row at runtime, then reading the cell where they intersect.",
+    related: ["playwright-dynamic-locators", "playwright-locators", "playwright-auto-waiting", "python-basics"],
+    sources: [
+      { title: "Handling Dynamic Web Tables", addedDate: "2026-07-30" }
+    ],
+    lastUpdated: "2026-07-30"
+  },
+  {
+    slug: "playwright-alerts-dialogs",
+    title: "JavaScript Alerts & Dialogs",
+    file: "pages/playwright-alerts-dialogs.html",
+    tags: ["playwright", "dialogs", "events"],
+    keyTerms: [
+      "alert", "confirm", "prompt", "dialog", "page.on", "lambda", "anonymous function",
+      "dialog.accept", "dialog.dismiss", "dialog.message", "dialog.type", "event handler",
+      "not in DOM", "JavaScript popup", "page.once", "auto-dismiss"
+    ],
+    summary: "A native alert isn't in the DOM at all, so no locator can find it — you register an event handler in advance instead.",
+    related: ["playwright-child-windows", "playwright-frames", "playwright-locators"],
+    sources: [
+      { title: "Handling Alerts & JavaScript Dialogs", addedDate: "2026-07-30" }
+    ],
+    lastUpdated: "2026-07-30"
+  },
+  {
+    slug: "playwright-frames",
+    title: "Frames & iFrames",
+    file: "pages/playwright-frames.html",
+    tags: ["playwright", "frames", "locators"],
+    keyTerms: [
+      "iframe", "frame", "frame_locator", "nested frame", "embedded document", "page.frames",
+      "to_contain_text", "to_have_text", "body locator", "switch_to.frame", "scope"
+    ],
+    summary: "An iframe is a separate embedded document, so page.locator() can't see into it — frame_locator() crosses that boundary.",
+    related: ["playwright-child-windows", "playwright-alerts-dialogs", "playwright-locators", "playwright-auto-waiting"],
+    sources: [
+      { title: "Handling Frames & iFrames", addedDate: "2026-07-30" }
+    ],
+    lastUpdated: "2026-07-30"
+  },
+  {
     slug: "playwright-dynamic-locators",
     title: "Dynamic Locators, Filtering & Scoped Search",
     file: "pages/playwright-dynamic-locators.html",

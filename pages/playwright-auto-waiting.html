@@ -104,6 +104,27 @@
 expect(page.get_by_text("Incorrect username or password")).to_be_visible()</code></pre>
         <p>This is what makes it safe to assert on something that appears with a short delay (e.g. an error message after a failed login) without writing any explicit wait beforehand.</p>
 
+        <h3>The common assertions</h3>
+        <p>Beyond <code>to_be_visible()</code>, a handful cover most real checks — and the pairs below are easy to confuse in an interview:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Assertion</th><th>Passes when</th></tr></thead>
+            <tbody>
+              <tr><td><code>to_be_visible()</code></td><td>The element is rendered and visible.</td></tr>
+              <tr><td class="highlight"><code>to_be_hidden()</code></td><td>The element is hidden <em>or</em> not in the DOM at all. The natural counterpart for testing show/hide behaviour — click Hide, assert hidden.</td></tr>
+              <tr><td class="highlight"><code>to_have_text("x")</code></td><td>The element's text matches <strong>exactly</strong>.</td></tr>
+              <tr><td class="highlight"><code>to_contain_text("x")</code></td><td>The text appears <strong>anywhere within</strong> — a substring match. Use this on broad locators like <code>body</code>, where exact full text is never what you mean.</td></tr>
+              <tr><td><code>to_have_count(n)</code></td><td>The locator matches exactly <code>n</code> elements.</td></tr>
+              <tr><td><code>to_be_enabled()</code> / <code>to_be_disabled()</code></td><td>The element is interactive / not interactive.</td></tr>
+              <tr><td><code>to_have_value("x")</code></td><td>An input's current value matches — distinct from its text content.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>A show/hide test reads exactly as you'd expect, with no waits despite the DOM changing between the two assertions:</p>
+        <pre><code>expect(page.get_by_placeholder("Hide/Show Example")).to_be_visible()
+page.get_by_role("button", name="Hide").click()
+expect(page.get_by_placeholder("Hide/Show Example")).to_be_hidden()</code></pre>
+
         <div class="callout supplement">
           <strong>Beyond this video <span class="src-tag">— the actual default timeouts, per Playwright's docs</span></strong>
           The course estimates the global timeout as "roughly 7 to 10 seconds" without citing a source. The documented defaults are more specific and worth knowing precisely: <strong>actions</strong> (click, fill, check, etc.) default to a <strong>30-second</strong> actionability timeout, configurable via <code>page.set_default_timeout(ms)</code> or a per-call <code>timeout=</code> argument. <strong>Web-first assertions</strong> (<code>expect()</code>) default to a separate, shorter <strong>5-second</strong> timeout, configurable via assertion-level options or global test config. These are two independently configurable values, not one shared number.
@@ -135,6 +156,14 @@ expect(page.get_by_text("Incorrect username or password")).to_be_visible()</code
         <details class="qa">
           <summary><span class="q-level mid">Mid</span> What are Playwright's actual default timeouts — for actions and for assertions?</summary>
           <div class="qa-body">30 seconds for actions (click, fill, etc.), configurable via <code>page.set_default_timeout()</code> or a per-call <code>timeout=</code> argument. 5 seconds for web-first assertions (<code>expect()</code>), configured separately. They're two independent values — knowing this precisely (rather than "a few seconds") signals you've actually used the tool, not just watched a tutorial.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the difference between <code>to_have_text()</code> and <code>to_contain_text()</code>?</summary>
+          <div class="qa-body"><code>to_have_text()</code> requires the element's full text to match exactly; <code>to_contain_text()</code> is a substring match that passes if the text appears anywhere within. On a narrow locator targeting one label, exact matching is usually right. On a broad locator like <code>body</code> — checking whether text appears anywhere on a page — <code>to_contain_text()</code> is the only sensible option.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> How would you test that clicking "Hide" actually hides an element?</summary>
+          <div class="qa-body">Assert visible, click, assert hidden: <code>expect(locator).to_be_visible()</code> → <code>click()</code> → <code>expect(locator).to_be_hidden()</code>. No waits needed between them — both assertions auto-retry, so the DOM changing in between is handled. <code>to_be_hidden()</code> passes whether the element is hidden via CSS or removed from the DOM entirely.</div>
         </details>
         <details class="qa">
           <summary><span class="q-level scenario">Scenario</span> A colleague fixes a flaky test by adding <code>time.sleep(5)</code> before the assertion. Why is that wrong, and what do you do instead?</summary>

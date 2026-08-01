@@ -805,6 +805,127 @@ function renderStringPipeline(containerId, config) {
   render();
 }
 
+/**
+ * renderTableScan("container-id", { headers, rows, steps })
+ *
+ * A real HTML table you can watch a locator strategy walk across — built for
+ * dynamic-table logic, where the whole point is that you don't know which
+ * column or row holds your target until runtime.
+ *
+ * steps: [{
+ *   code, desc,
+ *   header: i,                 // highlight one header cell
+ *   row: i,                    // highlight a whole row
+ *   cell: [rowIdx, colIdx],    // highlight one intersecting cell
+ *   scanned: [i, ...],         // headers already checked and rejected
+ *   vars: { name: "value" },   // loop/variable state shown below the table
+ *   result: { tone, text }
+ * }]
+ */
+function renderTableScan(containerId, config) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const { headers = [], rows = [], steps = [] } = config;
+
+  el.innerHTML = `
+    <div class="ts-controls">
+      <button class="btn-back" disabled>&#9668; Back</button>
+      <button class="btn-step">Step &#9658;</button>
+      <button class="btn-auto">&#9654; Autoplay</button>
+      <button class="btn-reset" disabled>&#8635; Reset</button>
+      <span class="ts-step-label"></span>
+    </div>
+    <div class="ts-code"></div>
+    <div class="ts-table-wrap">
+      <table class="ts-table">
+        <thead><tr>${headers.map((h, i) => `<th data-col="${i}">${h}</th>`).join("")}</tr></thead>
+        <tbody>
+          ${rows.map((r, ri) => `<tr data-row="${ri}">${r.map((c, ci) => `<td data-row="${ri}" data-col="${ci}">${c}</td>`).join("")}</tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+    <div class="ts-vars"></div>
+    <div class="ts-desc"></div>
+  `;
+
+  const table = el.querySelector(".ts-table");
+  const codeEl = el.querySelector(".ts-code");
+  const varsEl = el.querySelector(".ts-vars");
+  const descEl = el.querySelector(".ts-desc");
+  const label = el.querySelector(".ts-step-label");
+  const backBtn = el.querySelector(".btn-back");
+  const stepBtn = el.querySelector(".btn-step");
+  const autoBtn = el.querySelector(".btn-auto");
+  const resetBtn = el.querySelector(".btn-reset");
+
+  let index = 0;
+  let playing = false;
+
+  function clearMarks() {
+    table.querySelectorAll("th, td, tr").forEach((n) =>
+      n.classList.remove("ts-hit", "ts-row-hit", "ts-scanned", "ts-cell-hit")
+    );
+  }
+
+  function render() {
+    const step = index > 0 ? steps[index - 1] : null;
+    clearMarks();
+
+    if (step) {
+      (step.scanned || []).forEach((i) => {
+        const th = table.querySelector(`th[data-col="${i}"]`);
+        if (th) th.classList.add("ts-scanned");
+      });
+      if (step.header !== undefined) {
+        const th = table.querySelector(`th[data-col="${step.header}"]`);
+        if (th) th.classList.add("ts-hit");
+      }
+      if (step.row !== undefined) {
+        const tr = table.querySelector(`tr[data-row="${step.row}"]`);
+        if (tr) tr.classList.add("ts-row-hit");
+      }
+      if (step.cell) {
+        const td = table.querySelector(`td[data-row="${step.cell[0]}"][data-col="${step.cell[1]}"]`);
+        if (td) td.classList.add("ts-cell-hit");
+      }
+      codeEl.textContent = step.code || "";
+      varsEl.innerHTML = Object.entries(step.vars || {})
+        .map(([k, v]) => `<span class="ts-var"><code>${k}</code><b>${v}</b></span>`)
+        .join("");
+      descEl.className = "ts-desc" + (step.result ? " " + step.result.tone : "");
+      descEl.innerHTML = (step.result ? `<b>${step.result.text}</b><br>` : "") + (step.desc || "");
+    } else {
+      codeEl.textContent = config.introCode || "";
+      varsEl.innerHTML = "";
+      descEl.className = "ts-desc";
+      descEl.textContent = config.introText || "Step through to watch the locator find the right cell.";
+    }
+
+    label.textContent = index === 0 ? `Ready — step 0 of ${steps.length}` : `Step ${index} of ${steps.length}`;
+    backBtn.disabled = index === 0;
+    resetBtn.disabled = index === 0;
+    const atEnd = index === steps.length;
+    stepBtn.disabled = atEnd || playing;
+    autoBtn.disabled = atEnd || playing;
+    stepBtn.textContent = atEnd ? "Done ✓" : "Step ▸";
+  }
+
+  stepBtn.addEventListener("click", () => { if (index < steps.length) { index++; render(); } });
+  backBtn.addEventListener("click", () => { if (index > 0) { index--; render(); } });
+  autoBtn.addEventListener("click", () => {
+    playing = true; render();
+    const tick = () => {
+      if (index >= steps.length) { playing = false; render(); return; }
+      index++; render();
+      setTimeout(tick, 1600);
+    };
+    tick();
+  });
+  resetBtn.addEventListener("click", () => { index = 0; playing = false; render(); });
+
+  render();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initScrollProgress();
   initQuizzes();

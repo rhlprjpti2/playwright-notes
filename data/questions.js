@@ -197,6 +197,46 @@ window.ALL_QUESTIONS = [
   "file": "pages/framework-system-design.html"
  },
  {
+  "q": "Why can't you use a normal locator to click OK on a JavaScript alert?",
+  "a": "Because the alert is rendered by the browser, not the page — it has no HTML representation at all. There's no element in the DOM to match, so any locator times out. This affects every DOM-based automation tool, not just Playwright. Dialogs are handled via an event handler instead: <code>page.on(\"dialog\", lambda dialog: dialog.accept())</code>.",
+  "level": "junior",
+  "topic": "playwright-alerts-dialogs",
+  "topicLabel": "Alerts &amp; Dialogs",
+  "file": "pages/playwright-alerts-dialogs.html"
+ },
+ {
+  "q": "Why must the dialog handler be registered before the triggering action?",
+  "a": "Because it's an event subscription, not a wait. When the dialog fires, Playwright looks for an already-registered handler; if none exists, the handler you register afterwards never sees that event. Registering first is the same principle as <code>expect_popup()</code> being a context manager — subscribe before the trigger so the event can't be missed.",
+  "level": "mid",
+  "topic": "playwright-alerts-dialogs",
+  "topicLabel": "Alerts &amp; Dialogs",
+  "file": "pages/playwright-alerts-dialogs.html"
+ },
+ {
+  "q": "What is a lambda and why is one used here?",
+  "a": "A lambda is a Python anonymous function — a function defined inline without a name. <code>page.on()</code> requires a function to invoke when the event fires, and since the handler body is a single call, a lambda avoids defining a separate named function. <code>lambda dialog: dialog.accept()</code> is equivalent to a <code>def handle(dialog): dialog.accept()</code> passed by name.",
+  "level": "junior",
+  "topic": "playwright-alerts-dialogs",
+  "topicLabel": "Alerts &amp; Dialogs",
+  "file": "pages/playwright-alerts-dialogs.html"
+ },
+ {
+  "q": "How would you test the \"user clicks Cancel\" path?",
+  "a": "Register a handler calling <code>dialog.dismiss()</code> instead of <code>accept()</code>, then assert on whatever the application does when the action is declined — the record still exists, no confirmation message appears, and so on. The dialog handling itself is one line; the meaningful assertions are about the app's resulting state.",
+  "level": "mid",
+  "topic": "playwright-alerts-dialogs",
+  "topicLabel": "Alerts &amp; Dialogs",
+  "file": "pages/playwright-alerts-dialogs.html"
+ },
+ {
+  "q": "A colleague says dialogs can't be asserted on, only clicked through. Is that right?",
+  "a": "Not entirely. The dialog object exposes <code>message</code> and <code>type</code>, so you can capture the text inside the handler and assert it afterwards — verifying that the confirmation wording is correct, not just that a dialog appeared. Worth also knowing that Playwright auto-dismisses dialogs when no handler is registered, so a forgotten handler silently takes the Cancel path instead of failing loudly, which can make a test pass for the wrong reason.",
+  "level": "senior",
+  "topic": "playwright-alerts-dialogs",
+  "topicLabel": "Alerts &amp; Dialogs",
+  "file": "pages/playwright-alerts-dialogs.html"
+ },
+ {
   "q": "What does Playwright's automatic actionability check actually check for?",
   "a": "Per this course: visible, stable (finished loading/animating), receives events (not obscured by another element), and enabled. Playwright verifies these before most actions, retrying automatically until they pass or a timeout is reached.",
   "level": "junior",
@@ -240,6 +280,22 @@ window.ALL_QUESTIONS = [
   "q": "What are Playwright's actual default timeouts — for actions and for assertions?",
   "a": "30 seconds for actions (click, fill, etc.), configurable via <code>page.set_default_timeout()</code> or a per-call <code>timeout=</code> argument. 5 seconds for web-first assertions (<code>expect()</code>), configured separately. They're two independent values — knowing this precisely (rather than \"a few seconds\") signals you've actually used the tool, not just watched a tutorial.",
   "level": "mid",
+  "topic": "playwright-auto-waiting",
+  "topicLabel": "Auto-Waiting",
+  "file": "pages/playwright-auto-waiting.html"
+ },
+ {
+  "q": "What's the difference between <code>to_have_text()</code> and <code>to_contain_text()</code>?",
+  "a": "<code>to_have_text()</code> requires the element's full text to match exactly; <code>to_contain_text()</code> is a substring match that passes if the text appears anywhere within. On a narrow locator targeting one label, exact matching is usually right. On a broad locator like <code>body</code> — checking whether text appears anywhere on a page — <code>to_contain_text()</code> is the only sensible option.",
+  "level": "junior",
+  "topic": "playwright-auto-waiting",
+  "topicLabel": "Auto-Waiting",
+  "file": "pages/playwright-auto-waiting.html"
+ },
+ {
+  "q": "How would you test that clicking \"Hide\" actually hides an element?",
+  "a": "Assert visible, click, assert hidden: <code>expect(locator).to_be_visible()</code> → <code>click()</code> → <code>expect(locator).to_be_hidden()</code>. No waits needed between them — both assertions auto-retry, so the DOM changing in between is handled. <code>to_be_hidden()</code> passes whether the element is hidden via CSS or removed from the DOM entirely.",
+  "level": "junior",
   "topic": "playwright-auto-waiting",
   "topicLabel": "Auto-Waiting",
   "file": "pages/playwright-auto-waiting.html"
@@ -493,6 +549,54 @@ window.ALL_QUESTIONS = [
   "file": "pages/playwright-dynamic-locators.html"
  },
  {
+  "q": "What is an iframe and why can't a normal locator find elements inside one?",
+  "a": "An iframe embeds a completely separate HTML document inside the current page — its own html, body and DOM tree. <code>page.locator()</code> only queries the parent document, so anything inside the frame is outside its search scope. You cross the boundary with <code>page.frame_locator(selector)</code>, then chain locators off that.",
+  "level": "junior",
+  "topic": "playwright-frames",
+  "topicLabel": "Frames &amp; iFrames",
+  "file": "pages/playwright-frames.html"
+ },
+ {
+  "q": "What's the difference between <code>page.locator(\"#frame\")</code> and <code>page.frame_locator(\"#frame\")</code>?",
+  "a": "<code>locator()</code> matches the <code>&lt;iframe&gt;</code> element itself as an object sitting in the parent document — useful for checking the frame exists or its dimensions, but it gives no access to the content inside. <code>frame_locator()</code> means \"enter this frame\": subsequent locators chained off it query the embedded document instead of the parent.",
+  "level": "mid",
+  "topic": "playwright-frames",
+  "topicLabel": "Frames &amp; iFrames",
+  "file": "pages/playwright-frames.html"
+ },
+ {
+  "q": "After working inside a frame, how do you get back to the main page?",
+  "a": "You don't \"switch back\" — there's no modal state to reset. The <code>page</code> object always refers to the parent document and the frame object always refers to the frame; both remain valid simultaneously. Calling <code>page.locator(...)</code> queries the parent, calling <code>page_frame.locator(...)</code> queries the frame. (This differs from Selenium, where <code>switch_to.frame()</code> changes driver state and requires an explicit <code>switch_to.default_content()</code> to return.)",
+  "level": "mid",
+  "topic": "playwright-frames",
+  "topicLabel": "Frames &amp; iFrames",
+  "file": "pages/playwright-frames.html"
+ },
+ {
+  "q": "How do you assert that some text appears anywhere on a page?",
+  "a": "Target the <code>body</code> element — which wraps the whole document — and use a substring assertion: <code>expect(page.locator(\"body\")).to_contain_text(\"happy subscribers\")</code>. Use <code>to_contain_text()</code> rather than <code>to_have_text()</code>, since the latter requires the element's entire text to match exactly.",
+  "level": "junior",
+  "topic": "playwright-frames",
+  "topicLabel": "Frames &amp; iFrames",
+  "file": "pages/playwright-frames.html"
+ },
+ {
+  "q": "An element is clearly visible on screen, but your locator times out saying it doesn't exist. What do you check?",
+  "a": "Visible-but-unreachable almost always means wrong document. Check whether the element sits inside an <code>&lt;iframe&gt;</code> (needs <code>frame_locator()</code>), inside a popup window opened by an earlier click (needs the child page object from <code>expect_popup()</code>), or whether it's a native browser dialog (not in any DOM — needs <code>page.on(\"dialog\")</code>). Inspecting the element and looking for an iframe ancestor in the DOM tree settles it quickly. If none of those apply, then consider timing or an incorrect selector.",
+  "level": "scenario",
+  "topic": "playwright-frames",
+  "topicLabel": "Frames &amp; iFrames",
+  "file": "pages/playwright-frames.html"
+ },
+ {
+  "q": "How do you handle an element inside a frame that's nested within another frame?",
+  "a": "Chain <code>frame_locator()</code> calls, one per level: <code>page.frame_locator(\"#outer\").frame_locator(\"#inner\").locator(\"button\")</code>. Each call descends one document deeper. Worth noting frames can load asynchronously and independently of the parent — <code>frame_locator()</code> participates in auto-waiting, so it handles a frame that hasn't loaded yet, but a frame whose <code>src</code> is slow can still surface as a timeout on the inner locator rather than an obvious frame-level error.",
+  "level": "senior",
+  "topic": "playwright-frames",
+  "topicLabel": "Frames &amp; iFrames",
+  "file": "pages/playwright-frames.html"
+ },
+ {
   "q": "What two DOM conditions must hold for get_by_label to successfully find an element?",
   "a": "Either the input element is nested inside the <code>&lt;label&gt;</code> tag itself, or the label's <code>for</code> attribute exactly matches the input's <code>id</code> attribute. If neither holds, get_by_label won't find it — even if a label is visually present on the page.",
   "level": "junior",
@@ -520,6 +624,22 @@ window.ALL_QUESTIONS = [
   "q": "What's the difference between what select_option chooses and what's visually shown in a dropdown?",
   "a": "select_option targets the underlying HTML <code>option value</code> attribute, which is not necessarily identical to the text visually displayed to the user in the dropdown UI.",
   "level": "junior",
+  "topic": "playwright-locators",
+  "topicLabel": "Locators",
+  "file": "pages/playwright-locators.html"
+ },
+ {
+  "q": "A search box has no label and no text content. How do you locate it?",
+  "a": "<code>get_by_placeholder(\"...\")</code> matches on the greyed-out hint text inside the field. It's the right choice when no label exists, and also a clean workaround when a label exists but its <code>for</code>/<code>id</code> linkage is broken. Note a placeholder isn't the element's text content, so <code>get_by_text()</code> won't find it.",
+  "level": "junior",
+  "topic": "playwright-locators",
+  "topicLabel": "Locators",
+  "file": "pages/playwright-locators.html"
+ },
+ {
+  "q": "How do you click an item in a menu that only appears on mouse hover?",
+  "a": "Two steps: <code>.hover()</code> on the trigger element to open the menu, then a normal locator + <code>.click()</code> on the item inside it. Auto-waiting won't infer that a hover is needed — it checks whether an element is visible and actionable, and a hover-only menu item genuinely isn't visible until the hover happens, so the hover must be its own explicit step.",
+  "level": "mid",
   "topic": "playwright-locators",
   "topicLabel": "Locators",
   "file": "pages/playwright-locators.html"
@@ -563,6 +683,46 @@ window.ALL_QUESTIONS = [
   "topic": "playwright-locators",
   "topicLabel": "Locators",
   "file": "pages/playwright-locators.html"
+ },
+ {
+  "q": "How would you verify a specific cell's value in a table where both the row and column positions are dynamic?",
+  "a": "Resolve both coordinates at runtime. For the column: get all <code>th</code> elements, use <code>count()</code> as a loop bound, and check each with <code>.nth(i).filter(has_text=\"Price\").count() &gt; 0</code>, recording the index and breaking on match. For the row: <code>page.locator(\"tr\").filter(has_text=\"Rice\")</code> — content-based, so position doesn't matter. Then intersect: <code>rice_row.locator(\"td\").nth(price_column)</code>, scoping the cell search to that row. Finally assert with <code>expect(...).to_have_text()</code>.",
+  "level": "mid",
+  "topic": "playwright-web-tables",
+  "topicLabel": "Web Tables",
+  "file": "pages/playwright-web-tables.html"
+ },
+ {
+  "q": "What's the difference between <code>.count()</code> and <code>expect(locator).to_have_count(n)</code>?",
+  "a": "<code>.count()</code> returns a number you can use in code — as a loop bound, in an if-condition, anywhere. <code>to_have_count(n)</code> is a web-first assertion: it doesn't return anything usable, it auto-retries until the count matches or fails the test. Use <code>count()</code> for logic, <code>to_have_count()</code> for verification.",
+  "level": "junior",
+  "topic": "playwright-web-tables",
+  "topicLabel": "Web Tables",
+  "file": "pages/playwright-web-tables.html"
+ },
+ {
+  "q": "Earlier you said hardcoding <code>.nth()</code> is fragile. Why is it acceptable here?",
+  "a": "Because the index isn't hardcoded — it's computed at runtime by scanning the headers. <code>nth(price_column)</code> where <code>price_column</code> was discovered by searching for the text \"Price\" is fundamentally different from <code>nth(1)</code> written by hand. The fragility of <code>.nth()</code> comes from assuming a fixed position, not from the method itself.",
+  "level": "mid",
+  "topic": "playwright-web-tables",
+  "topicLabel": "Web Tables",
+  "file": "pages/playwright-web-tables.html"
+ },
+ {
+  "q": "Your table test passes locally but fails in a different environment where the table has an extra \"Stock\" column inserted before Price. Does this solution survive?",
+  "a": "Yes — that's precisely what it's built for. The column loop rescans headers at runtime, so Price simply resolves to index 2 instead of 1, and everything downstream adjusts. A hardcoded <code>nth(1)</code> would silently read the Stock value and either fail with a confusing mismatch or, worse, pass against the wrong data.",
+  "level": "scenario",
+  "topic": "playwright-web-tables",
+  "topicLabel": "Web Tables",
+  "file": "pages/playwright-web-tables.html"
+ },
+ {
+  "q": "Is looping through headers in Python the best approach, or is there a more idiomatic Playwright way?",
+  "a": "The loop is explicit and easy to reason about, which is why it's good for demonstrating the logic. More idiomatic options: <code>page.locator(\"th\").all_text_contents()</code> returns every header's text as a Python list in one round-trip, so <code>.index(\"Price\")</code> replaces the whole loop — fewer calls to the browser and simpler code. If the markup is semantic, <code>get_by_role(\"row\")</code>/<code>get_by_role(\"cell\")</code> is more robust than tag selectors. Worth noting the loop makes one browser round-trip per header, which matters on large tables.",
+  "level": "senior",
+  "topic": "playwright-web-tables",
+  "topicLabel": "Web Tables",
+  "file": "pages/playwright-web-tables.html"
  },
  {
   "q": "Does a Pytest fixture run automatically, like JUnit's @BeforeTest or TestNG's before-hooks?",

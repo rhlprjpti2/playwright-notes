@@ -30,6 +30,9 @@ TOPIC_LABELS = {
     "playwright-dynamic-locators": "Dynamic Locators",
     "first-real-test": "First Real Test",
     "playwright-child-windows": "Child Windows &amp; Popups",
+    "playwright-web-tables": "Web Tables",
+    "playwright-alerts-dialogs": "Alerts &amp; Dialogs",
+    "playwright-frames": "Frames &amp; iFrames",
     "framework-system-design": "Framework &amp; System Design",
 }
 

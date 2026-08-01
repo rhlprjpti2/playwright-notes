@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamic Web Tables · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Dynamic Web Tables</div>
+    <h1>Dynamic Web Tables</h1>
+    <p class="lede">"Verify the price of Rice is 37" sounds trivial until you can't assume which column price is in, or which row Rice is on. This is the classic table interview question, and the answer is a chain of concepts — count, loops, filter, nth, scoped search — combined rather than any single API.</p>
+    <div class="card-tags">
+      <span>playwright</span>
+      <span>tables</span>
+      <span>locators</span>
+      <span>logic</span>
+    </div>
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">The problem</a>
+      <a href="#visual">Watch it resolve</a>
+      <a href="#code">The full solution</a>
+      <a href="#apis">The APIs involved</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>The problem</h2>
+        <p>Given a table of products and prices, verify that <strong>Rice costs 37</strong>. The naive approach — <code>td:nth-child(2)</code> on row 4 — works exactly until someone adds a column, re-sorts the rows, or inserts a product. Both coordinates are unknown at write-time:</p>
+        <ul>
+          <li><strong>Which column</strong> holds the price? Columns can be added or reordered.</li>
+          <li><strong>Which row</strong> holds Rice? Rows are dynamic and may be sorted differently.</li>
+        </ul>
+        <p>So the solution has three parts: find the price column index at runtime, find the Rice row at runtime, then read the cell where they intersect.</p>
+      </section>
+
+      <section id="visual">
+        <h2>Watch it resolve</h2>
+        <p class="lead">A real table below. Step through and watch each header get checked and rejected until the price column is found, then the row filter, then the intersection.</p>
+
+        <div class="table-scan" id="table-demo"></div>
+        <script>
+          renderTableScan("table-demo", {
+            headers: ["Veg/fruit name", "Price", "Discount price"],
+            rows: [
+              ["Beans", "18", "17"],
+              ["Brinjal", "29", "25"],
+              ["Carrot", "32", "30"],
+              ["Rice", "37", "35"],
+              ["Tomato", "25", "22"]
+            ],
+            introCode: 'page.goto(TABLE_URL)',
+            introText: "Goal: verify Rice costs 37 — without hardcoding which column or row that is.",
+            steps: [
+              {
+                code: 'page.locator("th").count()',
+                vars: { "column_count": "3" },
+                desc: 'First, how many columns are there? <code>count()</code> returns the number of elements a locator matched — here, 3 header cells. This becomes the loop bound, so the code adapts if columns are added later.'
+              },
+              {
+                code: 'for i in range(column_count):\n    page.locator("th").nth(0).filter(has_text="Price")',
+                header: 0, vars: { "i": "0", "matches": "0" },
+                desc: '<code>nth(0)</code> scopes to the first header only, then <code>filter(has_text="Price")</code> asks: does <em>this</em> header contain "Price"? "Veg/fruit name" does not — the filter matches nothing, so <code>count()</code> is 0.',
+                result: { tone: "fail", text: "✗ no match — keep looping" }
+              },
+              {
+                code: 'page.locator("th").nth(1).filter(has_text="Price")',
+                header: 1, scanned: [0], vars: { "i": "1", "matches": "1" },
+                desc: 'Second header contains "Price" — the filter matches, <code>count()</code> is 1, which is greater than 0. We record <code>i</code> as the price column index and <code>break</code> out of the loop; there is no reason to keep scanning.',
+                result: { tone: "pass", text: "✓ found — price_column = 1" }
+              },
+              {
+                code: 'rice_row = page.locator("tr").filter(has_text="Rice")',
+                row: 3, scanned: [0], header: 1,
+                vars: { "price_column": "1", "rice_row": "1 match" },
+                desc: 'No loop needed here. <code>locator("tr")</code> matches every row, and <code>.filter(has_text="Rice")</code> narrows to just the one containing Rice — content-based, so it works wherever that row happens to sit.',
+                result: { tone: "info", text: "Row found by content, not position" }
+              },
+              {
+                code: 'rice_row.locator("td").nth(price_column)',
+                row: 3, cell: [3, 1], header: 1, scanned: [0],
+                vars: { "price_column": "1", "scope": "3 cells (not 15)" },
+                desc: 'Now the two coordinates combine. Searching <code>td</code> from <code>rice_row</code> instead of <code>page</code> restricts the scope to that row\'s 3 cells rather than all 15 in the table — then <code>nth(price_column)</code> picks the one under Price.',
+                result: { tone: "info", text: "Scoped search + dynamic index = the target cell" }
+              },
+              {
+                code: 'expect(rice_row.locator("td").nth(price_column)).to_have_text("37")',
+                cell: [3, 1], row: 3,
+                vars: { "actual": '"37"', "expected": '"37"' },
+                desc: 'A web-first assertion on the resolved cell. Because both coordinates were discovered at runtime, this passes whether Rice is row 1 or row 50, and whether Price is column 2 or column 7.',
+                result: { tone: "pass", text: "✓ PASSED" }
+              }
+            ]
+          });
+        </script>
+
+        <div class="quiz">
+          <div class="quiz-q">Why search <code>td</code> from <code>rice_row</code> rather than from <code>page</code>?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">It's faster, but functionally identical</button>
+            <button class="quiz-opt" data-correct="true">Scope — from page it matches all 15 cells in the table, so nth(1) would return the wrong row's cell entirely</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="code">
+        <h2>The full solution</h2>
+        <pre><code>page.goto(TABLE_URL)
+
+# 1. Find which column holds "Price" — don't assume it's column 2
+price_column = -1
+column_count = page.locator("th").count()
+
+for i in range(column_count):
+    if page.locator("th").nth(i).filter(has_text="Price").count() > 0:
+        price_column = i
+        print(f"Price column index is {price_column}")
+        break
+
+# 2. Find the Rice row by content, not position
+rice_row = page.locator("tr").filter(has_text="Rice")
+
+# 3. Read the cell where they intersect, scoped to that row
+expect(rice_row.locator("td").nth(price_column)).to_have_text("37")</code></pre>
+        <div class="callout tip">
+          <strong>The f-string</strong>
+          <code>f"Price column index is {price_column}"</code> — prefixing a string with <code>f</code> makes anything inside <code>{}</code> evaluate as a variable at runtime rather than print literally. Without the <code>f</code>, you'd get the text <code>{price_column}</code> printed as-is.
+        </div>
+      </section>
+
+      <section id="apis">
+        <h2>The APIs involved</h2>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>API</th><th>What it does here</th></tr></thead>
+            <tbody>
+              <tr><td><code>.count()</code></td><td>Returns how many elements a locator matched, as a plain number you can loop over. Distinct from <code>expect(...).to_have_count(n)</code>, which asserts rather than returns.</td></tr>
+              <tr><td><code>.nth(i)</code></td><td>Selects the element at index <code>i</code> from a multi-match locator. Legitimate here because the index is <em>computed at runtime</em>, not hardcoded.</td></tr>
+              <tr><td><code>.filter(has_text=...)</code></td><td>Narrows a locator to elements containing given text — the mechanism for finding both the column and the row by content.</td></tr>
+              <tr><td>scoped <code>locator()</code></td><td>Calling <code>.locator()</code> on an existing locator searches only inside it. See <a href="playwright-dynamic-locators.html">Dynamic Locators</a> for the same pattern on product cards.</td></tr>
+              <tr><td><code>to_have_text()</code></td><td>Asserts exact text. Use <code>to_contain_text()</code> when you only need a substring match.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout supplement">
+          <strong>Beyond this video <span class="src-tag">— a shorter route when the DOM cooperates</span></strong>
+          If the table has proper semantic markup, Playwright's ARIA roles can do a lot of this directly: <code>page.get_by_role("row").filter(has_text="Rice").get_by_role("cell").nth(price_column)</code>. And for the column lookup, <code>page.locator("th").all_text_contents()</code> returns a plain Python list of every header's text in one call, so you can use <code>.index("Price")</code> instead of a manual loop. The loop version above is worth understanding because it's what an interviewer usually wants to see you reason through — but knowing the shortcut shows depth.
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> How would you verify a specific cell's value in a table where both the row and column positions are dynamic?</summary>
+          <div class="qa-body">Resolve both coordinates at runtime. For the column: get all <code>th</code> elements, use <code>count()</code> as a loop bound, and check each with <code>.nth(i).filter(has_text="Price").count() &gt; 0</code>, recording the index and breaking on match. For the row: <code>page.locator("tr").filter(has_text="Rice")</code> — content-based, so position doesn't matter. Then intersect: <code>rice_row.locator("td").nth(price_column)</code>, scoping the cell search to that row. Finally assert with <code>expect(...).to_have_text()</code>.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the difference between <code>.count()</code> and <code>expect(locator).to_have_count(n)</code>?</summary>
+          <div class="qa-body"><code>.count()</code> returns a number you can use in code — as a loop bound, in an if-condition, anywhere. <code>to_have_count(n)</code> is a web-first assertion: it doesn't return anything usable, it auto-retries until the count matches or fails the test. Use <code>count()</code> for logic, <code>to_have_count()</code> for verification.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Earlier you said hardcoding <code>.nth()</code> is fragile. Why is it acceptable here?</summary>
+          <div class="qa-body">Because the index isn't hardcoded — it's computed at runtime by scanning the headers. <code>nth(price_column)</code> where <code>price_column</code> was discovered by searching for the text "Price" is fundamentally different from <code>nth(1)</code> written by hand. The fragility of <code>.nth()</code> comes from assuming a fixed position, not from the method itself.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level scenario">Scenario</span> Your table test passes locally but fails in a different environment where the table has an extra "Stock" column inserted before Price. Does this solution survive?</summary>
+          <div class="qa-body">Yes — that's precisely what it's built for. The column loop rescans headers at runtime, so Price simply resolves to index 2 instead of 1, and everything downstream adjusts. A hardcoded <code>nth(1)</code> would silently read the Stock value and either fail with a confusing mismatch or, worse, pass against the wrong data.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Is looping through headers in Python the best approach, or is there a more idiomatic Playwright way?</summary>
+          <div class="qa-body">The loop is explicit and easy to reason about, which is why it's good for demonstrating the logic. More idiomatic options: <code>page.locator("th").all_text_contents()</code> returns every header's text as a Python list in one round-trip, so <code>.index("Price")</code> replaces the whole loop — fewer calls to the browser and simpler code. If the markup is semantic, <code>get_by_role("row")</code>/<code>get_by_role("cell")</code> is more robust than tag selectors. Worth noting the loop makes one browser round-trip per header, which matters on large tables.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Scope is the bug that bites</strong>
+          <code>page.locator("td").nth(price_column)</code> searches every cell in the table — with 5 rows of 3 columns that's 15 cells, so <code>nth(1)</code> returns the first row's price, not Rice's. The scoped form <code>rice_row.locator("td")</code> is what makes the index mean "column within this row."
+        </div>
+        <div class="callout warn">
+          <strong>Substring matching in filters</strong>
+          <code>filter(has_text="Rice")</code> matches any row <em>containing</em> that text — a row for "Brown Rice" or "Rice Flour" would also match, and a multi-match locator then fails strict mode. When values can overlap, filter on an exact-match regex or a more specific cell locator instead.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="playwright-dynamic-locators.html">Dynamic Locators &amp; Filtering →</a>
+          <a href="playwright-locators.html">Playwright Core Locators →</a>
+          <a href="playwright-auto-waiting.html">Auto-Waiting &amp; Assertions →</a>
+          <a href="python-basics.html">Python Basics →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: "Handling Dynamic Web Tables" — added 2026-07-30</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

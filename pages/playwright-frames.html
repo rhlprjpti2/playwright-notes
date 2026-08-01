@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frames &amp; iFrames · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+<script src="../assets/playground.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Frames &amp; iFrames</div>
+    <h1>Frames &amp; iFrames</h1>
+    <p class="lede">An iframe is a whole separate HTML document embedded inside the page. Visually it looks like part of the page; structurally it isn't, so <code>page.locator()</code> can't see into it. <code>frame_locator()</code> is how you cross that boundary.</p>
+    <div class="card-tags">
+      <span>playwright</span>
+      <span>frames</span>
+      <span>locators</span>
+    </div>
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">What a frame actually is</a>
+      <a href="#demo">Prove it yourself</a>
+      <a href="#code">Using frame_locator()</a>
+      <a href="#body-assert">Asserting on whole-page text</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>What a frame actually is</h2>
+        <p>An <code>&lt;iframe&gt;</code> embeds an entirely separate HTML document inside the current one. The two share screen space but not structure — the embedded page has its own <code>&lt;html&gt;</code>, its own <code>&lt;body&gt;</code>, and its own DOM tree. News sites, embedded video players, payment forms and third-party widgets are all commonly iframes.</p>
+        <p>Because <code>page.locator()</code> only queries the parent document, an element inside a frame is invisible to it — the search finds nothing and, thanks to auto-waiting, retries until it times out. Same failure signature as using the wrong page object for <a href="playwright-child-windows.html">a popup</a>, and for the same underlying reason: wrong document.</p>
+      </section>
+
+      <section id="demo">
+        <h2>Prove it yourself</h2>
+        <p class="lead">Below is a genuine nested document — a real <code>&lt;iframe&gt;</code> inside this notes page, not a picture of one. The queries run for real against the actual DOM, so the parent-scope query genuinely cannot reach the link inside the frame.</p>
+
+        <div class="frame-scope" id="frame-demo"></div>
+        <script>
+          renderFrameScopeDemo("frame-demo", {
+            queries: [
+              {
+                display: 'page.locator("a")',
+                scope: "parent",
+                sel: "a",
+                explain: "Searches the parent document only. It finds the parent's own \"Contact sales\" link — but not the \"All Access Plan\" link, even though you can see it right there. That link lives in a different document."
+              },
+              {
+                display: 'page.locator("#all-access")',
+                scope: "parent",
+                sel: "#all-access",
+                explain: "Zero matches. The id genuinely does not exist in the parent document. In a real test this wouldn't fail instantly — auto-waiting would retry until timeout, producing a confusing \"element not found\" for an element that's plainly visible on screen."
+              },
+              {
+                display: 'page.frame_locator("iframe").locator("#all-access")',
+                scope: "frame",
+                sel: "#all-access",
+                explain: "Crossing the boundary into the embedded document finds it immediately. This is exactly what frame_locator() does — switches which document subsequent queries run against."
+              },
+              {
+                display: 'page.frame_locator("iframe").locator("a")',
+                scope: "frame",
+                sel: "a",
+                explain: "Scoped inside the frame, so it matches the frame's link — and notably NOT the parent's \"Contact sales\" link. The isolation cuts both ways."
+              }
+            ]
+          });
+        </script>
+
+        <div class="quiz">
+          <div class="quiz-q">In a real Playwright test, what happens when you call <code>page.locator("#all-access")</code> for an element that's inside an iframe?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">It fails instantly with a clear "element is inside a frame" error</button>
+            <button class="quiz-opt" data-correct="true">Auto-waiting retries until timeout, then reports element not found — even though the element is visibly on screen</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="code">
+        <h2>Using frame_locator()</h2>
+        <pre><code># Identify the frame itself, then work inside it
+page_frame = page.frame_locator("#courses-iframe")
+
+page_frame.get_by_role("link", name="All Access Plan").click()</code></pre>
+        <p>Two things worth noting:</p>
+        <ul>
+          <li><strong>Use <code>frame_locator()</code>, not <code>locator()</code>, to select the frame.</strong> <code>page.locator("#courses-iframe")</code> would match the <code>&lt;iframe&gt;</code> element itself as an object on the parent page — it does not give you access to its contents. <code>frame_locator()</code> specifically means "enter this frame."</li>
+          <li><strong>Every element inside must go through the frame object.</strong> Once you have <code>page_frame</code>, all locators chain off it. Reverting to <code>page.</code> puts you straight back in the parent document — the two coexist, and you switch by choosing which object to call.</li>
+        </ul>
+        <div class="callout supplement">
+          <strong>Beyond this video <span class="src-tag">— related APIs</span></strong>
+          <code>frame_locator()</code> is the modern, auto-waiting-aware approach and should be the default. Older APIs still appear in existing codebases: <code>page.frame(name="...")</code> and <code>page.frame(url="...")</code> return a <code>Frame</code> object, and <code>page.frames</code> lists every frame on the page. Frames also <strong>nest</strong> — for a frame inside a frame, chain them: <code>page.frame_locator("#outer").frame_locator("#inner").locator("button")</code>.
+        </div>
+      </section>
+
+      <section id="body-assert">
+        <h2>Asserting on whole-page text</h2>
+        <p>To check that some text appears <em>anywhere</em> in a document without knowing which element holds it, target <code>body</code> — which wraps the entire document — and assert it contains the text:</p>
+        <pre><code>expect(page_frame.locator("body")).to_contain_text("happy subscribers")</code></pre>
+        <p>This is a genuinely different assertion shape from what's covered on the <a href="playwright-auto-waiting.html">Auto-Waiting</a> page, and the distinction is worth being precise about:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Approach</th><th>Asks</th><th>Best when</th></tr></thead>
+            <tbody>
+              <tr><td><code>expect(get_by_text("x")).to_be_visible()</code></td><td>"Find the element containing this text — is it visible?"</td><td>You care that a specific element is displayed</td></tr>
+              <tr><td class="highlight"><code>expect(locator("body")).to_contain_text("x")</code></td><td>"Within this region, does this text appear anywhere?"</td><td>You don't know or care which element holds it</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout tip">
+          <strong>to_contain_text vs to_have_text</strong>
+          <code>to_contain_text()</code> is a substring match — passes if the text appears anywhere within. <code>to_have_text()</code> requires the element's full text to match exactly. On a <code>body</code> locator you almost always want <code>to_contain_text()</code>, since the exact full text of an entire document is never what you're asserting.
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What is an iframe and why can't a normal locator find elements inside one?</summary>
+          <div class="qa-body">An iframe embeds a completely separate HTML document inside the current page — its own html, body and DOM tree. <code>page.locator()</code> only queries the parent document, so anything inside the frame is outside its search scope. You cross the boundary with <code>page.frame_locator(selector)</code>, then chain locators off that.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What's the difference between <code>page.locator("#frame")</code> and <code>page.frame_locator("#frame")</code>?</summary>
+          <div class="qa-body"><code>locator()</code> matches the <code>&lt;iframe&gt;</code> element itself as an object sitting in the parent document — useful for checking the frame exists or its dimensions, but it gives no access to the content inside. <code>frame_locator()</code> means "enter this frame": subsequent locators chained off it query the embedded document instead of the parent.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> After working inside a frame, how do you get back to the main page?</summary>
+          <div class="qa-body">You don't "switch back" — there's no modal state to reset. The <code>page</code> object always refers to the parent document and the frame object always refers to the frame; both remain valid simultaneously. Calling <code>page.locator(...)</code> queries the parent, calling <code>page_frame.locator(...)</code> queries the frame. (This differs from Selenium, where <code>switch_to.frame()</code> changes driver state and requires an explicit <code>switch_to.default_content()</code> to return.)</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> How do you assert that some text appears anywhere on a page?</summary>
+          <div class="qa-body">Target the <code>body</code> element — which wraps the whole document — and use a substring assertion: <code>expect(page.locator("body")).to_contain_text("happy subscribers")</code>. Use <code>to_contain_text()</code> rather than <code>to_have_text()</code>, since the latter requires the element's entire text to match exactly.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level scenario">Scenario</span> An element is clearly visible on screen, but your locator times out saying it doesn't exist. What do you check?</summary>
+          <div class="qa-body">Visible-but-unreachable almost always means wrong document. Check whether the element sits inside an <code>&lt;iframe&gt;</code> (needs <code>frame_locator()</code>), inside a popup window opened by an earlier click (needs the child page object from <code>expect_popup()</code>), or whether it's a native browser dialog (not in any DOM — needs <code>page.on("dialog")</code>). Inspecting the element and looking for an iframe ancestor in the DOM tree settles it quickly. If none of those apply, then consider timing or an incorrect selector.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> How do you handle an element inside a frame that's nested within another frame?</summary>
+          <div class="qa-body">Chain <code>frame_locator()</code> calls, one per level: <code>page.frame_locator("#outer").frame_locator("#inner").locator("button")</code>. Each call descends one document deeper. Worth noting frames can load asynchronously and independently of the parent — <code>frame_locator()</code> participates in auto-waiting, so it handles a frame that hasn't loaded yet, but a frame whose <code>src</code> is slow can still surface as a timeout on the inner locator rather than an obvious frame-level error.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>The confusing failure mode</strong>
+          An element inside a frame produces a plain "not found" timeout — not an error mentioning frames. Since the element is visibly on screen, this is genuinely disorienting the first time. If a locator fails for something you can plainly see, check for an iframe ancestor before anything else.
+        </div>
+        <div class="callout warn">
+          <strong>Don't select the frame with locator()</strong>
+          <code>page.locator("#my-frame").locator("button")</code> looks reasonable but fails — it's searching for a button <em>inside the iframe element as rendered in the parent document</em>, which contains nothing. Only <code>frame_locator()</code> crosses into the embedded document.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="playwright-child-windows.html">Child Windows &amp; Popups →</a>
+          <a href="playwright-alerts-dialogs.html">Alerts &amp; Dialogs →</a>
+          <a href="playwright-locators.html">Playwright Core Locators →</a>
+          <a href="playwright-auto-waiting.html">Auto-Waiting &amp; Assertions →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: "Handling Frames &amp; iFrames" — added 2026-07-30</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

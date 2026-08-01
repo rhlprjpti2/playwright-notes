@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JavaScript Alerts &amp; Dialogs · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Alerts &amp; Dialogs</div>
+    <h1>JavaScript Alerts &amp; Dialogs</h1>
+    <p class="lede">Every locator strategy on this site assumes the thing you want is in the DOM. A native <code>alert()</code> or <code>confirm()</code> isn't — it's a browser-level window with no HTML behind it. Inspect it and you'll find nothing, which is why it needs an entirely different mechanism.</p>
+    <div class="card-tags">
+      <span>playwright</span>
+      <span>dialogs</span>
+      <span>events</span>
+    </div>
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Why locators don't work</a>
+      <a href="#visual">The event listener flow</a>
+      <a href="#lambda">The lambda explained</a>
+      <a href="#api">Dialog API</a>
+      <a href="#pattern">The same pattern, three times</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Why locators don't work</h2>
+        <p>A JavaScript <code>alert()</code>, <code>confirm()</code>, or <code>prompt()</code> is rendered by the <strong>browser itself</strong>, not by the page. Right-click and inspect it and there is no element to find — no tag, no class, no id — because it isn't part of the document at all. Every DOM-based tool hits the same wall here; this isn't a Playwright limitation specifically.</p>
+        <p>So instead of locating it, you register an <strong>event handler</strong> in advance: "if a dialog ever appears during this test, here's what to do with it." Playwright then handles it automatically whenever it fires.</p>
+
+        <div class="mock-frame">
+          <div class="mock-frame-label">Illustrative — a native dialog sits above the page, outside the DOM</div>
+          <div class="mock-window">
+            <div class="mock-titlebar">
+              <span>shop.example.com says</span>
+              <span class="mock-winctrls"><i></i><i></i><i class="close"></i></span>
+            </div>
+            <div class="mock-body">
+              <p style="margin:0 0 16px; font-size:13px;">Are you sure you want to continue?</p>
+              <div class="mock-btn-row" style="justify-content:flex-end; margin-bottom:0;">
+                <button class="mock-btn">Cancel</button>
+                <button class="mock-btn primary mock-spotlight">OK</button>
+              </div>
+            </div>
+          </div>
+          <div class="mock-caption">There is no <code>&lt;button&gt;</code> behind that OK. <code>page.get_by_role("button", name="OK")</code> finds nothing and times out — the element genuinely does not exist in the page.</div>
+        </div>
+      </section>
+
+      <section id="visual">
+        <h2>The event listener flow</h2>
+        <p class="lead">The ordering is the whole trick: the handler is registered <em>before</em> the click that triggers the dialog. Step through and note that nothing appears at registration time.</p>
+
+        <div class="sim" id="dialog-sim"></div>
+        <script>
+          renderStepDebugger("dialog-sim", {
+            title: "test_alert_handling · step debugger",
+            terminalPrompt: "$ pytest test_dialogs.py -s",
+            legend: [
+              { label: "listener registered", color: "var(--success)" },
+              { label: "dialog fires", color: "#e0c14a" },
+              { label: "handled automatically", color: "var(--accent-3)" }
+            ],
+            codeBlocks: [
+              {
+                caption: "test_dialogs.py",
+                lines: [
+                  { id: "dln1", zone: "setup", html: '<span class="ln">1</span> page.goto(BASE_URL)' },
+                  { id: "dln2", zone: "setup", html: '<span class="ln">2</span> page.on(<span class="tok-str">"dialog"</span>, <span class="tok-kw">lambda</span> dialog: dialog.accept())' },
+                  { id: "dln3", html: '<span class="ln">3</span> page.get_by_role(<span class="tok-str">"button"</span>, name=<span class="tok-str">"Confirm"</span>).click()' },
+                  { id: "dln4", zone: "teardown", html: '<span class="ln">4</span> <span class="tok-cm"># no dialog-handling code needed here — already handled</span>' }
+                ]
+              }
+            ],
+            steps: [
+              { lineIds: ["dln1"], desc: "Land on the page. Nothing unusual yet.", term: '<span class="tag-setup">▸ page.goto(BASE_URL)</span>' },
+              { lineIds: ["dln2"], desc: "Register the handler. Note: no dialog exists at this point and nothing pops up — you are only declaring what should happen IF one appears later.", term: '<span class="tag-setup">▸ dialog handler registered — nothing shown yet</span>' },
+              { lineIds: ["dln3"], desc: "The click runs and the browser fires a native confirm dialog. Execution would normally block here waiting for a human.", term: '<span class="tag-pause">⚠ native dialog fired — browser blocking</span>' },
+              { lineIds: ["dln2"], desc: "Playwright routes the dialog to the registered handler, which calls dialog.accept() — the programmatic equivalent of clicking OK. This happens automatically, with no line of test code at the point of the dialog.", term: '<span class="tag-setup">▸ handler invoked → dialog.accept()</span>' },
+              { lineIds: ["dln4"], desc: "Dialog dismissed, the browser unblocks, and the test continues normally. Nothing at line 4 mentions dialogs at all.", term: '<span class="tag-test">✓ dialog accepted — execution resumes</span>' }
+            ]
+          });
+        </script>
+
+        <div class="quiz">
+          <div class="quiz-q">What happens if you register the dialog handler <em>after</em> the click that triggers it?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">It still works — Playwright queues dialogs until a handler exists</button>
+            <button class="quiz-opt" data-correct="true">The dialog fires with no handler registered, so it isn't handled — the test blocks or Playwright auto-dismisses it, and the flow breaks</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="lambda">
+        <h2>The lambda explained</h2>
+        <p><code>page.on()</code> takes two arguments: the event name, and <strong>a function to call</strong> when it fires. The function must accept the dialog as a parameter. Written out longhand:</p>
+        <pre><code>def handle_dialog(dialog):
+    dialog.accept()
+
+page.on("dialog", handle_dialog)      # note: no parentheses — passing the function itself</code></pre>
+        <p>For a one-line body, defining a named function is overhead. Python's <code>lambda</code> creates an <strong>anonymous function</strong> — a function with no name, defined inline:</p>
+        <pre><code>page.on("dialog", lambda dialog: dialog.accept())</code></pre>
+        <p>Read it as: <em>"a function taking <code>dialog</code>, which returns <code>dialog.accept()</code>."</em> The two forms are equivalent; the lambda is just shorter.</p>
+        <div class="callout warn">
+          <strong>The mistake this prevents</strong>
+          Writing <code>page.on("dialog", dialog.accept())</code> fails — that <em>calls</em> something immediately and passes its result, but <code>page.on</code> needs a function to call <em>later</em>. The lambda wraps the call so it's deferred until the event actually fires.
+        </div>
+      </section>
+
+      <section id="api">
+        <h2>Dialog API</h2>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Member</th><th>What it does</th></tr></thead>
+            <tbody>
+              <tr><td><code>dialog.accept()</code></td><td>Clicks OK / confirms. Accepts an optional string for <code>prompt()</code> dialogs — <code>dialog.accept("my answer")</code>.</td></tr>
+              <tr><td><code>dialog.dismiss()</code></td><td>Clicks Cancel / dismisses. Used to test the "user declined" path.</td></tr>
+              <tr><td><code>dialog.message</code></td><td class="highlight">The dialog's text. This <em>is</em> assertable — despite the dialog not being in the DOM.</td></tr>
+              <tr><td><code>dialog.type</code></td><td><code>"alert"</code>, <code>"confirm"</code>, <code>"prompt"</code>, or <code>"beforeunload"</code>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout supplement">
+          <strong>Beyond this video <span class="src-tag">— you can assert on dialogs</span></strong>
+          The lecture states there's no way to validate a dialog, only to click through it. That's not quite the full picture: <code>dialog.message</code> exposes the text, so you can capture and assert it. A common pattern is to record it from inside the handler:
+          <pre style="margin-top:10px;"><code>messages = []
+page.on("dialog", lambda d: (messages.append(d.message), d.accept()))
+page.get_by_role("button", name="Confirm").click()
+assert messages[0] == "Are you sure you want to continue?"</code></pre>
+          Also worth knowing: if <strong>no</strong> handler is registered, Playwright auto-dismisses dialogs by default so tests don't hang — which means a missing handler can silently take the "Cancel" path rather than failing loudly.
+        </div>
+      </section>
+
+      <section id="pattern">
+        <h2>The same pattern, three times</h2>
+        <p>This is the third mechanism on this site built on "register interest before the trigger." Recognising the shared shape makes all three easier to recall under pressure:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Situation</th><th>Mechanism</th><th>Why not a plain locator</th></tr></thead>
+            <tbody>
+              <tr><td><a href="playwright-child-windows.html">New tab / popup</a></td><td><code>with page.expect_popup()</code></td><td>The new window has its own page object; <code>page</code> never learns about it</td></tr>
+              <tr><td>JS dialog (this page)</td><td><code>page.on("dialog", ...)</code></td><td>Not in the DOM at all — nothing to locate</td></tr>
+              <tr><td><a href="playwright-frames.html">iframe</a></td><td><code>page.frame_locator(...)</code></td><td>Separate embedded document; <code>page</code> only scans the parent</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> Why can't you use a normal locator to click OK on a JavaScript alert?</summary>
+          <div class="qa-body">Because the alert is rendered by the browser, not the page — it has no HTML representation at all. There's no element in the DOM to match, so any locator times out. This affects every DOM-based automation tool, not just Playwright. Dialogs are handled via an event handler instead: <code>page.on("dialog", lambda dialog: dialog.accept())</code>.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why must the dialog handler be registered before the triggering action?</summary>
+          <div class="qa-body">Because it's an event subscription, not a wait. When the dialog fires, Playwright looks for an already-registered handler; if none exists, the handler you register afterwards never sees that event. Registering first is the same principle as <code>expect_popup()</code> being a context manager — subscribe before the trigger so the event can't be missed.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What is a lambda and why is one used here?</summary>
+          <div class="qa-body">A lambda is a Python anonymous function — a function defined inline without a name. <code>page.on()</code> requires a function to invoke when the event fires, and since the handler body is a single call, a lambda avoids defining a separate named function. <code>lambda dialog: dialog.accept()</code> is equivalent to a <code>def handle(dialog): dialog.accept()</code> passed by name.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> How would you test the "user clicks Cancel" path?</summary>
+          <div class="qa-body">Register a handler calling <code>dialog.dismiss()</code> instead of <code>accept()</code>, then assert on whatever the application does when the action is declined — the record still exists, no confirmation message appears, and so on. The dialog handling itself is one line; the meaningful assertions are about the app's resulting state.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> A colleague says dialogs can't be asserted on, only clicked through. Is that right?</summary>
+          <div class="qa-body">Not entirely. The dialog object exposes <code>message</code> and <code>type</code>, so you can capture the text inside the handler and assert it afterwards — verifying that the confirmation wording is correct, not just that a dialog appeared. Worth also knowing that Playwright auto-dismisses dialogs when no handler is registered, so a forgotten handler silently takes the Cancel path instead of failing loudly, which can make a test pass for the wrong reason.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Register once, applies to everything after</strong>
+          <code>page.on("dialog", ...)</code> stays active for the rest of that page's lifetime — every subsequent dialog gets the same treatment. If one step needs Accept and a later step needs Cancel, you'll need <code>page.once(...)</code> (fires a single time) or to remove and re-register the handler.
+        </div>
+        <div class="callout warn">
+          <strong>Silent auto-dismiss</strong>
+          With no handler registered, Playwright dismisses dialogs automatically rather than hanging. Convenient, but it means forgetting the handler doesn't produce an obvious error — your test just quietly exercises the Cancel path.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="playwright-child-windows.html">Child Windows &amp; Popups →</a>
+          <a href="playwright-frames.html">Frames &amp; iFrames →</a>
+          <a href="playwright-locators.html">Playwright Core Locators →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: "Handling Alerts &amp; JavaScript Dialogs" — added 2026-07-30</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

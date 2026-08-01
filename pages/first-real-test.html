@@ -45,6 +45,7 @@
       <a href="#watch-it-run">Watch it run</a>
       <a href="#config">pytest.ini</a>
       <a href="#running">Running it</a>
+      <a href="#codegen">Codegen: record &amp; playback</a>
       <a href="#mapping">Where each concept lands</a>
       <a href="#interview-qa">Interview Q&amp;A</a>
       <a href="#gotchas">Gotchas</a>
@@ -253,6 +254,42 @@
         <div class="callout supplement">
           <strong>Beyond this video <span class="src-tag">— debugging tools you'll be asked about</span></strong>
           <code>pytest --tracing on</code> records a trace file you can open with <code>playwright show-trace trace.zip</code> — a full timeline with DOM snapshots per step. <code>PWDEBUG=1 pytest</code> opens Playwright Inspector to step through a test live. And <code>page.pause()</code> dropped into a test halts execution there with the Inspector open. If asked "how do you debug a failing Playwright test," these three are the expected answer.
+        </div>
+      </section>
+
+      <section id="codegen">
+        <h2>Codegen: record &amp; playback</h2>
+        <p>Playwright can watch you click through a flow in a real browser and write the code for you:</p>
+        <div class="code-block">
+          <div class="cap">terminal</div>
+          <span class="code-line">playwright codegen https://shop.example.com/login</span>
+        </div>
+        <p>Two windows open — a browser, and an Inspector that writes code live as you interact. Click through your flow, stop recording, and copy the generated script out.</p>
+
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>What it's genuinely good at</th><th>What it gets wrong</th></tr></thead>
+            <tbody>
+              <tr><td>Discovering locators fast — it favours <code>get_by_role</code>/<code>get_by_placeholder</code>, so it teaches good habits</td><td>Long brittle CSS selectors when semantic options run out</td></tr>
+              <tr><td>Skeleton code for an unfamiliar flow</td><td>Hardcoded positional choices ("the 2nd product") instead of filtering by name</td></tr>
+              <tr><td>Getting unblocked when a locator is hard to pin down</td><td>Noise — recording a click on a field before typing in it, decoding images unnecessarily</td></tr>
+              <tr><td class="muted"></td><td>No fixtures, no Page Objects, no assertions — the structure your framework needs</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout interview">
+          <strong>The honest framing</strong>
+          Roughly 70–80% usable as a starting point, and best treated as a locator-discovery tool rather than a test generator. Generated code has no fixtures, no assertions, and no page objects — the things that actually make a suite maintainable. If asked about it in an interview, saying "I use it to find locators quickly, then rewrite it to fit the framework" reads as far more experienced than either dismissing it or relying on it.
+        </div>
+
+        <div class="quiz">
+          <div class="quiz-q">What's the main limitation of using <code>playwright codegen</code> output directly as your test suite?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">It generates code in JavaScript only, so it needs translating to Python</button>
+            <button class="quiz-opt" data-correct="true">It records actions but no assertions, fixtures, or page objects — and often uses brittle positional selectors, so it needs rewriting to fit a real framework</button>
+          </div>
+          <div class="quiz-feedback"></div>
         </div>
       </section>
 

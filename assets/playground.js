@@ -137,6 +137,94 @@ function pgResolve(locator, root) {
   return { elements: [] };
 }
 
+/**
+ * renderFrameScopeDemo("container-id", {...})
+ *
+ * Embeds a REAL iframe and runs real queries against it, so the scope isolation
+ * is demonstrated rather than illustrated: a parent-document query genuinely
+ * cannot see inside the child document, and you can watch the match counts
+ * differ. Mirrors what page.locator() vs page.frame_locator() do in Playwright.
+ */
+function renderFrameScopeDemo(containerId, config) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  el.innerHTML = `
+    <div class="fs-head">
+      <span class="fs-title">Live iframe scope demo</span>
+      <span class="fs-hint">real nested document — queries below actually run</span>
+    </div>
+    <div class="fs-body">
+      <div class="fs-controls">
+        <div class="fs-controls-label">Try a query</div>
+        <div class="fs-btns"></div>
+        <div class="fs-result"><div class="fs-result-empty">Pick a query to run it against the page below.</div></div>
+      </div>
+      <div class="fs-preview">
+        <div class="fs-parent-label">parent document</div>
+        <div class="fs-parent" id="${containerId}-parent">
+          <h5>Plans &amp; Pricing</h5>
+          <p><a href="#" class="fs-parent-link">Contact sales</a></p>
+          <div class="fs-frame-label">&lt;iframe&gt; — separate document</div>
+          <iframe id="${containerId}-frame" class="fs-frame" title="embedded pricing frame" srcdoc='
+            <style>
+              body { font-family: -apple-system, "Segoe UI", sans-serif; font-size: 12px; color: #1e1e24; margin: 10px; }
+              h6 { margin: 0 0 6px; font-size: 12.5px; }
+              a { color: #2563eb; padding: 2px 3px; border-radius: 3px; }
+              .fs-hit { outline: 2px solid #16a34a; background: rgba(22,163,74,0.18); }
+            </style>
+            <h6>Subscription options</h6>
+            <p><a href="#" id="all-access">All Access Plan</a></p>
+            <p>Trusted by 10,000 happy subscribers</p>
+          '></iframe>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const parent = document.getElementById(`${containerId}-parent`);
+  const frame = document.getElementById(`${containerId}-frame`);
+  const resultBox = el.querySelector(".fs-result");
+  const btnBox = el.querySelector(".fs-btns");
+
+  function clearHits() {
+    parent.querySelectorAll(".fs-hit").forEach((n) => n.classList.remove("fs-hit"));
+    try {
+      const doc = frame.contentDocument;
+      if (doc) doc.querySelectorAll(".fs-hit").forEach((n) => n.classList.remove("fs-hit"));
+    } catch (e) { /* cross-origin — not possible with srcdoc, but be safe */ }
+  }
+
+  (config.queries || []).forEach((q) => {
+    const btn = document.createElement("button");
+    btn.className = "fs-btn";
+    btn.innerHTML = `<code>${q.display}</code>`;
+    btn.addEventListener("click", () => {
+      btnBox.querySelectorAll(".fs-btn").forEach((b) => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      clearHits();
+
+      let nodes = [];
+      if (q.scope === "frame") {
+        const doc = frame.contentDocument;
+        nodes = doc ? Array.from(doc.querySelectorAll(q.sel)) : [];
+      } else {
+        // Parent-document query: genuinely cannot reach into the iframe's document.
+        nodes = Array.from(parent.querySelectorAll(q.sel)).filter((n) => n.tagName !== "IFRAME");
+      }
+      nodes.forEach((n) => n.classList.add("fs-hit"));
+
+      const count = nodes.length;
+      const cls = count === 0 ? "fail" : "pass";
+      resultBox.className = `fs-result ${cls}`;
+      resultBox.innerHTML = `
+        <div class="fs-verdict"><span class="fs-dot"></span>${count} match${count === 1 ? "" : "es"}</div>
+        <div class="fs-explain">${q.explain || ""}</div>`;
+    });
+    btnBox.appendChild(btn);
+  });
+}
+
 function renderLocatorPlayground(containerId, config) {
   const el = document.getElementById(containerId);
   if (!el) return;

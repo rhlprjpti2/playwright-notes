@@ -397,6 +397,38 @@ window.ALL_QUESTIONS = [
   "file": "pages/playwright-child-windows.html"
  },
  {
+  "q": "What's the difference between plain <code>assert</code> and Playwright's <code>expect()</code>?",
+  "a": "Plain <code>assert</code> is a standard Pytest assertion on a value you already hold — it evaluates once, immediately, with no retry. <code>expect()</code> is Playwright's web-first assertion that operates on a <em>locator</em> and auto-retries until the condition holds or it times out. Rule of thumb: once you've extracted a value out of the page into a Python variable it's frozen, so plain <code>assert</code> is right; while the thing you're checking is still live on the page, use <code>expect()</code> so auto-waiting applies.",
+  "level": "junior",
+  "topic": "playwright-child-windows",
+  "topicLabel": "Child Windows &amp; Popups",
+  "file": "pages/playwright-child-windows.html"
+ },
+ {
+  "q": "A test extracting text with <code>split(\" \")[0]</code> returns an empty string. What's the most likely cause?",
+  "a": "A leading space in the string being split. <code>split(\" \")</code> breaks at the very first space it finds — if that's at position 0, index <code>[0]</code> is everything to its left, which is nothing. The fix is <code>.strip()</code> before splitting, to remove leading/trailing whitespace. This class of bug is hard to spot because whitespace is invisible in printed output; <code>repr()</code> in a debugger reveals it immediately.",
+  "level": "mid",
+  "topic": "playwright-child-windows",
+  "topicLabel": "Child Windows &amp; Popups",
+  "file": "pages/playwright-child-windows.html"
+ },
+ {
+  "q": "What does Python's <code>split()</code> return, and what happens to the delimiter?",
+  "a": "A list of substrings, with the delimiter itself consumed and removed. <code>\"a-b-c\".split(\"-\")</code> returns <code>['a','b','c']</code> — note it splits on <em>every</em> occurrence, not just the first, so the list length depends on how many times the delimiter appears. <code>strip()</code> is separate: it removes whitespace from both ends of a single string and returns a string, not a list.",
+  "level": "junior",
+  "topic": "playwright-child-windows",
+  "topicLabel": "Child Windows &amp; Popups",
+  "file": "pages/playwright-child-windows.html"
+ },
+ {
+  "q": "Extracting data via string splitting is brittle. When would you push back on this approach?",
+  "a": "Index-based string splitting couples the test to exact sentence wording — a copy change like \"email us at\" becoming \"contact us at\" silently breaks it, and the failure message (\"expected X, got '' \") won't point at the real cause. It's acceptable when the surrounding text is genuinely static and you control it. Better alternatives when available: a more precise locator that targets just the email element (e.g. a dedicated <code>&lt;a href=\"mailto:\"&gt;</code> or a test id), or a regex match on a pattern rather than positional splitting. If the data matters enough to assert on, it usually deserves its own addressable element.",
+  "level": "senior",
+  "topic": "playwright-child-windows",
+  "topicLabel": "Child Windows &amp; Popups",
+  "file": "pages/playwright-child-windows.html"
+ },
+ {
   "q": "You capture a popup and immediately query an element on it, but get intermittent failures. What's a likely cause beyond using the wrong page object?",
   "a": "The popup <code>Page</code> is returned as soon as the window is created, which can be before its content has finished loading. Auto-waiting covers element actionability, but if the page is still navigating, the DOM you're querying may not be the final one. Calling <code>child_page.wait_for_load_state()</code> (optionally with <code>\"networkidle\"</code>) before querying makes the readiness explicit rather than relying on timing.",
   "level": "senior",

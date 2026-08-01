@@ -27,11 +27,12 @@
   <div class="topic-header">
     <div class="breadcrumb"><a href="../index.html">All topics</a> / Child Windows &amp; Popups</div>
     <h1>Handling Child Windows &amp; Popups</h1>
-    <p class="lede">A page object only ever knows about the page it was created on. Click a link that opens a new tab, and your existing <code>page</code> variable has no idea that new window exists — you have to explicitly listen for it and capture a fresh page object.</p>
+    <p class="lede">A page object only ever knows about the page it was created on. Click a link that opens a new tab, and your existing <code>page</code> variable has no idea that new window exists — you have to explicitly listen for it and capture a fresh page object. Then, to actually use what you find there: extracting a substring with <code>split()</code>/<code>strip()</code>, and knowing when plain <code>assert</code> beats <code>expect()</code>.</p>
     <div class="card-tags">
       <span>playwright</span>
       <span>popups</span>
       <span>multi-page</span>
+      <span>assertions</span>
     </div>
   </div>
 
@@ -44,6 +45,8 @@
       <a href="#api">expect_popup() in depth</a>
       <a href="#code">Full example</a>
       <a href="#text-content">Reading text with text_content()</a>
+      <a href="#extract">Extracting with split() &amp; strip()</a>
+      <a href="#assertions">assert vs expect()</a>
       <a href="#leads-to">Where this leads</a>
       <a href="#interview-qa">Interview Q&amp;A</a>
       <a href="#gotchas">Gotchas</a>
@@ -268,7 +271,123 @@ print(text)</code></pre>
         <p>Distinct from asserting an element is visible (<code>expect(locator).to_be_visible()</code>, already covered on the <a href="playwright-auto-waiting.html">Auto-Waiting</a> page) — <code>.text_content()</code> actually retrieves and returns the element's text so you can print it, log it, or manipulate it in code:</p>
         <pre><code>text = child_page.locator(".red").text_content()
 print(text)</code></pre>
-        <p>This prints the <em>entire</em> matched element's text — if that element wraps more than just the piece you care about (e.g. a whole line containing an email address alongside other words), you get all of it, not just the part you want.</p>
+        <p>This prints the <em>entire</em> matched element's text — if that element wraps more than just the piece you care about (e.g. a whole line containing an email address alongside other words), you get all of it, not just the part you want. Extracting the piece you actually want is plain Python, covered next.</p>
+      </section>
+
+      <section id="extract">
+        <h2>Extracting the email: split() and strip()</h2>
+        <p class="lead">The lecture's test <strong>fails on the first attempt</strong>, and the cause is a single invisible space. That failure is more instructive than the fix, so step through it below — spaces are rendered as <code>·</code> so you can actually see the thing that breaks it.</p>
+
+        <div class="string-pipeline" id="extract-pipeline"></div>
+        <script>
+          renderStringPipeline("extract-pipeline", {
+            initialExpr: 'text = child_page.locator(".red").text_content()',
+            introText: "The full text pulled from the child window. The goal: extract just the email address.",
+            initialParts: [{ t: "Please email us at mentor@rahulshettyacademy.com with any questions", tone: "keep" }],
+            steps: [
+              {
+                code: 'text.split("at")',
+                parts: [
+                  { t: "Please email us ", tone: "keep" },
+                  { t: "at", tone: "delim" },
+                  { t: " mentor@rahulshettyacademy.com with any questions", tone: "keep" }
+                ],
+                result: { label: "returns", value: "['Please email us ', ' mentor@rahulshettyacademy.com with any questions']", tone: "neutral" },
+                note: 'Splitting on the <b>word</b> <code>"at"</code> — not the <code>@</code> symbol. The delimiter is consumed and removed, leaving two list items: everything left of it at index <code>[0]</code>, everything right of it at index <code>[1]</code>.'
+              },
+              {
+                code: 'words = text.split("at")\nwords[1]',
+                parts: [
+                  { t: "Please email us ", tone: "drop" },
+                  { t: "at", tone: "drop" },
+                  { t: " ", tone: "space" },
+                  { t: "mentor@rahulshettyacademy.com with any questions", tone: "keep" }
+                ],
+                result: { label: "words[1]", value: "' mentor@rahulshettyacademy.com with any questions'", tone: "neutral" },
+                note: 'Index <code>[0]</code> is discarded. But look closely at what <code>words[1]</code> actually starts with — a <b>leading space</b>, left behind because the original text read <code>"us <u>at</u> mentor"</code>. Invisible in normal output, and about to cause the bug.'
+              },
+              {
+                code: 'words[1].split(" ")[0]   # the naive attempt',
+                parts: [
+                  { t: " ", tone: "delim" },
+                  { t: "mentor@rahulshettyacademy.com with any questions", tone: "drop" }
+                ],
+                result: { label: "returns", value: "''  (empty string)", tone: "fail" },
+                note: '<b>This is where the test fails.</b> The very first space in the string is that leading one — so <code>split(" ")</code> breaks there, and index <code>[0]</code> is everything to its left, which is <b>nothing at all</b>. You get an empty string, and the assertion fails with a confusing message.'
+              },
+              {
+                code: 'words[1].strip()',
+                parts: [
+                  { t: "·", tone: "drop" },
+                  { t: "mentor@rahulshettyacademy.com with any questions", tone: "keep" }
+                ],
+                result: { label: "returns", value: "'mentor@rahulshettyacademy.com with any questions'", tone: "neutral" },
+                note: '<code>strip()</code> removes whitespace from <b>both</b> ends of a string — leading and trailing. Now the string genuinely begins with <code>m</code>, so the first real space is the one after <code>.com</code>, exactly where we want to split.'
+              },
+              {
+                code: 'words[1].strip().split(" ")',
+                parts: [
+                  { t: "mentor@rahulshettyacademy.com", tone: "hit" },
+                  { t: " ", tone: "delim" },
+                  { t: "with any questions", tone: "drop" }
+                ],
+                result: { label: "returns", value: "['mentor@rahulshettyacademy.com', 'with', 'any', 'questions']", tone: "neutral" },
+                note: 'Now the split lands in the right place. Note <code>split(" ")</code> splits on <b>every</b> occurrence, producing four items — not just two. We only care about the first.'
+              },
+              {
+                code: 'email = words[1].strip().split(" ")[0]',
+                parts: [{ t: "mentor@rahulshettyacademy.com", tone: "hit" }],
+                result: { label: "email", value: "'mentor@rahulshettyacademy.com'", tone: "pass" },
+                note: 'Index <code>[0]</code> gives exactly the email address. The full chain: <code>text.split("at")[1].strip().split(" ")[0]</code>.'
+              }
+            ]
+          });
+        </script>
+
+        <div class="callout warn">
+          <strong>Why this bug is worth remembering</strong>
+          A leading or trailing space is invisible in printed output — <code>print(text)</code> looks completely fine. The failure surfaces somewhere else entirely (a confusing assertion mismatch against an empty string), which is why <code>repr()</code> in a debugger, or <code>strip()</code> as a defensive habit on any scraped text, saves real time.
+        </div>
+
+        <div class="quiz">
+          <div class="quiz-q">Why did <code>words[1].split(" ")[0]</code> return an empty string rather than the email?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">Because split(" ") can only be used once per string</button>
+            <button class="quiz-opt" data-correct="true">Because words[1] started with a leading space, so the first split happened at position 0 — leaving nothing to its left</button>
+            <button class="quiz-opt" data-correct="false">Because the email contains an @ symbol, which split() treats specially</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="assertions">
+        <h2>Plain <code>assert</code> vs Playwright's <code>expect()</code></h2>
+        <p>With the email extracted, the lecture compares it using a <strong>pure Pytest assertion</strong> — no Playwright involved:</p>
+        <pre><code>assert email == "mentor@rahulshettyacademy.com"</code></pre>
+        <p>This is a genuinely different tool from the <code>expect()</code> assertions on the <a href="playwright-auto-waiting.html">Auto-Waiting</a> page, and knowing when each applies is an easy interview differentiator:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th></th><th>Plain <code>assert</code> (Pytest)</th><th><code>expect()</code> (Playwright)</th></tr></thead>
+            <tbody>
+              <tr><td>Operates on</td><td class="highlight">A value you already hold — a string, number, list</td><td class="highlight">A <em>locator</em> — an element on a live page</td></tr>
+              <tr><td>Retries?</td><td>No — evaluates once, immediately</td><td class="highlight">Yes — auto-retries until true or timeout</td></tr>
+              <tr><td>Right for</td><td>Comparing extracted/computed data, like the email above</td><td>Anything about page state: visibility, text, count, enabled</td></tr>
+              <tr><td>Wrong for</td><td class="muted">Page state that may not have rendered yet — no retry means a race</td><td class="muted">Plain Python values — there's nothing to re-query</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout tip">
+          <strong>The rule of thumb</strong>
+          Once a value has been pulled <em>out</em> of the page into a Python variable, it's frozen — retrying can't change it, so plain <code>assert</code> is correct. While the thing you care about is still <em>on</em> the page, use <code>expect()</code> so auto-waiting can do its job.
+        </div>
+        <div class="quiz">
+          <div class="quiz-q">You extract text into a variable, then assert on it with plain <code>assert</code>. A colleague says "that's wrong, always use Playwright's expect()." Who's right?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="true">You are — the value is already extracted into a Python variable, so there's nothing for expect() to re-query or retry</button>
+            <button class="quiz-opt" data-correct="false">The colleague — expect() should always be preferred in a Playwright test for consistency</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
       </section>
 
       <section id="leads-to">
@@ -285,7 +404,7 @@ print(text)</code></pre>
         </div>
         <div class="callout supplement">
           <strong>Beyond this video <span class="src-tag">— related APIs not covered in this lecture</span></strong>
-          <code>page.on("popup", handler)</code> is the lower-level event-listener form of the same mechanism — <code>expect_popup()</code> is really a convenience wrapper around it. <code>context.pages</code> returns a list of every page currently open in a browser context, useful when more than one popup can appear and you need to find a specific one rather than just "the next one." The instructor's own next lecture (not yet processed) covers extracting a substring from <code>text_content()</code>'s output using Python's <code>split()</code>/<code>strip()</code> — that'll get its own page once that transcript arrives.
+          <code>page.on("popup", handler)</code> is the lower-level event-listener form of the same mechanism — <code>expect_popup()</code> is really a convenience wrapper around it. <code>context.pages</code> returns a list of every page currently open in a browser context, useful when more than one popup can appear and you need to find a specific one rather than just "the next one."
         </div>
       </section>
 
@@ -320,6 +439,22 @@ print(text)</code></pre>
           <div class="qa-body">It returns an event context manager, not a Page. <code>.value</code> is only meaningful after the <code>with</code> block exits — at that point it blocks until the popup has been captured and returns the new <code>Page</code> object. It also accepts <code>timeout</code> (ms before raising TimeoutError, defaulting to the context timeout) and <code>predicate</code> (a filter so only a matching popup is accepted).</div>
         </details>
         <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the difference between plain <code>assert</code> and Playwright's <code>expect()</code>?</summary>
+          <div class="qa-body">Plain <code>assert</code> is a standard Pytest assertion on a value you already hold — it evaluates once, immediately, with no retry. <code>expect()</code> is Playwright's web-first assertion that operates on a <em>locator</em> and auto-retries until the condition holds or it times out. Rule of thumb: once you've extracted a value out of the page into a Python variable it's frozen, so plain <code>assert</code> is right; while the thing you're checking is still live on the page, use <code>expect()</code> so auto-waiting applies.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> A test extracting text with <code>split(" ")[0]</code> returns an empty string. What's the most likely cause?</summary>
+          <div class="qa-body">A leading space in the string being split. <code>split(" ")</code> breaks at the very first space it finds — if that's at position 0, index <code>[0]</code> is everything to its left, which is nothing. The fix is <code>.strip()</code> before splitting, to remove leading/trailing whitespace. This class of bug is hard to spot because whitespace is invisible in printed output; <code>repr()</code> in a debugger reveals it immediately.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What does Python's <code>split()</code> return, and what happens to the delimiter?</summary>
+          <div class="qa-body">A list of substrings, with the delimiter itself consumed and removed. <code>"a-b-c".split("-")</code> returns <code>['a','b','c']</code> — note it splits on <em>every</em> occurrence, not just the first, so the list length depends on how many times the delimiter appears. <code>strip()</code> is separate: it removes whitespace from both ends of a single string and returns a string, not a list.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Extracting data via string splitting is brittle. When would you push back on this approach?</summary>
+          <div class="qa-body">Index-based string splitting couples the test to exact sentence wording — a copy change like "email us at" becoming "contact us at" silently breaks it, and the failure message ("expected X, got '' ") won't point at the real cause. It's acceptable when the surrounding text is genuinely static and you control it. Better alternatives when available: a more precise locator that targets just the email element (e.g. a dedicated <code>&lt;a href="mailto:"&gt;</code> or a test id), or a regex match on a pattern rather than positional splitting. If the data matters enough to assert on, it usually deserves its own addressable element.</div>
+        </details>
+        <details class="qa">
           <summary><span class="q-level senior">Senior</span> You capture a popup and immediately query an element on it, but get intermittent failures. What's a likely cause beyond using the wrong page object?</summary>
           <div class="qa-body">The popup <code>Page</code> is returned as soon as the window is created, which can be before its content has finished loading. Auto-waiting covers element actionability, but if the page is still navigating, the DOM you're querying may not be the final one. Calling <code>child_page.wait_for_load_state()</code> (optionally with <code>"networkidle"</code>) before querying makes the readiness explicit rather than relying on timing.</div>
         </details>
@@ -346,7 +481,7 @@ print(text)</code></pre>
         </div>
       </div>
 
-      <p class="source-note">Source: "Handling Child Windows / Popups in Playwright" — added 2026-07-30</p>
+      <p class="source-note">Sources: "Handling Child Windows / Popups in Playwright", "Extracting Text with split() &amp; strip() + Pytest Assertions" — added 2026-07-30</p>
     </div>
   </div>
 </div>

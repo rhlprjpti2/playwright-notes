@@ -214,15 +214,18 @@ window.TOPICS_INDEX = [
     slug: "playwright-child-windows",
     title: "Handling Child Windows & Popups",
     file: "pages/playwright-child-windows.html",
-    tags: ["playwright", "popups", "multi-page"],
+    tags: ["playwright", "popups", "multi-page", "assertions"],
     keyTerms: [
       "expect_popup", "child window", "popup", "new_page_info", "child_page", "text_content",
-      "page.on(\"popup\")", "context.pages", "multi-page", "with block", "closure", "event listener"
+      "page.on(\"popup\")", "context.pages", "multi-page", "with block", "closure", "event listener",
+      "split", "strip", "string extraction", "leading space", "assert", "pytest assertion",
+      "expected vs actual", "predicate", "wait_for_load_state", "race condition"
     ],
-    summary: "A page object only knows the page it was created on — expect_popup() is how you listen for a new window and get a page object scoped to it.",
-    related: ["playwright-browser-context-page", "playwright-locators", "playwright-auto-waiting"],
+    summary: "A page object only knows the page it was created on — expect_popup() to capture a new window, then split()/strip() to extract text and plain assert vs expect() to check it.",
+    related: ["playwright-browser-context-page", "playwright-locators", "playwright-auto-waiting", "python-basics"],
     sources: [
-      { title: "Handling Child Windows / Popups in Playwright", addedDate: "2026-07-30" }
+      { title: "Handling Child Windows / Popups in Playwright", addedDate: "2026-07-30" },
+      { title: "Extracting Text with split() & strip() + Pytest Assertions", addedDate: "2026-07-30" }
     ],
     lastUpdated: "2026-07-30"
   },

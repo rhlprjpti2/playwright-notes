@@ -692,6 +692,117 @@ function renderWindowFlow(containerId, config) {
   render();
 }
 
+/**
+ * renderStringPipeline("container-id", { steps: [...] })
+ *
+ * Visualises a string being transformed step by step, rendering whitespace as a
+ * visible marker. Built for bugs that are invisible in ordinary text — a stray
+ * leading space, a delimiter that isn't where you assumed — where seeing the
+ * actual characters is the entire explanation.
+ *
+ * steps: [{
+ *   code:  "words[1].split(' ')[0]",     // the expression being evaluated
+ *   note:  "why this step matters",
+ *   parts: [{ t: "text", tone: "keep|drop|hit|space|delim" }],
+ *   result: { value: "'...'", tone: "pass|fail|neutral", label: "..." }
+ * }]
+ */
+function renderStringPipeline(containerId, config) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const steps = config.steps || [];
+
+  el.innerHTML = `
+    <div class="sp-controls">
+      <button class="btn-back" disabled>&#9668; Back</button>
+      <button class="btn-step">Step &#9658;</button>
+      <button class="btn-auto">&#9654; Autoplay</button>
+      <button class="btn-reset" disabled>&#8635; Reset</button>
+      <span class="sp-step-label"></span>
+    </div>
+    <div class="sp-legend">
+      <span><i class="sp-sw space"></i> space character</span>
+      <span><i class="sp-sw delim"></i> split point</span>
+      <span><i class="sp-sw hit"></i> what we want</span>
+      <span><i class="sp-sw drop"></i> discarded</span>
+    </div>
+    <div class="sp-expr"></div>
+    <div class="sp-string"></div>
+    <div class="sp-result"></div>
+    <div class="sp-note"></div>
+  `;
+
+  const exprEl = el.querySelector(".sp-expr");
+  const strEl = el.querySelector(".sp-string");
+  const resEl = el.querySelector(".sp-result");
+  const noteEl = el.querySelector(".sp-note");
+  const label = el.querySelector(".sp-step-label");
+  const backBtn = el.querySelector(".btn-back");
+  const stepBtn = el.querySelector(".btn-step");
+  const autoBtn = el.querySelector(".btn-auto");
+  const resetBtn = el.querySelector(".btn-reset");
+
+  let index = 0;
+  let playing = false;
+
+  function renderParts(parts) {
+    return (parts || [])
+      .map((p) => {
+        if (p.tone === "space") {
+          // render each space as a visible middot so the bug is actually visible
+          return `<span class="sp-seg space">${"·".repeat(Math.max(1, p.t.length))}</span>`;
+        }
+        const safe = p.t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        return `<span class="sp-seg ${p.tone || "keep"}">${safe}</span>`;
+      })
+      .join("");
+  }
+
+  function render() {
+    const step = index > 0 ? steps[index - 1] : null;
+    if (!step) {
+      exprEl.textContent = config.initialExpr || "";
+      strEl.innerHTML = renderParts(config.initialParts);
+      resEl.className = "sp-result";
+      resEl.innerHTML = "";
+      noteEl.textContent = config.introText || "Step through to watch the string transform.";
+    } else {
+      exprEl.textContent = step.code || "";
+      strEl.innerHTML = renderParts(step.parts);
+      if (step.result) {
+        resEl.className = "sp-result " + (step.result.tone || "neutral");
+        resEl.innerHTML = `<span class="sp-result-label">${step.result.label || "result"}</span><code>${step.result.value}</code>`;
+      } else {
+        resEl.className = "sp-result";
+        resEl.innerHTML = "";
+      }
+      noteEl.innerHTML = step.note || "";
+    }
+    label.textContent = index === 0 ? `Ready — step 0 of ${steps.length}` : `Step ${index} of ${steps.length}`;
+    backBtn.disabled = index === 0;
+    resetBtn.disabled = index === 0;
+    const atEnd = index === steps.length;
+    stepBtn.disabled = atEnd || playing;
+    autoBtn.disabled = atEnd || playing;
+    stepBtn.textContent = atEnd ? "Done ✓" : "Step ▸";
+  }
+
+  stepBtn.addEventListener("click", () => { if (index < steps.length) { index++; render(); } });
+  backBtn.addEventListener("click", () => { if (index > 0) { index--; render(); } });
+  autoBtn.addEventListener("click", () => {
+    playing = true; render();
+    const tick = () => {
+      if (index >= steps.length) { playing = false; render(); return; }
+      index++; render();
+      setTimeout(tick, 1900);
+    };
+    tick();
+  });
+  resetBtn.addEventListener("click", () => { index = 0; playing = false; render(); });
+
+  render();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initScrollProgress();
   initQuizzes();

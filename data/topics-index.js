@@ -107,6 +107,119 @@ window.TOPICS_INDEX_PYTHON = [
     lastUpdated: "2026-08-02",
     phase: "python-track",
     order: 3
+  },
+  {
+    slug: "python-lists-tuples",
+    title: "Lists & Tuples",
+    file: "pages/python-lists-tuples.html",
+    tags: ["python", "lists", "tuples", "fundamentals"],
+    keyTerms: [
+      "list", "tuple", "indexing", "negative index", "slicing", "append", "extend", "insert",
+      "pop", "remove", "sort", "sorted", "list comprehension", "shallow copy", "deep copy",
+      "packing", "unpacking", "star unpacking", "hashable", "shared reference", "matrix bug"
+    ],
+    summary: "append vs extend, slicing, comprehensions, and the shared-reference bug that shows up the moment a mutable list gets multiplied.",
+    related: ["python-memory-model", "python-dicts-sets", "python-strings"],
+    sources: [
+      { title: "Original content — Python Learning series", addedDate: "2026-08-02" }
+    ],
+    lastUpdated: "2026-08-02",
+    phase: "python-track",
+    order: 4
+  },
+  {
+    slug: "python-dicts-sets",
+    title: "Dicts & Sets",
+    file: "pages/python-dicts-sets.html",
+    tags: ["python", "dicts", "sets", "fundamentals"],
+    keyTerms: [
+      "dict", "dictionary", "set", "get", "setdefault", "update", "pop", "hash table",
+      "hashable", "O(1) lookup", "dict comprehension", "set comprehension", "union",
+      "intersection", "difference", "symmetric difference", "insertion order"
+    ],
+    summary: "Why dict/set lookups are O(1) instead of O(n), the method toolkit, and the set operators that turn ID-comparison loops into one-liners.",
+    related: ["python-lists-tuples", "python-memory-model", "python-control-flow"],
+    sources: [
+      { title: "Original content — Python Learning series", addedDate: "2026-08-02" }
+    ],
+    lastUpdated: "2026-08-02",
+    phase: "python-track",
+    order: 5
+  },
+  {
+    slug: "python-control-flow",
+    title: "Control Flow",
+    file: "pages/python-control-flow.html",
+    tags: ["python", "control-flow", "fundamentals"],
+    keyTerms: [
+      "if elif else", "ternary", "for loop", "while loop", "enumerate", "zip",
+      "for else", "break", "continue", "walrus operator", "range", "iteration"
+    ],
+    summary: "Iterating without index variables, enumerate() and zip(), the for/else clause almost nobody expects, and the walrus operator.",
+    related: ["python-lists-tuples", "playwright-auto-waiting", "python-functions"],
+    sources: [
+      { title: "Original content — Python Learning series", addedDate: "2026-08-02" }
+    ],
+    lastUpdated: "2026-08-02",
+    phase: "python-track",
+    order: 6
+  },
+  {
+    slug: "python-functions",
+    title: "Functions Deep Dive",
+    file: "pages/python-functions.html",
+    tags: ["python", "functions", "scope", "fundamentals"],
+    keyTerms: [
+      "args", "kwargs", "default argument", "positional-only", "keyword-only",
+      "LEGB", "local enclosing global builtin", "global keyword", "nonlocal",
+      "closure", "late binding", "lambda", "first-class function"
+    ],
+    summary: "*args/**kwargs, positional-only vs keyword-only params, the LEGB scope rule, and the late-binding closure trap in loops.",
+    related: ["python-memory-model", "python-decorators", "python-control-flow"],
+    sources: [
+      { title: "Original content — Python Learning series", addedDate: "2026-08-02" }
+    ],
+    lastUpdated: "2026-08-02",
+    phase: "python-track",
+    order: 7
+  },
+  {
+    slug: "python-decorators",
+    title: "Decorators",
+    file: "pages/python-decorators.html",
+    tags: ["python", "decorators", "closures"],
+    keyTerms: [
+      "decorator", "@syntax", "closure", "functools.wraps", "decorator factory",
+      "decorator with arguments", "stacking decorators", "wrapper function",
+      "pytest.fixture decorator"
+    ],
+    summary: "What @decorator syntax actually does, why functools.wraps matters, decorators that take arguments, and the order multiple stacked decorators run in.",
+    related: ["python-functions", "pytest-fixtures", "python-generators"],
+    sources: [
+      { title: "Original content — Python Learning series", addedDate: "2026-08-02" }
+    ],
+    lastUpdated: "2026-08-02",
+    phase: "python-track",
+    order: 8
+  },
+  {
+    slug: "python-generators",
+    title: "Generators & yield",
+    file: "pages/python-generators.html",
+    tags: ["python", "generators", "iterators"],
+    keyTerms: [
+      "generator", "yield", "yield vs return", "lazy evaluation", "generator expression",
+      "iterator protocol", "iter", "next", "StopIteration", "memory efficiency",
+      "pytest fixture yield", "setup teardown"
+    ],
+    summary: "How yield's pause-and-resume actually works, generator expressions, the iterator protocol, and why pytest fixtures use yield for setup/teardown.",
+    related: ["pytest-fixtures", "python-decorators", "python-memory-model"],
+    sources: [
+      { title: "Original content — Python Learning series", addedDate: "2026-08-02" }
+    ],
+    lastUpdated: "2026-08-02",
+    phase: "python-track",
+    order: 9
   }
 ];
 

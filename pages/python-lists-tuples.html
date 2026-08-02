@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lists & Tuples · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Lists & Tuples</div>
+    <h1>Lists & Tuples</h1>
+    <p class="lede">Lists are the workhorse collection in almost every automation script — building up rows from a table, collecting failed assertions, batching test data. Tuples look similar but exist for a different reason entirely.</p>
+    <div class="card-tags">
+      <span>python</span>
+      <span>lists</span>
+      <span>tuples</span>
+      <span>fundamentals</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone Python Learning section — authored directly, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#basics">Creating & indexing</a>
+      <a href="#slicing">Slicing</a>
+      <a href="#methods">Common methods</a>
+      <a href="#comprehension">List comprehensions</a>
+      <a href="#aliasing-trap">The shared-reference trap</a>
+      <a href="#tuples">Why tuples exist</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="basics">
+        <h2>Creating & indexing</h2>
+        <pre><code>items = ["login", "checkout", "search"]
+items[0]        # "login"
+items[-1]       # "search"  — negative index counts from the end
+len(items)      # 3</code></pre>
+        <p>Negative indexing is idiomatic Python — <code>items[-1]</code> for "the last one" reads better than <code>items[len(items) - 1]</code>, and it's used constantly when parsing scraped or split text (see the URL-slicing example on <a href="python-strings.html">String Methods</a>).</p>
+      </section>
+
+      <section id="slicing">
+        <h2>Slicing</h2>
+        <p>The full slice syntax is <code>list[start:stop:step]</code> — every part is optional, and <code>stop</code> is exclusive.</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Expression</th><th>Result</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight"><code>items[1:3]</code></td><td><code>["checkout", "search"]</code></td><td>index 1 up to (not including) 3</td></tr>
+              <tr><td class="highlight"><code>items[:2]</code></td><td><code>["login", "checkout"]</code></td><td>from the start</td></tr>
+              <tr><td class="highlight"><code>items[1:]</code></td><td><code>["checkout", "search"]</code></td><td>to the end</td></tr>
+              <tr><td class="highlight"><code>items[::-1]</code></td><td><code>["search", "checkout", "login"]</code></td><td>step -1 reverses the whole list</td></tr>
+              <tr><td class="highlight"><code>items[:]</code></td><td>a new list, same elements</td><td>shallow copy — see the trap section below</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Unlike indexing a single element, slicing never raises an <code>IndexError</code> for an out-of-range boundary — <code>items[1:100]</code> just returns whatever exists from index 1 onward. Useful, but it also means a typo'd slice fails silently instead of loudly.</p>
+      </section>
+
+      <section id="methods">
+        <h2>Common methods</h2>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Method</th><th>Does</th><th>Returns</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight"><code>.append(x)</code></td><td>adds one item to the end</td><td><code>None</code> — mutates in place</td></tr>
+              <tr><td class="highlight"><code>.extend(iterable)</code></td><td>adds every item from another iterable</td><td><code>None</code> — mutates in place</td></tr>
+              <tr><td class="highlight"><code>.insert(i, x)</code></td><td>inserts <code>x</code> at index <code>i</code></td><td><code>None</code></td></tr>
+              <tr><td class="highlight"><code>.pop(i=-1)</code></td><td>removes and returns the item at <code>i</code> (default: last)</td><td>the removed item</td></tr>
+              <tr><td class="highlight"><code>.remove(x)</code></td><td>removes the first matching value</td><td><code>None</code> — raises <code>ValueError</code> if not found</td></tr>
+              <tr><td class="highlight"><code>.sort(key=None, reverse=False)</code></td><td>sorts in place</td><td><code>None</code></td></tr>
+              <tr><td class="highlight"><code>sorted(list)</code></td><td>built-in, not a method</td><td>a <em>new</em> sorted list, original untouched</td></tr>
+              <tr><td class="highlight"><code>.count(x)</code> / <code>.index(x)</code></td><td>occurrences / first position</td><td><code>int</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout warn">
+          <strong>append() vs extend() — the interview classic</strong>
+          <code>items.append([1, 2])</code> adds one element that is itself a list — <code>len(items)</code> grows by 1. <code>items.extend([1, 2])</code> adds each element individually — <code>len(items)</code> grows by 2. Mixing these up is one of the most common real bugs in list-building code, not just an interview trivia question.
+        </div>
+        <div class="quiz">
+          <div class="quiz-q"><code>a = [1, 2]; a.append([3, 4])</code> — what is <code>len(a)</code>?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">4 — append flattens iterables in</button>
+            <button class="quiz-opt" data-correct="true">3 — append() always adds exactly one element, even if that element is itself a list</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="comprehension">
+        <h2>List comprehensions</h2>
+        <p>A list comprehension builds a new list from an existing iterable in one expression — idiomatic Python prefers it over a manual <code>for</code> loop with <code>.append()</code> when the logic is simple enough to read in one line.</p>
+        <pre><code># Manual loop
+failed = []
+for result in test_results:
+    if result.status == "failed":
+        failed.append(result.name)
+
+# Equivalent comprehension
+failed = [r.name for r in test_results if r.status == "failed"]</code></pre>
+        <p>The general shape is <code>[expression for item in iterable if condition]</code> — the <code>if</code> is optional. Nested loops work too (<code>[x for row in matrix for x in row]</code> flattens a 2D list), but once a comprehension needs a second nested loop or multiple conditions, most style guides agree it's more readable as a regular loop again.</p>
+      </section>
+
+      <section id="aliasing-trap">
+        <h2>The shared-reference trap</h2>
+        <p>This is the same aliasing idea from <a href="python-memory-model.html">Variables & the Memory Model</a>, but in a form that catches people constantly: multiplying a list containing a mutable object doesn't create independent copies — it creates multiple names pointing at the <em>same</em> inner object.</p>
+        <div id="matrix-demo" class="memory-model"></div>
+        <script>
+          renderMemoryModel("matrix-demo", {
+            introCode: "row = [0, 0, 0]\nmatrix = [row] * 3",
+            introText: "Step through to see why every row in this 'matrix' ends up sharing state.",
+            steps: [
+              {
+                code: "row = [0, 0, 0]",
+                heap: [{ id: "row1", display: "[0, 0, 0]", type: "list", tone: "" }],
+                vars: [{ name: "row", pointsTo: "row1" }],
+                desc: "One list object, one name pointing at it — nothing surprising yet."
+              },
+              {
+                code: "matrix = [row] * 3",
+                heap: [{ id: "row1", display: "[0, 0, 0]", type: "list", tone: "" }],
+                vars: [{ name: "row", pointsTo: "row1" }, { name: "matrix[0]", pointsTo: "row1" }, { name: "matrix[1]", pointsTo: "row1" }, { name: "matrix[2]", pointsTo: "row1" }],
+                desc: "* 3 repeats the reference three times — it does not call list() three times. matrix now has 3 slots, all pointing at the exact same row object."
+              },
+              {
+                code: "matrix[0][0] = 9",
+                heap: [{ id: "row1", display: "[9, 0, 0]", type: "list", tone: "" }],
+                vars: [{ name: "row", pointsTo: "row1" }, { name: "matrix[0]", pointsTo: "row1" }, { name: "matrix[1]", pointsTo: "row1" }, { name: "matrix[2]", pointsTo: "row1" }],
+                desc: "Mutating matrix[0] mutates the one shared object — so matrix[1] and matrix[2] show the 9 too. All three \"rows\" just changed at once.",
+                verdict: { tone: "danger", text: "⚠ matrix[1][0] and matrix[2][0] are also 9 now" }
+              }
+            ]
+          });
+        </script>
+        <p>The fix: build each row independently so each gets its own list object.</p>
+        <pre><code># Wrong — 3 references to 1 list
+matrix = [[0, 0, 0]] * 3
+
+# Right — a comprehension calls the list literal fresh each time
+matrix = [[0, 0, 0] for _ in range(3)]</code></pre>
+      </section>
+
+      <section id="tuples">
+        <h2>Why tuples exist</h2>
+        <p>A tuple is written with parentheses — <code>(1, 2, 3)</code> — and behaves like a list except it's immutable: no <code>.append()</code>, no item assignment, no <code>.sort()</code>. That restriction is the entire point, not a missing feature.</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Use case</th><th>Why a tuple, specifically</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">Dictionary keys</td><td>Keys must be hashable; lists aren't hashable (they're mutable), tuples are — <code>cache[(x, y)] = result</code> works, <code>cache[[x, y]]</code> raises <code>TypeError</code></td></tr>
+              <tr><td class="highlight">Multiple return values</td><td><code>return name, status</code> actually returns a tuple — unpacked at the call site via <code>name, status = get_result()</code></td></tr>
+              <tr><td class="highlight">Fixed-shape records</td><td>An (x, y) coordinate or (row, col) pair that should never accidentally grow a third element</td></tr>
+              <tr><td class="highlight">Function default arguments</td><td>Immutable, so it's safe as a default in a way a list default is not — see the <a href="python-memory-model.html#gotcha">mutable-default trap</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <pre><code># Packing and unpacking
+point = 3, 4                 # packing — parens are optional
+x, y = point                 # unpacking
+x, *rest = [1, 2, 3, 4]      # star-unpacking: x = 1, rest = [2, 3, 4]</code></pre>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the practical difference between a list and a tuple?</summary>
+          <div class="qa-body">A list is mutable — you can append, remove, or reorder items after creation. A tuple is immutable — once created, its contents can't change. Beyond that, they behave the same for indexing, slicing, and iteration. The immutability is what makes tuples usable as dictionary keys and set members, where lists would raise <code>TypeError: unhashable type</code>.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the difference between .append() and .extend()?</summary>
+          <div class="qa-body"><code>.append(x)</code> adds exactly one item — even if <code>x</code> is itself a list, it gets added as a single nested element. <code>.extend(iterable)</code> adds every item from the iterable individually, growing the list by however many elements the iterable had. <code>a.append([1,2])</code> makes <code>len(a)</code> grow by 1; <code>a.extend([1,2])</code> makes it grow by 2.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why does <code>matrix = [[0, 0]] * 3</code> produce a bug when you try to mutate one row?</summary>
+          <div class="qa-body"><code>*</code> on a list repeats <em>references</em>, not deep copies — all 3 slots in <code>matrix</code> end up pointing at the exact same inner list object. Mutating <code>matrix[0][0]</code> mutates that shared object, so every row appears to change simultaneously. The fix is <code>[[0, 0] for _ in range(3)]</code>, which evaluates the list literal fresh on each iteration, producing 3 independent objects.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why can a tuple be used as a dict key but a list can't?</summary>
+          <div class="qa-body">Dict keys must be hashable, and Python's rule is that mutable types are unhashable — if a list's contents could change after being used as a key, its hash would change too, corrupting the dict's internal bucket structure. Tuples are immutable, so their hash is stable for their entire lifetime, making them safe as keys (as long as everything inside the tuple is also hashable).</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> When would you deliberately choose a list comprehension over a plain for loop, and when would you avoid one?</summary>
+          <div class="qa-body">Use one when the transformation is a single clear expression with at most one filter condition — it reads as "build a list of X for each Y where Z" faster than five lines of loop boilerplate, and it's typically a bit faster too since the append calls happen in optimized C rather than Python bytecode. Avoid one once you need a second nested loop, multiple conditions, or a side effect (like logging) per iteration — at that point a comprehension becomes a puzzle to read backward instead of a shortcut, and a plain loop is the more maintainable choice.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Slicing looks safe but silently returns partial results</strong>
+          <code>items[2:100]</code> never raises, even though there's no index 100 — it just returns everything from index 2 to the end. A typo'd boundary produces a shorter-than-expected list instead of an error, which can hide bugs in data-parsing code for a long time.
+        </div>
+        <div class="callout warn">
+          <strong>a[:] and list(a) are shallow copies</strong>
+          Both create a new outer list, but if the elements themselves are mutable (like nested lists), the inner objects are still shared between the original and the copy — mutating a nested element through the copy still affects the original. Use <code>copy.deepcopy()</code> if you genuinely need independent nested structures.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="python-memory-model.html">Variables &amp; the Memory Model →</a>
+          <a href="python-dicts-sets.html">Dicts &amp; Sets →</a>
+          <a href="python-strings.html">String Methods for Automation →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Original content, written for this notes site — not sourced from a video transcript. — added 2026-08-02</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

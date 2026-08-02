@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Functions Deep Dive · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Functions Deep Dive</div>
+    <h1>Functions Deep Dive</h1>
+    <p class="lede"><code>def</code> is easy. What separates a working function signature from one that's actually pleasant to call — *args, **kwargs, keyword-only params — and the scope rules that decide which variable a name inside a function actually refers to, is less obvious.</p>
+    <div class="card-tags">
+      <span>python</span>
+      <span>functions</span>
+      <span>scope</span>
+      <span>fundamentals</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone Python Learning section — authored directly, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#params">Parameter types</a>
+      <a href="#args-kwargs">*args and **kwargs</a>
+      <a href="#kw-only">Positional-only and keyword-only</a>
+      <a href="#scope">The LEGB scope rule</a>
+      <a href="#closures">Closures & the late-binding trap</a>
+      <a href="#first-class">Functions as values</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="params">
+        <h2>Parameter types</h2>
+        <pre><code>def run_test(name, browser="chromium", headless=True):
+    ...
+
+run_test("test_login")                          # browser="chromium", headless=True
+run_test("test_login", "firefox")                # positional
+run_test("test_login", browser="firefox")        # keyword — same effect, clearer at the call site
+run_test("test_login", headless=False)           # skip browser, target headless directly by name</code></pre>
+        <p>Default values are evaluated exactly once, at function-definition time — not on every call. That's harmless for immutable defaults like <code>True</code> or <code>"chromium"</code> above, but genuinely dangerous for mutable ones; see the <a href="python-memory-model.html#gotcha">mutable-default-argument trap</a> if you haven't already.</p>
+      </section>
+
+      <section id="args-kwargs">
+        <h2>*args and **kwargs</h2>
+        <p><code>*args</code> collects any extra positional arguments into a tuple; <code>**kwargs</code> collects any extra keyword arguments into a dict. Neither name is special — <code>*</code> and <code>**</code> are what matter, the names are just convention.</p>
+        <pre><code>def log_step(action, *args, **kwargs):
+    print(action, args, kwargs)
+
+log_step("click", "#submit-button", retries=3, timeout=5000)
+# action = "click"
+# args   = ("#submit-button",)
+# kwargs = {"retries": 3, "timeout": 5000}</code></pre>
+        <p>The reverse operation — unpacking a list/dict <em>into</em> a call — uses the same symbols on the caller's side:</p>
+        <pre><code>coords = (10, 20)
+move_to(*coords)          # same as move_to(10, 20)
+
+opts = {"timeout": 5000, "force": True}
+element.click(**opts)      # same as element.click(timeout=5000, force=True)</code></pre>
+      </section>
+
+      <section id="kw-only">
+        <h2>Positional-only and keyword-only parameters</h2>
+        <p>Two lesser-known markers in a function signature restrict how a parameter can be passed — useful for API design where you want to lock down the call style.</p>
+        <pre><code>def connect(host, port, /, *, timeout=30):
+    ...
+    # host, port  — before the /  → positional-ONLY, can't use host=
+    # timeout     — after the *   → keyword-ONLY, must use timeout=
+
+connect("localhost", 8080, timeout=10)   # ✓ correct
+connect(host="localhost", port=8080)     # ✗ TypeError — host/port are positional-only
+connect("localhost", 8080, 10)           # ✗ TypeError — timeout is keyword-only</code></pre>
+        <p>You'll see this constantly in the standard library's own function signatures (check any built-in's <code>help()</code> output) even if you rarely write <code>/</code> yourself — recognizing it is the practical skill.</p>
+      </section>
+
+      <section id="scope">
+        <h2>The LEGB scope rule</h2>
+        <p>When Python resolves a name inside a function, it checks four scopes in this exact order, stopping at the first match: <strong>L</strong>ocal → <strong>E</strong>nclosing (an outer function, for nested functions) → <strong>G</strong>lobal (module level) → <strong>B</strong>uilt-in (<code>len</code>, <code>print</code>, etc).</p>
+        <pre><code>x = "global"
+
+def outer():
+    x = "enclosing"
+    def inner():
+        x = "local"
+        print(x)      # "local" — found immediately, search stops
+    inner()
+
+outer()   # prints "local"</code></pre>
+        <p>Assigning to a name inside a function makes Python treat it as local for the <em>entire</em> function body, even before the assignment line — reading it earlier in the function raises <code>UnboundLocalError</code> rather than falling back to the global. To explicitly modify a name from an outer scope, use <code>global</code> or <code>nonlocal</code>:</p>
+        <pre><code>counter = 0
+def increment():
+    global counter
+    counter += 1   # without `global`, this line alone would raise UnboundLocalError</code></pre>
+      </section>
+
+      <section id="closures">
+        <h2>Closures & the late-binding trap</h2>
+        <p>A closure is an inner function that remembers variables from its enclosing scope even after that outer function has returned. The catch: it remembers the <em>variable</em>, not the value at closure-creation time — and that variable keeps changing until the loop that created it finishes.</p>
+        <div id="closure-demo" class="memory-model"></div>
+        <script>
+          renderMemoryModel("closure-demo", {
+            introCode: "makers = [lambda: i for i in range(3)]",
+            introText: "Step through to see why every lambda in this list returns the same value.",
+            steps: [
+              {
+                code: "i = 0  (loop start)",
+                heap: [{ id: "i", display: "0", type: "int", tone: "" }],
+                vars: [{ name: "i", pointsTo: "i" }],
+                desc: "The loop variable i is one object that gets rebound each iteration — the lambdas don't capture its value, they capture the name i itself."
+              },
+              {
+                code: "i = 1  (loop continues)",
+                heap: [{ id: "i", display: "1", type: "int", tone: "" }],
+                vars: [{ name: "i", pointsTo: "i" }],
+                desc: "i is rebound to a new int object. Every lambda created so far still just says \"look up i when I'm called\" — none of them stored 0."
+              },
+              {
+                code: "i = 2  (loop ends, i stays 2)",
+                heap: [{ id: "i", display: "2", type: "int", tone: "" }],
+                vars: [{ name: "i", pointsTo: "i" }],
+                desc: "The loop finishes with i left at 2. All 3 lambdas share the same enclosing scope, so all 3 now resolve i to 2 when finally called.",
+                verdict: { tone: "danger", text: "⚠ [m() for m in makers] → [2, 2, 2], not [0, 1, 2]" }
+              }
+            ]
+          });
+        </script>
+        <p>The fix forces evaluation at creation time by capturing the current value as a default argument, which — unlike the closure lookup — <em>is</em> evaluated once, immediately:</p>
+        <pre><code># Fixed — default arg captures the value of i at that iteration
+makers = [lambda i=i: i for i in range(3)]
+[m() for m in makers]   # [0, 1, 2]</code></pre>
+      </section>
+
+      <section id="first-class">
+        <h2>Functions as values</h2>
+        <p>Functions are ordinary objects in Python — assignable to variables, passable as arguments, returnable from other functions. This is what makes patterns like custom sort keys and decorators possible at all.</p>
+        <pre><code>results = [{"name": "a", "duration": 3.2}, {"name": "b", "duration": 1.1}]
+results.sort(key=lambda r: r["duration"])   # a function passed as an argument
+
+def retry(fn, times=3):
+    for _ in range(times):
+        try:
+            return fn()
+        except Exception:
+            continue
+    raise RuntimeError("all retries failed")
+
+retry(lambda: page.click("#flaky-button"))</code></pre>
+        <p>A <code>lambda</code> is just an anonymous, single-expression function — anything a lambda can do, a regular <code>def</code> can also do, and once the logic needs more than one expression or a docstring, <code>def</code> is the better (and often required) choice.</p>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What do *args and **kwargs actually mean?</summary>
+          <div class="qa-body"><code>*args</code> collects any extra positional arguments a function receives into a tuple; <code>**kwargs</code> collects any extra keyword arguments into a dict. They let a function accept a variable, unknown-in-advance number of arguments. The names <code>args</code>/<code>kwargs</code> are just convention — the <code>*</code> and <code>**</code> symbols are what actually matter to Python.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What's the LEGB rule?</summary>
+          <div class="qa-body">It's the order Python searches scopes to resolve a variable name: Local (inside the current function) → Enclosing (an outer function, for nested/closure functions) → Global (module level) → Built-in (Python's built-in names like <code>len</code>). Python stops at the first scope where the name is found, so a local variable always shadows a global one with the same name.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why does creating a list of lambdas in a loop often produce unexpected results?</summary>
+          <div class="qa-body">A closure captures the enclosing variable itself, not its value at the moment the closure was created — so all the lambdas share the same loop variable, and by the time any of them is called, the loop has already finished and the variable holds its final value. <code>[lambda: i for i in range(3)]</code> produces 3 functions that all return 2, not 0/1/2. The standard fix is capturing the current value as a default argument: <code>lambda i=i: i</code>, since default argument values are evaluated once, immediately, at function-definition time.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Why does Python require the global keyword to reassign a global variable inside a function, but not to read one?</summary>
+          <div class="qa-body">Python decides a variable's scope statically, by scanning the function body at compile time — if a name is assigned anywhere in a function, Python treats it as local for the entire function, full stop. Without <code>global</code>, <code>counter += 1</code> is treated as assigning a local <code>counter</code>, which requires reading it first — but there's no local <code>counter</code> yet, hence <code>UnboundLocalError</code>, not a fallback to the global value. Reading a name that's never assigned in the function has no such ambiguity, so it can fall through Local → Enclosing → Global → Built-in freely. <code>global</code> (or <code>nonlocal</code> for enclosing scopes) explicitly tells Python "assignments to this name in this function should target the outer variable, not create a local one."</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>A function with no return statement returns None</strong>
+          Forgetting <code>return</code> is a common source of silent bugs — the function runs fine, produces no error, and every caller just gets <code>None</code> back instead of the expected value.
+        </div>
+        <div class="callout warn">
+          <strong>Mutable default arguments — the other big trap</strong>
+          Covered in depth on <a href="python-memory-model.html#gotcha">Variables &amp; the Memory Model</a>: a mutable default value (like <code>[]</code> or <code>{}</code>) is created once at function-definition time and shared across every call that doesn't override it.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="python-memory-model.html">Variables &amp; the Memory Model →</a>
+          <a href="python-decorators.html">Decorators →</a>
+          <a href="python-control-flow.html">Control Flow →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Original content, written for this notes site — not sourced from a video transcript. — added 2026-08-02</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

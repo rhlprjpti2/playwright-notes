@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decorators · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Decorators</div>
+    <h1>Decorators</h1>
+    <p class="lede">You've already used one — <code>@pytest.fixture</code> is a decorator. Understanding what <code>@something</code> above a function actually does demystifies a huge chunk of both pytest and Python itself.</p>
+    <div class="card-tags">
+      <span>python</span>
+      <span>decorators</span>
+      <span>closures</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone Python Learning section — authored directly, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#the-problem">The problem decorators solve</a>
+      <a href="#basic-decorator">A decorator from scratch</a>
+      <a href="#syntax-sugar">@ is just sugar</a>
+      <a href="#wraps">functools.wraps</a>
+      <a href="#with-args">Decorators that take arguments</a>
+      <a href="#stacking">Stacking multiple decorators</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="the-problem">
+        <h2>The problem decorators solve</h2>
+        <p>Say you want to time how long several different test-helper functions take, without pasting the same start/stop timing code into every single one of them. A decorator wraps a function with extra behavior — before, after, or instead of the original — while leaving the original function's own code completely untouched.</p>
+      </section>
+
+      <section id="basic-decorator">
+        <h2>A decorator from scratch</h2>
+        <p>A decorator is just a function that takes a function and returns a function — nothing more exotic than that, even though the syntax looks unusual the first time.</p>
+        <pre><code>import time
+
+def timed(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        elapsed = time.time() - start
+        print(f"{func.__name__} took {elapsed:.2f}s")
+        return result
+    return wrapper
+
+def load_dashboard(page):
+    page.goto("https://example.com/dashboard")
+    page.wait_for_selector(".widgets-loaded")
+
+load_dashboard = timed(load_dashboard)   # manually "decorating" it
+load_dashboard(page)                      # prints timing, then runs normally</code></pre>
+        <p>Nothing here is decorator-specific syntax yet — it's just a function (<code>timed</code>) that takes <code>load_dashboard</code> as an argument and returns a different function (<code>wrapper</code>) that calls the original inside some extra logic. This is a closure — <code>wrapper</code> remembers <code>func</code> from its enclosing scope, exactly like the closures on <a href="python-functions.html#closures">Functions Deep Dive</a>.</p>
+      </section>
+
+      <section id="syntax-sugar">
+        <h2>@ is just sugar</h2>
+        <p>The <code>@decorator</code> syntax above a function definition is exactly equivalent to reassigning the function after defining it, the way the manual line above did — Python just gives it a cleaner spelling.</p>
+        <pre><code>@timed
+def load_dashboard(page):
+    page.goto("https://example.com/dashboard")
+    page.wait_for_selector(".widgets-loaded")
+
+# ...is identical to...
+
+def load_dashboard(page):
+    page.goto("https://example.com/dashboard")
+    page.wait_for_selector(".widgets-loaded")
+load_dashboard = timed(load_dashboard)</code></pre>
+        <div class="quiz">
+          <div class="quiz-q"><code>@timed\ndef f(): ...</code> — what does calling f() actually execute first?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">f's own code directly, then timed() runs afterward</button>
+            <button class="quiz-opt" data-correct="true">timed's wrapper() function — f itself only runs when wrapper calls func() inside it</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="wraps">
+        <h2>functools.wraps</h2>
+        <p>There's a real, common bug in the basic decorator above: after decorating, <code>load_dashboard.__name__</code> is <code>"wrapper"</code>, not <code>"load_dashboard"</code> — the original function's identity got hidden behind the wrapper. This breaks debugging output, introspection, and anything that reads <code>__name__</code> or the docstring.</p>
+        <pre><code>from functools import wraps
+
+def timed(func):
+    @wraps(func)          # copies __name__, __doc__, etc. from func onto wrapper
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        print(f"{func.__name__} took {time.time() - start:.2f}s")
+        return result
+    return wrapper</code></pre>
+        <p>This is a one-line fix with no downside, which is why every decorator you'll see in real, well-written codebases uses <code>@wraps(func)</code> — omitting it is a small but genuine code-review flag.</p>
+      </section>
+
+      <section id="with-args">
+        <h2>Decorators that take arguments</h2>
+        <p>A decorator with its own arguments — like <code>@retry(times=3)</code> — needs one more layer of nesting: a function that takes the arguments and <em>returns</em> a decorator.</p>
+        <pre><code>def retry(times=3):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(times):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if attempt == times - 1:
+                        raise
+            return None
+        return wrapper
+    return decorator
+
+@retry(times=5)
+def click_flaky_button(page):
+    page.click("#sometimes-slow-to-render")</code></pre>
+        <p>Three layers, each with one job: <code>retry(times=5)</code> runs first and returns <code>decorator</code>; <code>decorator</code> receives the actual function and returns <code>wrapper</code>; <code>wrapper</code> is what finally executes on every call. It looks like a lot the first time, but each layer is doing exactly the same closure trick as the basic decorator, just one level deeper.</p>
+      </section>
+
+      <section id="stacking">
+        <h2>Stacking multiple decorators</h2>
+        <pre><code>@timed
+@retry(times=3)
+def load_dashboard(page):
+    ...</code></pre>
+        <p>Decorators apply bottom-up, closest-to-the-function first — so this is equivalent to <code>timed(retry(times=3)(load_dashboard))</code>. In practice: <code>retry</code> wraps the original function first, then <code>timed</code> wraps <em>that</em> result, so a call times the entire retry loop, not just one attempt. Order matters and swapping it changes behavior — worth tracing through deliberately rather than guessing.</p>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What is a decorator, in plain terms?</summary>
+          <div class="qa-body">A function that takes another function as input and returns a new function — typically one that calls the original but adds behavior before, after, or around it (timing, logging, retrying, access control). The <code>@decorator</code> syntax above a function definition is shorthand for reassigning the function to the decorator's return value.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What problem does functools.wraps solve, and what breaks without it?</summary>
+          <div class="qa-body">A decorator normally returns a new inner function ("wrapper") in place of the original — so without intervention, the decorated function's <code>__name__</code>, docstring, and other metadata get replaced by the wrapper's, not the original function's. <code>@wraps(func)</code> copies that metadata from the original function onto the wrapper, so introspection, debugging output, and documentation tools still see the original function's identity rather than a generic "wrapper".</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why does a decorator that accepts arguments (like @retry(times=3)) need an extra layer of nesting compared to a plain decorator?</summary>
+          <div class="qa-body">A plain decorator like <code>@timed</code> is just <code>timed(func)</code> — one function call. But <code>@retry(times=3)</code> is evaluated as <code>retry(times=3)</code> first (which must return the actual decorator), and only then is that result called with the function: <code>retry(times=3)(func)</code>. So <code>retry</code> itself isn't the decorator — it's a factory that takes the configuration arguments and returns the real decorator function, adding one layer of nesting versus a plain decorator.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> When multiple decorators are stacked on one function, what order do they run in, and why does it matter?</summary>
+          <div class="qa-body">They apply bottom-up (closest to the function first) but execute top-down on each actual call. <code>@a @b def f()</code> means <code>f = a(b(f))</code> — <code>b</code> wraps the original first, then <code>a</code> wraps <code>b</code>'s result. On a call, <code>a</code>'s wrapper runs first (since it's the outermost layer), and it decides whether/when to call into <code>b</code>'s wrapper, which then decides whether/when to call the original. Order changes real behavior: stacking a timing decorator outside a retry decorator measures the entire retry loop's duration; swapping the order would measure only the final successful attempt.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Forgetting @wraps silently breaks introspection</strong>
+          The decorated function still runs correctly — the bug is invisible until something reads <code>__name__</code>, a docstring, or a stack trace, and gets the wrapper's identity instead of the real function's.
+        </div>
+        <div class="callout warn">
+          <strong>A decorator without *args, **kwargs only works on functions with that exact signature</strong>
+          <code>def wrapper(x):</code> instead of <code>def wrapper(*args, **kwargs):</code> means the decorator silently breaks the moment it's applied to a function with a different parameter list. Always forward with <code>*args, **kwargs</code> unless the decorator is deliberately built for one specific signature.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="python-functions.html">Functions Deep Dive →</a>
+          <a href="pytest-fixtures.html">Pytest Fixtures &amp; Fundamentals →</a>
+          <a href="python-generators.html">Generators &amp; yield →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Original content, written for this notes site — not sourced from a video transcript. — added 2026-08-02</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generators & yield · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Generators & yield</div>
+    <h1>Generators & yield</h1>
+    <p class="lede">A pytest fixture using <code>yield</code> for setup/teardown is a generator function. Understanding what <code>yield</code> actually does — pause and resume, not "return multiple times" — explains that pattern and a whole class of memory-efficient code.</p>
+    <div class="card-tags">
+      <span>python</span>
+      <span>generators</span>
+      <span>iterators</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone Python Learning section — authored directly, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#the-problem">The memory problem</a>
+      <a href="#yield">yield vs return</a>
+      <a href="#gen-expr">Generator expressions</a>
+      <a href="#iterator-protocol">The iterator protocol</a>
+      <a href="#fixtures-link">Why pytest fixtures use yield</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="the-problem">
+        <h2>The memory problem</h2>
+        <p>Say you need to process a log file with 10 million lines, checking each one for an error pattern. Reading it into a list first means holding all 10 million lines in memory simultaneously — even though at any moment you only actually need the one line you're currently looking at.</p>
+        <pre><code># Loads the entire file into memory as a list, all at once
+def read_lines_list(path):
+    lines = []
+    with open(path) as f:
+        for line in f:
+            lines.append(line)
+    return lines
+
+# Yields one line at a time — never holds more than one line in memory
+def read_lines_gen(path):
+    with open(path) as f:
+        for line in f:
+            yield line</code></pre>
+        <p>Both functions look almost identical to call — <code>for line in read_lines_gen(path):</code> works exactly like iterating a list. The difference is entirely about <em>when</em> each line gets produced and how much memory is held at once, which ties directly back to the object model on <a href="python-memory-model.html">Variables &amp; the Memory Model</a>: a list holds references to every element simultaneously; a generator holds a paused execution frame and produces one value at a time, on demand.</p>
+      </section>
+
+      <section id="yield">
+        <h2>yield vs return</h2>
+        <p><code>return</code> ends a function permanently, handing back one value. <code>yield</code> pauses the function, hands back one value, and — critically — remembers exactly where it left off, ready to resume from that exact point the next time a value is requested.</p>
+        <pre><code>def count_up_to(n):
+    i = 1
+    while i <= n:
+        yield i
+        i += 1        # this line only runs when the generator is resumed
+
+gen = count_up_to(3)
+next(gen)   # 1  — runs until the first yield, then pauses
+next(gen)   # 2  — resumes right after yield, runs i += 1, loops, yields again
+next(gen)   # 3
+next(gen)   # raises StopIteration — the while condition is now False</code></pre>
+        <p>Calling <code>count_up_to(3)</code> does <strong>not</strong> run any of the function's code yet — it immediately returns a generator object. The body only starts executing on the first <code>next()</code> call, and only runs as far as the next <code>yield</code> before pausing again. This lazy, on-demand execution is the entire mechanism behind the memory savings above.</p>
+        <div class="quiz">
+          <div class="quiz-q">What happens the moment you call a generator function, like <code>count_up_to(3)</code>?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">The function body runs immediately, up to the first yield</button>
+            <button class="quiz-opt" data-correct="true">Nothing runs yet — a generator object is returned, and the body only starts on the first next() call</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="gen-expr">
+        <h2>Generator expressions</h2>
+        <p>The same syntax as a list comprehension, but with parentheses instead of square brackets — and the same lazy, one-at-a-time evaluation as a <code>yield</code>-based generator function.</p>
+        <pre><code>squares_list = [x * x for x in range(1000000)]   # builds all 1,000,000 values now
+squares_gen  = (x * x for x in range(1000000))    # builds nothing yet — lazy
+
+sum(x * x for x in range(1000000))   # no brackets needed when it's a sole function argument</code></pre>
+        <p>For anything that gets consumed once in a loop or passed straight into <code>sum()</code>/<code>max()</code>/<code>any()</code>, a generator expression is the more memory-efficient choice by default — there's rarely a reason to materialize the full list first if nothing needs random access or a second pass over it.</p>
+      </section>
+
+      <section id="iterator-protocol">
+        <h2>The iterator protocol</h2>
+        <p>A <code>for</code> loop over any iterable — a list, a generator, a file, a dict — is secretly doing the same two-method dance every time: calling <code>iter()</code> once to get an iterator, then calling <code>next()</code> repeatedly until <code>StopIteration</code> is raised.</p>
+        <pre><code>items = [1, 2, 3]
+it = iter(items)
+next(it)   # 1
+next(it)   # 2
+next(it)   # 3
+next(it)   # raises StopIteration
+
+# This is exactly what `for x in items:` does under the hood</code></pre>
+        <p>A generator (whether from a <code>yield</code> function or a generator expression) already satisfies this protocol automatically — it's an object with its own <code>__next__</code> built in, which is why it can be looped over directly without any extra wrapping.</p>
+      </section>
+
+      <section id="fixtures-link">
+        <h2>Why pytest fixtures use yield</h2>
+        <p>The setup/teardown pattern on <a href="pytest-fixtures.html">Pytest Fixtures &amp; Fundamentals</a> is a generator function used for its pause-and-resume behavior, not for producing a sequence of values.</p>
+        <pre><code>@pytest.fixture
+def page(browser):
+    page = browser.new_page()
+    yield page          # pytest resumes the test here, using this value
+    page.close()         # this runs only after the test finishes — teardown</code></pre>
+        <p>Pytest calls <code>next()</code> on the fixture generator once to run the setup code and get the yielded <code>page</code> object, hands that to the test, runs the test, and then calls <code>next()</code> again afterward — which resumes the generator right after the <code>yield</code> line and runs the teardown code. The exact same pause/resume mechanism as the log-file example above, just used for "do setup, hand off control, do cleanup" instead of "produce a sequence of values."</p>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the core difference between yield and return?</summary>
+          <div class="qa-body"><code>return</code> exits a function permanently and hands back one value. <code>yield</code> pauses the function at that exact line, hands back one value, and preserves all local state so execution can resume from right after the <code>yield</code> the next time a value is requested. A function containing <code>yield</code> anywhere in its body becomes a generator function — calling it returns a generator object rather than running the body immediately.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why would you use a generator instead of returning a list?</summary>
+          <div class="qa-body">Memory. A list holds every element in memory simultaneously, which is fine for small collections but wasteful or impossible for huge or unbounded sequences (a large file's lines, an infinite counter, a paginated API being consumed page by page). A generator produces one value at a time, on demand, so memory use stays constant regardless of how many items get produced in total — the tradeoff is that a generator can only be iterated once and doesn't support indexing or <code>len()</code>.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What does calling a generator function actually do, versus calling a regular function?</summary>
+          <div class="qa-body">Calling a regular function runs its body immediately and returns the result. Calling a generator function (one containing <code>yield</code>) runs none of the body — it immediately returns a generator object. The body only begins executing on the first call to <code>next()</code> (or the first iteration of a <code>for</code> loop over it), and each subsequent <code>next()</code> resumes execution from directly after the last <code>yield</code>, rather than starting over.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Explain what's actually happening when a pytest fixture uses yield instead of return for setup/teardown.</summary>
+          <div class="qa-body">The fixture function is a generator. Pytest calls <code>next()</code> on it once before the test runs — this executes the setup code and pauses at the <code>yield</code> line, and the yielded value becomes what gets injected into the test as the fixture's value. The test then runs using that value. Once the test finishes (pass or fail), pytest calls <code>next()</code> again, which resumes the generator immediately after the <code>yield</code> and runs whatever teardown code follows — closing a browser, deleting test data, etc. This guarantees teardown runs even though it's written after the point where control was handed to the test, because the generator's paused frame kept that "resume point" alive the whole time the test was executing.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>A generator can only be iterated once</strong>
+          Once exhausted (StopIteration raised), a generator is permanently spent — looping over it again yields nothing, silently. A list can be iterated as many times as you want; a generator can't. If you need to iterate the same data twice, either store it as a list or call the generator function again to get a fresh generator object.
+        </div>
+        <div class="callout warn">
+          <strong>len() doesn't work on a generator</strong>
+          A generator doesn't know its total length in advance — it only knows how to produce the next value — so <code>len(my_generator)</code> raises <code>TypeError</code>. If you need a count, either consume it into a list first or track a counter manually while iterating.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="pytest-fixtures.html">Pytest Fixtures &amp; Fundamentals →</a>
+          <a href="python-decorators.html">Decorators →</a>
+          <a href="python-memory-model.html">Variables &amp; the Memory Model →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Original content, written for this notes site — not sourced from a video transcript. — added 2026-08-02</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

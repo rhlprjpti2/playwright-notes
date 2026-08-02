@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control Flow · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Control Flow</div>
+    <h1>Control Flow</h1>
+    <p class="lede">if/for/while look identical to every other language at a glance — the parts that actually differ, and actually come up in interviews, are iterating without index variables and the loop <code>else</code> clause almost nobody expects.</p>
+    <div class="card-tags">
+      <span>python</span>
+      <span>control-flow</span>
+      <span>fundamentals</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone Python Learning section — authored directly, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#conditionals">if / elif / else</a>
+      <a href="#for-loops">for loops without indexes</a>
+      <a href="#enumerate-zip">enumerate() and zip()</a>
+      <a href="#while">while loops</a>
+      <a href="#for-else">The loop else clause</a>
+      <a href="#walrus">The walrus operator</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="conditionals">
+        <h2>if / elif / else</h2>
+        <pre><code>if response.status_code == 200:
+    result = "passed"
+elif response.status_code == 404:
+    result = "not found"
+else:
+    result = "failed"
+
+# Ternary — one-line conditional expression
+result = "passed" if response.status_code == 200 else "failed"</code></pre>
+        <p>The ternary form reads as "the value, then the condition, then the fallback" — backwards from most languages' <code>condition ? a : b</code>, which is exactly the kind of thing that trips people up the first few times they read someone else's Python.</p>
+      </section>
+
+      <section id="for-loops">
+        <h2>for loops without indexes</h2>
+        <p>Python's <code>for</code> loops over the items of an iterable directly — there's no C-style <code>for (i = 0; i &lt; n; i++)</code> at all. If you find yourself writing <code>for i in range(len(items))</code> just to then do <code>items[i]</code>, that's almost always a sign you want the plain form instead.</p>
+        <pre><code># Avoid — indexing an iterable you already have
+for i in range(len(test_names)):
+    print(test_names[i])
+
+# Idiomatic — iterate the items directly
+for name in test_names:
+    print(name)</code></pre>
+      </section>
+
+      <section id="enumerate-zip">
+        <h2>enumerate() and zip()</h2>
+        <p>The two situations that <em>do</em> need more than the item itself both have a dedicated built-in, rather than reaching for manual indexing.</p>
+        <pre><code># Need the index AND the item → enumerate()
+for i, name in enumerate(test_names):
+    print(f"{i}: {name}")
+
+for i, name in enumerate(test_names, start=1):   # start counting from 1
+    print(f"Test #{i}: {name}")
+
+# Need to walk two lists in parallel → zip()
+expected = ["passed", "passed", "failed"]
+actual   = ["passed", "failed", "failed"]
+for exp, act in zip(expected, actual):
+    if exp != act:
+        print(f"mismatch: expected {exp}, got {act}")</code></pre>
+        <div class="callout tip">
+          <strong>zip() stops at the shortest iterable</strong>
+          If <code>expected</code> has 5 items and <code>actual</code> has 3, <code>zip()</code> silently pairs up only the first 3 and stops — it does not raise an error for the length mismatch. If mismatched lengths should be a test failure in their own right, check <code>len(expected) == len(actual)</code> explicitly before zipping.
+        </div>
+      </section>
+
+      <section id="while">
+        <h2>while loops</h2>
+        <pre><code>attempts = 0
+while attempts < 3 and not element.is_visible():
+    time.sleep(1)
+    attempts += 1</code></pre>
+        <p>In Playwright specifically, manual polling loops like this are rarely needed — the whole point of <a href="playwright-auto-waiting.html">auto-waiting</a> is that the framework already retries actionability checks internally. A hand-rolled <code>while</code> retry loop around a Playwright call is usually a sign of fighting the framework rather than using it.</p>
+      </section>
+
+      <section id="for-else">
+        <h2>The loop <code>else</code> clause</h2>
+        <p>Both <code>for</code> and <code>while</code> loops can have an <code>else</code> block — it runs only if the loop completed without hitting a <code>break</code>. This is a genuinely underused feature that maps directly onto a common "search and verify not found" pattern.</p>
+        <pre><code>for item in cart_items:
+    if item.name == "out-of-stock-product":
+        print("Found it — should not be in cart")
+        break
+else:
+    print("Confirmed: product correctly absent from cart")</code></pre>
+        <p>Without <code>else</code>, the same logic needs a separate flag variable set inside the loop and checked afterward — <code>for/else</code> collapses that into the loop itself. It reads oddly the first time ("else... on a for loop?"), which is exactly why it's a favorite "do you actually know Python" interview question.</p>
+        <div class="quiz">
+          <div class="quiz-q">When does a <code>for...else</code> block's <code>else</code> clause run?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">Every time, right after the loop finishes — like a normal function's cleanup step</button>
+            <button class="quiz-opt" data-correct="true">Only if the loop finished naturally, without hitting a break</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="walrus">
+        <h2>The walrus operator (:=)</h2>
+        <p>Added in Python 3.8, <code>:=</code> assigns a value <em>and</em> returns it in the same expression — useful specifically for avoiding a duplicate call inside a condition.</p>
+        <pre><code># Without walrus — calls get_next_row() twice, or needs an extra line
+row = get_next_row()
+while row is not None:
+    process(row)
+    row = get_next_row()
+
+# With walrus — assign and test in one line
+while (row := get_next_row()) is not None:
+    process(row)</code></pre>
+        <p>It's a style choice more than a necessity — plenty of production code never uses it — but it shows up often enough in modern Python (and in interview "what does this do" snippets) to be worth recognizing on sight.</p>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> Why does idiomatic Python avoid for i in range(len(items))?</summary>
+          <div class="qa-body">Python's <code>for</code> loop iterates over the items of an iterable directly, so <code>for item in items:</code> already gives you each element without needing an index to look it up. Using <code>range(len(items))</code> just to then index back into the list is unnecessary — and if you also need the index, <code>enumerate(items)</code> gives you both the index and the item together, more directly than manual indexing.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What does zip() do, and what happens with mismatched-length inputs?</summary>
+          <div class="qa-body"><code>zip()</code> pairs up corresponding items from two or more iterables so they can be looped over together. If the iterables have different lengths, <code>zip()</code> stops as soon as the shortest one is exhausted — it does not raise an error or pad the shorter one, so a length mismatch fails silently unless checked for separately.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What does the else clause on a for loop actually do?</summary>
+          <div class="qa-body">It runs only when the loop completes all its iterations without hitting a <code>break</code>. It's most useful for a "search, and confirm not found" pattern: loop looking for something, <code>break</code> if found, and let <code>else</code> handle the "loop finished, nothing matched" case — avoiding a separate boolean flag variable to track whether a match occurred.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What problem does the walrus operator (:=) solve?</summary>
+          <div class="qa-body">It lets you assign a value and use it in the same expression, most commonly inside a <code>while</code> or <code>if</code> condition — avoiding calling the same function twice (once to test it, once to use the result) or writing an extra assignment line before the condition. It's purely a readability/DRY tool, not something that changes what's possible — everything it does could already be written with an extra line.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Mutating a list while iterating it skips elements</strong>
+          <code>for item in items: items.remove(item)</code> silently skips every other element, because removing an item shifts everything after it down one index while the loop's internal position doesn't adjust. Iterate over a copy instead — <code>for item in items[:]:</code> — or build a new list via a comprehension rather than mutating in place.
+        </div>
+        <div class="callout warn">
+          <strong>range(n) is not the values 0 to n</strong>
+          <code>range(5)</code> produces <code>0, 1, 2, 3, 4</code> — 5 is excluded, matching the same "stop is exclusive" convention as slicing. This causes the same off-by-one confusion in both places, for the same reason.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="python-lists-tuples.html">Lists &amp; Tuples →</a>
+          <a href="playwright-auto-waiting.html">Playwright Auto-Waiting &amp; Assertions →</a>
+          <a href="python-functions.html">Functions Deep Dive →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Original content, written for this notes site — not sourced from a video transcript. — added 2026-08-02</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

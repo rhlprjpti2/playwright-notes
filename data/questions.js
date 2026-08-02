@@ -861,6 +861,38 @@ window.ALL_QUESTIONS = [
   "file": "pages/python-basics.html"
  },
  {
+  "q": "Why does idiomatic Python avoid for i in range(len(items))?",
+  "a": "Python's <code>for</code> loop iterates over the items of an iterable directly, so <code>for item in items:</code> already gives you each element without needing an index to look it up. Using <code>range(len(items))</code> just to then index back into the list is unnecessary — and if you also need the index, <code>enumerate(items)</code> gives you both the index and the item together, more directly than manual indexing.",
+  "level": "junior",
+  "topic": "python-control-flow",
+  "topicLabel": "Python: Control Flow",
+  "file": "pages/python-control-flow.html"
+ },
+ {
+  "q": "What does zip() do, and what happens with mismatched-length inputs?",
+  "a": "<code>zip()</code> pairs up corresponding items from two or more iterables so they can be looped over together. If the iterables have different lengths, <code>zip()</code> stops as soon as the shortest one is exhausted — it does not raise an error or pad the shorter one, so a length mismatch fails silently unless checked for separately.",
+  "level": "junior",
+  "topic": "python-control-flow",
+  "topicLabel": "Python: Control Flow",
+  "file": "pages/python-control-flow.html"
+ },
+ {
+  "q": "What does the else clause on a for loop actually do?",
+  "a": "It runs only when the loop completes all its iterations without hitting a <code>break</code>. It's most useful for a \"search, and confirm not found\" pattern: loop looking for something, <code>break</code> if found, and let <code>else</code> handle the \"loop finished, nothing matched\" case — avoiding a separate boolean flag variable to track whether a match occurred.",
+  "level": "mid",
+  "topic": "python-control-flow",
+  "topicLabel": "Python: Control Flow",
+  "file": "pages/python-control-flow.html"
+ },
+ {
+  "q": "What problem does the walrus operator (:=) solve?",
+  "a": "It lets you assign a value and use it in the same expression, most commonly inside a <code>while</code> or <code>if</code> condition — avoiding calling the same function twice (once to test it, once to use the result) or writing an extra assignment line before the condition. It's purely a readability/DRY tool, not something that changes what's possible — everything it does could already be written with an extra line.",
+  "level": "mid",
+  "topic": "python-control-flow",
+  "topicLabel": "Python: Control Flow",
+  "file": "pages/python-control-flow.html"
+ },
+ {
   "q": "Why prefer isinstance() over type() == for type checks?",
   "a": "<code>isinstance()</code> accounts for inheritance — it returns True if the object is an instance of the class <em>or any subclass of it</em>. <code>type(x) == SomeClass</code> only matches the exact type, so it silently breaks for subclasses. <code>isinstance()</code> also accepts a tuple of types for an \"or\" check: <code>isinstance(x, (int, float))</code>.",
   "level": "junior",
@@ -899,6 +931,174 @@ window.ALL_QUESTIONS = [
   "topic": "python-data-types",
   "topicLabel": "Python: Data Types",
   "file": "pages/python-data-types.html"
+ },
+ {
+  "q": "What is a decorator, in plain terms?",
+  "a": "A function that takes another function as input and returns a new function — typically one that calls the original but adds behavior before, after, or around it (timing, logging, retrying, access control). The <code>@decorator</code> syntax above a function definition is shorthand for reassigning the function to the decorator's return value.",
+  "level": "junior",
+  "topic": "python-decorators",
+  "topicLabel": "Python: Decorators",
+  "file": "pages/python-decorators.html"
+ },
+ {
+  "q": "What problem does functools.wraps solve, and what breaks without it?",
+  "a": "A decorator normally returns a new inner function (\"wrapper\") in place of the original — so without intervention, the decorated function's <code>__name__</code>, docstring, and other metadata get replaced by the wrapper's, not the original function's. <code>@wraps(func)</code> copies that metadata from the original function onto the wrapper, so introspection, debugging output, and documentation tools still see the original function's identity rather than a generic \"wrapper\".",
+  "level": "mid",
+  "topic": "python-decorators",
+  "topicLabel": "Python: Decorators",
+  "file": "pages/python-decorators.html"
+ },
+ {
+  "q": "Why does a decorator that accepts arguments (like @retry(times=3)) need an extra layer of nesting compared to a plain decorator?",
+  "a": "A plain decorator like <code>@timed</code> is just <code>timed(func)</code> — one function call. But <code>@retry(times=3)</code> is evaluated as <code>retry(times=3)</code> first (which must return the actual decorator), and only then is that result called with the function: <code>retry(times=3)(func)</code>. So <code>retry</code> itself isn't the decorator — it's a factory that takes the configuration arguments and returns the real decorator function, adding one layer of nesting versus a plain decorator.",
+  "level": "mid",
+  "topic": "python-decorators",
+  "topicLabel": "Python: Decorators",
+  "file": "pages/python-decorators.html"
+ },
+ {
+  "q": "When multiple decorators are stacked on one function, what order do they run in, and why does it matter?",
+  "a": "They apply bottom-up (closest to the function first) but execute top-down on each actual call. <code>@a @b def f()</code> means <code>f = a(b(f))</code> — <code>b</code> wraps the original first, then <code>a</code> wraps <code>b</code>'s result. On a call, <code>a</code>'s wrapper runs first (since it's the outermost layer), and it decides whether/when to call into <code>b</code>'s wrapper, which then decides whether/when to call the original. Order changes real behavior: stacking a timing decorator outside a retry decorator measures the entire retry loop's duration; swapping the order would measure only the final successful attempt.",
+  "level": "senior",
+  "topic": "python-decorators",
+  "topicLabel": "Python: Decorators",
+  "file": "pages/python-decorators.html"
+ },
+ {
+  "q": "What's the difference between dict[key] and dict.get(key)?",
+  "a": "<code>dict[key]</code> raises <code>KeyError</code> if the key doesn't exist — appropriate when a missing key means something is genuinely wrong. <code>dict.get(key)</code> returns <code>None</code> instead (or a custom default via <code>.get(key, default)</code>) — appropriate when the key being absent is an expected, handled case, like an optional field in an API response.",
+  "level": "junior",
+  "topic": "python-dicts-sets",
+  "topicLabel": "Python: Dicts &amp; Sets",
+  "file": "pages/python-dicts-sets.html"
+ },
+ {
+  "q": "Why is checking membership in a set faster than in a list?",
+  "a": "A list is a sequence — checking <code>x in list</code> scans from the start until it finds a match, which is O(n) and gets slower as the list grows. A set (and a dict's keys) uses a hash table: <code>hash(x)</code> computes directly which bucket to check, making membership testing O(1) on average regardless of collection size. For repeated lookups against a large collection, converting it to a set once and checking membership against that is a common, real performance fix.",
+  "level": "mid",
+  "topic": "python-dicts-sets",
+  "topicLabel": "Python: Dicts &amp; Sets",
+  "file": "pages/python-dicts-sets.html"
+ },
+ {
+  "q": "Why can't you use a list as a dict key or put one in a set?",
+  "a": "Both dict keys and set members must be hashable, and Python considers mutable types unhashable by design — if a list's contents changed after insertion, its hash would change too, which would corrupt the hash table's bucket structure (the item would become unfindable at its own stored location). Tuples work as keys precisely because they're immutable and therefore have a hash that's stable for their whole lifetime.",
+  "level": "mid",
+  "topic": "python-dicts-sets",
+  "topicLabel": "Python: Dicts &amp; Sets",
+  "file": "pages/python-dicts-sets.html"
+ },
+ {
+  "q": "You're comparing two large lists of user IDs for differences in a test — why is this a set problem, not a list problem?",
+  "a": "Framed as lists, finding \"IDs in A but not B\" naively means a nested loop or repeated <code>in</code> checks against B — O(n×m). Converting both to sets turns it into <code>set_a - set_b</code>, a single O(n+m) operation using hash-based lookups internally. Beyond the performance difference, it's also just more readable — <code>-</code>, <code>&amp;</code>, and <code>^</code> directly express \"missing\", \"shared\", and \"mismatched\" without a loop obscuring the intent. The only cost is losing duplicates and original order, which usually doesn't matter for an ID-comparison check.",
+  "level": "senior",
+  "topic": "python-dicts-sets",
+  "topicLabel": "Python: Dicts &amp; Sets",
+  "file": "pages/python-dicts-sets.html"
+ },
+ {
+  "q": "What do *args and **kwargs actually mean?",
+  "a": "<code>*args</code> collects any extra positional arguments a function receives into a tuple; <code>**kwargs</code> collects any extra keyword arguments into a dict. They let a function accept a variable, unknown-in-advance number of arguments. The names <code>args</code>/<code>kwargs</code> are just convention — the <code>*</code> and <code>**</code> symbols are what actually matter to Python.",
+  "level": "junior",
+  "topic": "python-functions",
+  "topicLabel": "Python: Functions",
+  "file": "pages/python-functions.html"
+ },
+ {
+  "q": "What's the LEGB rule?",
+  "a": "It's the order Python searches scopes to resolve a variable name: Local (inside the current function) → Enclosing (an outer function, for nested/closure functions) → Global (module level) → Built-in (Python's built-in names like <code>len</code>). Python stops at the first scope where the name is found, so a local variable always shadows a global one with the same name.",
+  "level": "mid",
+  "topic": "python-functions",
+  "topicLabel": "Python: Functions",
+  "file": "pages/python-functions.html"
+ },
+ {
+  "q": "Why does creating a list of lambdas in a loop often produce unexpected results?",
+  "a": "A closure captures the enclosing variable itself, not its value at the moment the closure was created — so all the lambdas share the same loop variable, and by the time any of them is called, the loop has already finished and the variable holds its final value. <code>[lambda: i for i in range(3)]</code> produces 3 functions that all return 2, not 0/1/2. The standard fix is capturing the current value as a default argument: <code>lambda i=i: i</code>, since default argument values are evaluated once, immediately, at function-definition time.",
+  "level": "mid",
+  "topic": "python-functions",
+  "topicLabel": "Python: Functions",
+  "file": "pages/python-functions.html"
+ },
+ {
+  "q": "Why does Python require the global keyword to reassign a global variable inside a function, but not to read one?",
+  "a": "Python decides a variable's scope statically, by scanning the function body at compile time — if a name is assigned anywhere in a function, Python treats it as local for the entire function, full stop. Without <code>global</code>, <code>counter += 1</code> is treated as assigning a local <code>counter</code>, which requires reading it first — but there's no local <code>counter</code> yet, hence <code>UnboundLocalError</code>, not a fallback to the global value. Reading a name that's never assigned in the function has no such ambiguity, so it can fall through Local → Enclosing → Global → Built-in freely. <code>global</code> (or <code>nonlocal</code> for enclosing scopes) explicitly tells Python \"assignments to this name in this function should target the outer variable, not create a local one.\"",
+  "level": "senior",
+  "topic": "python-functions",
+  "topicLabel": "Python: Functions",
+  "file": "pages/python-functions.html"
+ },
+ {
+  "q": "What's the core difference between yield and return?",
+  "a": "<code>return</code> exits a function permanently and hands back one value. <code>yield</code> pauses the function at that exact line, hands back one value, and preserves all local state so execution can resume from right after the <code>yield</code> the next time a value is requested. A function containing <code>yield</code> anywhere in its body becomes a generator function — calling it returns a generator object rather than running the body immediately.",
+  "level": "junior",
+  "topic": "python-generators",
+  "topicLabel": "Python: Generators",
+  "file": "pages/python-generators.html"
+ },
+ {
+  "q": "Why would you use a generator instead of returning a list?",
+  "a": "Memory. A list holds every element in memory simultaneously, which is fine for small collections but wasteful or impossible for huge or unbounded sequences (a large file's lines, an infinite counter, a paginated API being consumed page by page). A generator produces one value at a time, on demand, so memory use stays constant regardless of how many items get produced in total — the tradeoff is that a generator can only be iterated once and doesn't support indexing or <code>len()</code>.",
+  "level": "mid",
+  "topic": "python-generators",
+  "topicLabel": "Python: Generators",
+  "file": "pages/python-generators.html"
+ },
+ {
+  "q": "What does calling a generator function actually do, versus calling a regular function?",
+  "a": "Calling a regular function runs its body immediately and returns the result. Calling a generator function (one containing <code>yield</code>) runs none of the body — it immediately returns a generator object. The body only begins executing on the first call to <code>next()</code> (or the first iteration of a <code>for</code> loop over it), and each subsequent <code>next()</code> resumes execution from directly after the last <code>yield</code>, rather than starting over.",
+  "level": "mid",
+  "topic": "python-generators",
+  "topicLabel": "Python: Generators",
+  "file": "pages/python-generators.html"
+ },
+ {
+  "q": "Explain what's actually happening when a pytest fixture uses yield instead of return for setup/teardown.",
+  "a": "The fixture function is a generator. Pytest calls <code>next()</code> on it once before the test runs — this executes the setup code and pauses at the <code>yield</code> line, and the yielded value becomes what gets injected into the test as the fixture's value. The test then runs using that value. Once the test finishes (pass or fail), pytest calls <code>next()</code> again, which resumes the generator immediately after the <code>yield</code> and runs whatever teardown code follows — closing a browser, deleting test data, etc. This guarantees teardown runs even though it's written after the point where control was handed to the test, because the generator's paused frame kept that \"resume point\" alive the whole time the test was executing.",
+  "level": "senior",
+  "topic": "python-generators",
+  "topicLabel": "Python: Generators",
+  "file": "pages/python-generators.html"
+ },
+ {
+  "q": "What's the practical difference between a list and a tuple?",
+  "a": "A list is mutable — you can append, remove, or reorder items after creation. A tuple is immutable — once created, its contents can't change. Beyond that, they behave the same for indexing, slicing, and iteration. The immutability is what makes tuples usable as dictionary keys and set members, where lists would raise <code>TypeError: unhashable type</code>.",
+  "level": "junior",
+  "topic": "python-lists-tuples",
+  "topicLabel": "Python: Lists &amp; Tuples",
+  "file": "pages/python-lists-tuples.html"
+ },
+ {
+  "q": "What's the difference between .append() and .extend()?",
+  "a": "<code>.append(x)</code> adds exactly one item — even if <code>x</code> is itself a list, it gets added as a single nested element. <code>.extend(iterable)</code> adds every item from the iterable individually, growing the list by however many elements the iterable had. <code>a.append([1,2])</code> makes <code>len(a)</code> grow by 1; <code>a.extend([1,2])</code> makes it grow by 2.",
+  "level": "junior",
+  "topic": "python-lists-tuples",
+  "topicLabel": "Python: Lists &amp; Tuples",
+  "file": "pages/python-lists-tuples.html"
+ },
+ {
+  "q": "Why does <code>matrix = [[0, 0]] * 3</code> produce a bug when you try to mutate one row?",
+  "a": "<code>*</code> on a list repeats <em>references</em>, not deep copies — all 3 slots in <code>matrix</code> end up pointing at the exact same inner list object. Mutating <code>matrix[0][0]</code> mutates that shared object, so every row appears to change simultaneously. The fix is <code>[[0, 0] for _ in range(3)]</code>, which evaluates the list literal fresh on each iteration, producing 3 independent objects.",
+  "level": "mid",
+  "topic": "python-lists-tuples",
+  "topicLabel": "Python: Lists &amp; Tuples",
+  "file": "pages/python-lists-tuples.html"
+ },
+ {
+  "q": "Why can a tuple be used as a dict key but a list can't?",
+  "a": "Dict keys must be hashable, and Python's rule is that mutable types are unhashable — if a list's contents could change after being used as a key, its hash would change too, corrupting the dict's internal bucket structure. Tuples are immutable, so their hash is stable for their entire lifetime, making them safe as keys (as long as everything inside the tuple is also hashable).",
+  "level": "mid",
+  "topic": "python-lists-tuples",
+  "topicLabel": "Python: Lists &amp; Tuples",
+  "file": "pages/python-lists-tuples.html"
+ },
+ {
+  "q": "When would you deliberately choose a list comprehension over a plain for loop, and when would you avoid one?",
+  "a": "Use one when the transformation is a single clear expression with at most one filter condition — it reads as \"build a list of X for each Y where Z\" faster than five lines of loop boilerplate, and it's typically a bit faster too since the append calls happen in optimized C rather than Python bytecode. Avoid one once you need a second nested loop, multiple conditions, or a side effect (like logging) per iteration — at that point a comprehension becomes a puzzle to read backward instead of a shortcut, and a plain loop is the more maintainable choice.",
+  "level": "senior",
+  "topic": "python-lists-tuples",
+  "topicLabel": "Python: Lists &amp; Tuples",
+  "file": "pages/python-lists-tuples.html"
  },
  {
   "q": "What's the difference between <code>is</code> and <code>==</code>?",

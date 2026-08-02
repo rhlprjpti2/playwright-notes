@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dicts & Sets · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Dicts & Sets</div>
+    <h1>Dicts & Sets</h1>
+    <p class="lede">A dict is how you'll store almost every piece of structured test data — API responses, expected-vs-actual comparisons, config. The reason it feels instant no matter how big it gets is a specific mechanism worth actually understanding.</p>
+    <div class="card-tags">
+      <span>python</span>
+      <span>dicts</span>
+      <span>sets</span>
+      <span>fundamentals</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone Python Learning section — authored directly, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#basics">Creating & accessing</a>
+      <a href="#why-fast">Why dict lookups are O(1)</a>
+      <a href="#methods">Common methods</a>
+      <a href="#comprehension">Dict comprehensions</a>
+      <a href="#sets">Sets</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="basics">
+        <h2>Creating & accessing</h2>
+        <pre><code>response = {"status": "passed", "duration_ms": 342, "retries": 0}
+response["status"]          # "passed"
+response["missing_key"]     # KeyError — raises immediately
+response.get("missing_key") # None — no error
+response.get("retries", 0)  # 0 — explicit default if key is absent</code></pre>
+        <p><code>.get()</code> is the safer default for anything that might not exist — API responses, optional test config — while plain <code>[]</code> indexing is the right call when a missing key genuinely means something is broken and should fail loudly.</p>
+      </section>
+
+      <section id="why-fast">
+        <h2>Why dict lookups are O(1)</h2>
+        <p>A list stores items in order — checking <code>x in my_list</code> means scanning from the start until Python finds a match or runs out of items, an O(n) operation that gets slower as the list grows. A dict works completely differently under the hood.</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th></th><th>list</th><th>dict / set</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">Storage</td><td>ordered sequence</td><td>hash table — key's hash determines its bucket directly</td></tr>
+              <tr><td class="highlight"><code>x in collection</code></td><td>O(n) — scans until found</td><td>O(1) average — hash(x) jumps straight to the bucket</td></tr>
+              <tr><td class="highlight">Requirement</td><td>none</td><td>keys must be hashable (immutable)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>This is why <code>if value in some_set</code> is the idiomatic way to check membership against a large collection in automation code — checking against a <code>set</code> of a few thousand expected IDs stays fast, where the same check against a <code>list</code> would visibly slow down as the list grows.</p>
+      </section>
+
+      <section id="methods">
+        <h2>Common methods</h2>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Method</th><th>Does</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight"><code>.keys()</code> / <code>.values()</code> / <code>.items()</code></td><td>view objects for iterating keys, values, or (key, value) pairs</td></tr>
+              <tr><td class="highlight"><code>.get(key, default)</code></td><td>safe lookup, never raises</td></tr>
+              <tr><td class="highlight"><code>.setdefault(key, default)</code></td><td>returns the value if the key exists; otherwise inserts <code>default</code> and returns it</td></tr>
+              <tr><td class="highlight"><code>.update(other)</code></td><td>merges another dict in, overwriting shared keys</td></tr>
+              <tr><td class="highlight"><code>.pop(key, default)</code></td><td>removes and returns a value; safe if <code>default</code> given</td></tr>
+              <tr><td class="highlight"><code>d1 | d2</code></td><td>merge operator (3.9+) — returns a new dict, doesn't mutate either side</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <pre><code>expected = {"status": "passed"}
+actual = {"status": "passed", "duration_ms": 120}
+merged = expected | actual   # {"status": "passed", "duration_ms": 120}</code></pre>
+        <div class="callout tip">
+          <strong>Dicts remember insertion order</strong>
+          Since Python 3.7 this is a guaranteed language feature, not an implementation detail — iterating a dict always yields keys in the order they were first inserted. Useful to know, but don't rely on it for anything that needs true sorting; sort explicitly with <code>sorted(d.items())</code> when order matters semantically.
+        </div>
+      </section>
+
+      <section id="comprehension">
+        <h2>Dict comprehensions</h2>
+        <pre><code>results = [("test_login", "passed"), ("test_logout", "failed")]
+
+# Manual loop
+status_map = {}
+for name, status in results:
+    status_map[name] = status
+
+# Equivalent comprehension
+status_map = {name: status for name, status in results}
+
+# With a filter
+failures = {name: status for name, status in results if status == "failed"}</code></pre>
+      </section>
+
+      <section id="sets">
+        <h2>Sets</h2>
+        <p>A set is an unordered collection of unique, hashable values — written <code>{1, 2, 3}</code> or built via <code>set(iterable)</code>. Its two jobs: deduplicating, and fast membership checks (same O(1) hashing as dicts).</p>
+        <pre><code>expected_ids = {101, 102, 103}
+actual_ids = {102, 103, 104}
+
+expected_ids | actual_ids   # union: {101, 102, 103, 104}
+expected_ids & actual_ids   # intersection: {102, 103}
+expected_ids - actual_ids   # difference: {101}  — expected but not actual
+expected_ids ^ actual_ids   # symmetric difference: {101, 104} — in exactly one</code></pre>
+        <p>That <code>-</code> and <code>^</code> pair is genuinely useful in test automation: comparing an expected set of IDs against what actually came back from an API tells you exactly what's missing and what's unexpectedly extra, in two expressions, without writing a loop.</p>
+        <div class="quiz">
+          <div class="quiz-q">You need to find IDs present in <code>expected_ids</code> but missing from <code>actual_ids</code>. Which operator?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false"><code>expected_ids & actual_ids</code></button>
+            <button class="quiz-opt" data-correct="true"><code>expected_ids - actual_ids</code> — set difference: everything in the left set that isn't in the right</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+        <pre><code># Set comprehension — same brace syntax as dict, no colon
+unique_statuses = {r.status for r in test_results}</code></pre>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the difference between dict[key] and dict.get(key)?</summary>
+          <div class="qa-body"><code>dict[key]</code> raises <code>KeyError</code> if the key doesn't exist — appropriate when a missing key means something is genuinely wrong. <code>dict.get(key)</code> returns <code>None</code> instead (or a custom default via <code>.get(key, default)</code>) — appropriate when the key being absent is an expected, handled case, like an optional field in an API response.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why is checking membership in a set faster than in a list?</summary>
+          <div class="qa-body">A list is a sequence — checking <code>x in list</code> scans from the start until it finds a match, which is O(n) and gets slower as the list grows. A set (and a dict's keys) uses a hash table: <code>hash(x)</code> computes directly which bucket to check, making membership testing O(1) on average regardless of collection size. For repeated lookups against a large collection, converting it to a set once and checking membership against that is a common, real performance fix.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why can't you use a list as a dict key or put one in a set?</summary>
+          <div class="qa-body">Both dict keys and set members must be hashable, and Python considers mutable types unhashable by design — if a list's contents changed after insertion, its hash would change too, which would corrupt the hash table's bucket structure (the item would become unfindable at its own stored location). Tuples work as keys precisely because they're immutable and therefore have a hash that's stable for their whole lifetime.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> You're comparing two large lists of user IDs for differences in a test — why is this a set problem, not a list problem?</summary>
+          <div class="qa-body">Framed as lists, finding "IDs in A but not B" naively means a nested loop or repeated <code>in</code> checks against B — O(n×m). Converting both to sets turns it into <code>set_a - set_b</code>, a single O(n+m) operation using hash-based lookups internally. Beyond the performance difference, it's also just more readable — <code>-</code>, <code>&amp;</code>, and <code>^</code> directly express "missing", "shared", and "mismatched" without a loop obscuring the intent. The only cost is losing duplicates and original order, which usually doesn't matter for an ID-comparison check.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Mutating a dict while iterating it raises RuntimeError</strong>
+          <code>for key in my_dict: del my_dict[key]</code> raises <code>RuntimeError: dictionary changed size during iteration</code>. Iterate over a copy of the keys instead: <code>for key in list(my_dict.keys()):</code>.
+        </div>
+        <div class="callout warn">
+          <strong>{} is an empty dict, not an empty set</strong>
+          There's no literal shorthand for an empty set — <code>{}</code> always means dict. You have to write <code>set()</code> explicitly. This trips people up constantly when initializing a set-typed variable.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="python-lists-tuples.html">Lists &amp; Tuples →</a>
+          <a href="python-memory-model.html">Variables &amp; the Memory Model →</a>
+          <a href="python-control-flow.html">Control Flow →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Original content, written for this notes site — not sourced from a video transcript. — added 2026-08-02</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

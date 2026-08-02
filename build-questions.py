@@ -37,6 +37,12 @@ TOPIC_LABELS = {
     "python-memory-model": "Python: Memory Model",
     "python-data-types": "Python: Data Types",
     "python-strings": "Python: Strings",
+    "python-lists-tuples": "Python: Lists &amp; Tuples",
+    "python-dicts-sets": "Python: Dicts &amp; Sets",
+    "python-control-flow": "Python: Control Flow",
+    "python-functions": "Python: Functions",
+    "python-decorators": "Python: Decorators",
+    "python-generators": "Python: Generators",
 }
 
 QA_RE = re.compile(

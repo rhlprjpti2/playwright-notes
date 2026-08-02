@@ -231,6 +231,7 @@ a:hover { text-decoration: underline; }
   display: flex; align-items: baseline; gap: 10px;
   padding-bottom: 8px; margin-bottom: 14px;
   border-bottom: 1px solid var(--border);
+  cursor: pointer; user-select: none;
 }
 .hub-phase-label { font-size: 13px; font-weight: 650; text-transform: uppercase; letter-spacing: .06em; color: var(--text); }
 .hub-phase-count {
@@ -241,13 +242,16 @@ a:hover { text-decoration: underline; }
 
 /* Top-level grouping: track (Python Learning / Playwright Course) is the parent,
    phases render as indented children inside it (only when a track has more
-   than one phase — see .hub-phase-nested below). */
+   than one phase — see .hub-phase-nested below). Both track and phase heads
+   are click/keyboard toggles (see makeCollapseHead in app.js) that fold the
+   cards underneath — handy on mobile for jumping past sections already read. */
 .hub-track { margin-bottom: 44px; }
 .hub-track:last-child { margin-bottom: 0; }
 .hub-track-head {
   display: flex; align-items: baseline; gap: 12px;
   padding-bottom: 12px; margin-bottom: 22px;
   border-bottom: 2px solid var(--accent-2);
+  cursor: pointer; user-select: none;
 }
 .hub-track-label { font-size: 21px; font-weight: 750; letter-spacing: -0.01em; color: var(--text); }
 .hub-track-count {
@@ -255,6 +259,23 @@ a:hover { text-decoration: underline; }
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: 999px; padding: 3px 10px;
 }
+.hub-track-head:focus-visible, .hub-phase-head:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.hub-collapse-chevron {
+  font-size: 12px;
+  color: var(--text-faint);
+  transition: transform .2s ease;
+  flex-shrink: 0;
+}
+.hub-track.hub-collapsed .hub-track-head,
+.hub-phase.hub-collapsed .hub-phase-head { margin-bottom: 0; border-bottom-color: transparent; }
+.hub-track.hub-collapsed .hub-collapse-chevron,
+.hub-phase.hub-collapsed .hub-collapse-chevron { transform: rotate(-90deg); }
+.hub-track.hub-collapsed > .hub-track-body,
+.hub-phase.hub-collapsed > .grid { display: none; }
 .hub-track-body { min-width: 0; }
 .hub-phase-nested {
   margin-left: 2px;
@@ -364,6 +385,35 @@ a:hover { text-decoration: underline; }
   padding-top: 6px;
   scroll-margin-top: 80px;
 }
+/* Section headings double as collapse toggles — mobile readers can fold a
+   section they already know to cut scroll distance to what they need. */
+.content h2.section-toggle {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+  border-radius: 8px;
+  margin-left: -8px;
+  margin-right: -8px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.content h2.section-toggle:hover { background: var(--bg-elevated); }
+.content h2.section-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.section-chevron {
+  font-size: 14px;
+  color: var(--text-faint);
+  transition: transform .2s ease;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.content section.section-collapsed > *:not(h2) { display: none; }
+.content section.section-collapsed h2.section-toggle .section-chevron { transform: rotate(-90deg); }
+.content section.section-collapsed { margin-bottom: 14px; }
 .content h3 { font-size: 16.5px; margin: 22px 0 8px; }
 .content p { color: var(--text-dim); }
 .content ul, .content ol { color: var(--text-dim); padding-left: 22px; }

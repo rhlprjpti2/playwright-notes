@@ -100,7 +100,6 @@ window.TOPICS_INDEX_PYTHON = [
     order: 3
   }
 ];
-window.TOPICS_INDEX = window.TOPICS_INDEX.concat(window.TOPICS_INDEX_PYTHON);
 
 window.TOPICS_INDEX = [
   {
@@ -409,3 +408,5 @@ window.TOPICS_INDEX = [
     order: 4
   }
 ];
+
+window.TOPICS_INDEX = window.TOPICS_INDEX.concat(window.TOPICS_INDEX_PYTHON);

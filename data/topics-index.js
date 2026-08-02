@@ -26,7 +26,12 @@
  */
 
 // Display order + label for each phase — the hub renders sections in this order.
+// "python-track" is a standalone Python-fundamentals series, kept deliberately
+// separate from the Playwright-course phases below it (different source,
+// different pace) — a phase with zero topics simply doesn't render, so this
+// is safe to sit here empty until the first entry exists.
 window.PHASE_ORDER = [
+  { key: "python-track", label: "Python Learning" },
   { key: "intro", label: "Course Intro" },
   { key: "fundamentals", label: "Setup & Fundamentals" },
   { key: "core", label: "Playwright Core" },

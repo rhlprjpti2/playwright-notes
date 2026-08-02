@@ -141,18 +141,18 @@ def increment():
                 <circle r="5" fill="#e0b429" class="ca-pointer-dot" style="offset-path: path('M320 180 L320 112'); animation-delay: -0.85s"/>
                 <path d="M490 180 C450 140 390 100 340 82" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
                 <circle r="5" fill="#e0b429" class="ca-pointer-dot" style="offset-path: path('M490 180 C450 140 390 100 340 82'); animation-delay: -1.7s"/>
-                <g class="ca-bob ca-bob4" transform="translate(110,180)">
+                <g transform="translate(110,180)"><g class="ca-bob ca-bob4">
                   <rect width="80" height="46" rx="8" fill="#7fd8c9"/>
                   <text x="40" y="29" class="ca-lbl" style="font-size:12px">m0()</text>
-                </g>
-                <g class="ca-bob ca-bob2" transform="translate(280,180)">
+                </g></g>
+                <g transform="translate(280,180)"><g class="ca-bob ca-bob2">
                   <rect width="80" height="46" rx="8" fill="#7fd8c9"/>
                   <text x="40" y="29" class="ca-lbl" style="font-size:12px">m1()</text>
-                </g>
-                <g class="ca-bob ca-bob3" transform="translate(450,180)">
+                </g></g>
+                <g transform="translate(450,180)"><g class="ca-bob ca-bob3">
                   <rect width="80" height="46" rx="8" fill="#7fd8c9"/>
                   <text x="40" y="29" class="ca-lbl" style="font-size:12px">m2()</text>
-                </g>
+                </g></g>
               </svg>
               <figcaption>All three lambdas look up the same box when finally called — every one reads 2</figcaption>
             </figure>

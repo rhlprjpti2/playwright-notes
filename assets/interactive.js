@@ -1034,6 +1034,110 @@ function renderChainCompare(containerId, config) {
   render();
 }
 
+/**
+ * renderScopeCompare("container-id", { panels })
+ *
+ * Two side-by-side card diagrams that advance IN SYNC from one Step button, so
+ * the moment two similar locator chains diverge is directly visible rather than
+ * remembered. Shows the "search region" as an actual shrinking box — if the
+ * target sits outside that box, you can see it, no DOM-tree reading required.
+ *
+ * panels: [{
+ *   title, tone,
+ *   steps: [{ code, scope: "card"|"<childId>", desc, verdict: {tone,text} }]
+ * }]
+ * Each panel renders the same card: a container with two labelled children.
+ */
+function renderScopeCompare(containerId, config) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const panels = config.panels || [];
+  const total = Math.max(...panels.map((p) => p.steps.length));
+
+  const cardMarkup = `
+    <div class="sc-card" data-zone="card">
+      <span class="sc-card-tag">&lt;app-card&gt;</span>
+      <div class="sc-child" data-zone="link">
+        <span class="sc-child-tag">&lt;a&gt;</span>
+        <span class="sc-child-label">iphone X</span>
+      </div>
+      <div class="sc-child" data-zone="button">
+        <span class="sc-child-tag">&lt;button&gt;</span>
+        <span class="sc-child-label">Add</span>
+        <span class="sc-target-flag">target</span>
+      </div>
+    </div>`;
+
+  el.innerHTML = `
+    <div class="sc-controls">
+      <button class="btn-back" disabled>&#9668; Back</button>
+      <button class="btn-step">Step &#9658;</button>
+      <button class="btn-reset" disabled>&#8635; Reset</button>
+      <span class="sc-step-label"></span>
+    </div>
+    <div class="sc-legend">
+      <span><i class="sc-key scope"></i> where Playwright is searching</span>
+      <span><i class="sc-key target"></i> the button we want</span>
+    </div>
+    <div class="sc-panels">
+      ${panels.map((p, i) => `
+        <div class="sc-panel ${p.tone || ""}" data-panel="${i}">
+          <div class="sc-panel-head">${p.title}</div>
+          <div class="sc-code"></div>
+          ${cardMarkup}
+          <div class="sc-status"></div>
+        </div>`).join("")}
+    </div>
+  `;
+
+  const stepBtn = el.querySelector(".btn-step");
+  const backBtn = el.querySelector(".btn-back");
+  const resetBtn = el.querySelector(".btn-reset");
+  const label = el.querySelector(".sc-step-label");
+  let index = 0;
+
+  function render() {
+    panels.forEach((p, i) => {
+      const panel = el.querySelector(`.sc-panel[data-panel="${i}"]`);
+      const step = index > 0 ? p.steps[Math.min(index, p.steps.length) - 1] : null;
+      const card = panel.querySelector(".sc-card");
+
+      panel.querySelectorAll("[data-zone]").forEach((z) => z.classList.remove("sc-scope", "sc-outside"));
+
+      if (step) {
+        const scopeEl = panel.querySelector(`[data-zone="${step.scope}"]`);
+        if (scopeEl) scopeEl.classList.add("sc-scope");
+        // anything not inside the current scope is visibly out of reach
+        if (step.scope !== "card") {
+          panel.querySelectorAll("[data-zone]").forEach((z) => {
+            if (z !== scopeEl && !scopeEl.contains(z)) z.classList.add("sc-outside");
+          });
+        }
+        panel.querySelector(".sc-code").textContent = step.code;
+        const st = panel.querySelector(".sc-status");
+        st.className = "sc-status" + (step.verdict ? " " + step.verdict.tone : "");
+        st.innerHTML = (step.verdict ? `<b>${step.verdict.text}</b><br>` : "") + step.desc;
+      } else {
+        panel.querySelector(".sc-code").textContent = p.introCode || "";
+        const st = panel.querySelector(".sc-status");
+        st.className = "sc-status";
+        st.textContent = p.introText || "";
+      }
+    });
+
+    label.textContent = index === 0 ? `Ready — step 0 of ${total}` : `Step ${index} of ${total}`;
+    backBtn.disabled = index === 0;
+    resetBtn.disabled = index === 0;
+    stepBtn.disabled = index === total;
+    stepBtn.textContent = index === total ? "Done ✓" : "Step ▸";
+  }
+
+  stepBtn.addEventListener("click", () => { if (index < total) { index++; render(); } });
+  backBtn.addEventListener("click", () => { if (index > 0) { index--; render(); } });
+  resetBtn.addEventListener("click", () => { index = 0; render(); });
+  render();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initScrollProgress();
   initQuizzes();

@@ -198,92 +198,82 @@ page.get_by_text("Checkout").click()   # partial text match is enough</code></pr
 
       <section id="descend-vs-narrow">
         <h2>filter() vs chaining: the trap</h2>
-        <p class="lead">These two look almost identical. One works, one times out — and the reason has nothing to do with the button being wrong. It's about <strong>where each chain leaves your locator pointing</strong>.</p>
+        <p class="lead">Think of a locator as a <strong>box you're searching inside</strong>. Every call you chain either keeps that box the same size, or shrinks it. Shrink it too far and the thing you want ends up outside the box.</p>
 
-        <div class="table-wrap">
-          <table class="compare">
-            <thead><tr><th></th><th>Code</th><th>Result</th></tr></thead>
-            <tbody>
-              <tr>
-                <td class="highlight">Broken</td>
-                <td><code>page.locator("app-card")<br>&nbsp;&nbsp;.get_by_role("link", name="iphone X")</code></td>
-                <td>Times out — no button found</td>
-              </tr>
-              <tr>
-                <td class="highlight">Works</td>
-                <td><code>page.locator("app-card")<br>&nbsp;&nbsp;.filter(has_text="iphone X")</code></td>
-                <td>Clicks Add successfully</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="callout tip">
+          <strong>The one-line rule</strong>
+          <code>filter()</code> <strong>keeps</strong> the box the same — it only removes non-matching boxes.<br>
+          <code>.get_by_role()</code> / <code>.locator()</code> <strong>shrinks</strong> the box down to whatever it just found.
         </div>
 
-        <p>Both then call <code>.get_by_role("button", name="Add ")</code>. Step through each below and watch where the locator lands after the second call:</p>
+        <p>That single difference is why these two nearly identical chains behave completely differently — both end with <code>.get_by_role("button", name="Add ")</code>:</p>
+        <pre><code># ✗ times out
+page.locator("app-card").get_by_role("link", name="iphone X") \
+    .get_by_role("button", name="Add ").click()
 
-        <div class="chain-compare" id="chain-demo"></div>
+# ✓ works
+page.locator("app-card").filter(has_text="iphone X") \
+    .get_by_role("button", name="Add ").click()</code></pre>
+
+        <p>Press <strong>Step</strong> below — both run at the same time, so you can watch the search box change on the left and stay put on the right:</p>
+
+        <div class="scope-compare" id="scope-demo"></div>
         <script>
-          renderChainCompare("chain-demo", {
-            nodes: [
-              { id: "card", depth: 0, tag: "&lt;app-card&gt;", note: "the iphone X card" },
-              { id: "cardinner", depth: 1, tag: "&lt;div class=\"card\"&gt;" },
-              { id: "imglink", depth: 2, tag: "&lt;a&gt;&lt;img&gt;&lt;/a&gt;" },
-              { id: "body", depth: 2, tag: "&lt;div class=\"card-body\"&gt;" },
-              { id: "h4", depth: 3, tag: "&lt;h4 class=\"card-title\"&gt;" },
-              { id: "titlelink", depth: 4, tag: "&lt;a&gt;iphone X&lt;/a&gt;", note: "role=link, name=\"iphone X\"" },
-              { id: "price", depth: 3, tag: "&lt;h5&gt;$24.99&lt;/h5&gt;" },
-              { id: "footer", depth: 2, tag: "&lt;div class=\"card-footer\"&gt;" },
-              { id: "addbtn", depth: 3, tag: "&lt;button&gt;Add&lt;/button&gt;", note: "the target" }
-            ],
-            chains: [
+          renderScopeCompare("scope-demo", {
+            panels: [
               {
-                key: "broken",
                 tone: "bad",
-                label: '<b>✗ Broken</b><br><code>.get_by_role("link", …)</code>',
-                introCode: 'page.locator("app-card").get_by_role("link", name="iphone X")',
-                introText: "The chain that times out. Watch step 2 carefully.",
+                title: "✗ .get_by_role(\"link\", …)",
+                introCode: 'page.locator("app-card")
+  .get_by_role("link", name="iphone X")
+  .get_by_role("button", name="Add ")',
+                introText: "Press Step to run this chain.",
                 steps: [
                   {
                     code: 'page.locator("app-card")',
-                    lands: ["card"],
-                    desc: 'Points at the <code>&lt;app-card&gt;</code> element. (In the real page this matches all 4 cards; one is shown here for clarity.)'
+                    scope: "card",
+                    desc: "Searching the whole card. Both the link and the button are inside it.",
+                    verdict: { tone: "info", text: "Region = the card" }
                   },
                   {
                     code: '.get_by_role("link", name="iphone X")',
-                    lands: ["titlelink"], searchIn: "card",
-                    desc: 'A chained locator <b>descends</b>. It searches inside the card and lands on the matching element itself — the <code>&lt;a&gt;iphone X&lt;/a&gt;</code>. Your locator has now moved <em>deeper into the tree</em>, four levels down. It no longer refers to the card.',
-                    verdict: { tone: "info", text: "⚠ The locator moved down to the <a> tag" }
+                    scope: "link",
+                    desc: "Chaining <b>moves into</b> what it found. The region shrinks to just the link — and the Add button is now outside it.",
+                    verdict: { tone: "info", text: "⚠ Region shrank to the link" }
                   },
                   {
                     code: '.get_by_role("button", name="Add ")',
-                    searchIn: "titlelink",
-                    desc: 'Now it searches for a button <b>inside that <code>&lt;a&gt;</code> tag</b>. The anchor contains only the text "iphone X" — there is no button in there. The Add button is a sibling branch entirely, under <code>card-footer</code>. Auto-waiting retries until timeout.',
-                    verdict: { tone: "fail", text: "✗ 0 matches — searching inside the wrong element" }
+                    scope: "link",
+                    desc: "Looking for the button inside the link. It isn't in there — it never was. Playwright retries, then times out.",
+                    verdict: { tone: "fail", text: "✗ Not found — button is outside the region" }
                   }
                 ]
               },
               {
-                key: "works",
                 tone: "good",
-                label: '<b>✓ Works</b><br><code>.filter(has_text=…)</code>',
-                introCode: 'page.locator("app-card").filter(has_text="iphone X")',
-                introText: "The chain that works. Compare step 2 with the broken version.",
+                title: "✓ .filter(has_text=…)",
+                introCode: 'page.locator("app-card")
+  .filter(has_text="iphone X")
+  .get_by_role("button", name="Add ")',
+                introText: "Press Step to run this chain.",
                 steps: [
                   {
                     code: 'page.locator("app-card")',
-                    lands: ["card"],
-                    desc: 'Identical starting point — pointing at the <code>&lt;app-card&gt;</code> elements.'
+                    scope: "card",
+                    desc: "Identical starting point — searching the whole card.",
+                    verdict: { tone: "info", text: "Region = the card" }
                   },
                   {
                     code: '.filter(has_text="iphone X")',
-                    lands: ["card"], searchIn: "card",
-                    desc: '<code>filter()</code> <b>narrows without descending</b>. It asks "which of these cards contain that text?" and keeps the matching <em>cards</em> — it does not move to the element that contained the text. The locator still points at <code>&lt;app-card&gt;</code>, just fewer of them.',
-                    verdict: { tone: "info", text: "✓ The locator stayed at the card level" }
+                    scope: "card",
+                    desc: "filter <b>keeps you where you are</b>. It only asks \"which cards contain this text?\" — the region is still the whole card.",
+                    verdict: { tone: "info", text: "✓ Region unchanged — still the card" }
                   },
                   {
                     code: '.get_by_role("button", name="Add ")',
-                    lands: ["addbtn"], searchIn: "card",
-                    desc: 'Searching inside the whole card now — which does contain the Add button, under <code>card-footer</code>. Resolves to exactly one button and the click works.',
-                    verdict: { tone: "pass", text: "✓ 1 match — the Add button" }
+                    scope: "card",
+                    desc: "Looking for the button inside the card — where it actually lives. Found immediately.",
+                    verdict: { tone: "pass", text: "✓ Found — button is inside the region" }
                   }
                 ]
               }
@@ -292,8 +282,11 @@ page.get_by_text("Checkout").click()   # partial text match is enough</code></pr
         </script>
 
         <div class="callout tip">
-          <strong>The mental model</strong>
-          <code>filter()</code> moves <em>sideways</em> — same kind of element, fewer of them. A chained <code>locator()</code>/<code>get_by_*()</code> moves <em>downwards</em> — into the descendants. Use <code>filter()</code> when the text you're matching on is a way to <em>identify a container</em>; use chaining when the thing you matched <em>is</em> the thing you want.
+          <strong>So which do I use?</strong>
+          Ask what you're going to do <em>next</em>:<br>
+          • Clicking/reading the thing you just matched? <strong>Chain it</strong> — shrinking down to it is exactly what you want.<br>
+          • Using the match to <em>find the right container</em>, then reaching for something else inside it? <strong>Use filter()</strong> — you need to stay on the container.<br>
+          Here, "iphone X" identifies <em>which card</em>; the button is a different element in that card. That's a filter job.
         </div>
 
         <div class="callout warn">

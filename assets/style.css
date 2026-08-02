@@ -1127,6 +1127,102 @@ footer.site-footer {
   .qhub-filter-label { padding-top: 0; }
 }
 
+/* ---------- Scope compare: two chains side by side, stepping in sync ---------- */
+.scope-compare {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  padding: 18px;
+  margin: 20px 0;
+}
+.sc-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.sc-controls button {
+  font-family: var(--font-mono); font-size: 12.5px; padding: 7px 13px; border-radius: 7px;
+  border: 1.5px solid var(--border); background: var(--bg-card); color: var(--text);
+  cursor: pointer; transition: border-color .15s ease;
+}
+.sc-controls button:hover:not(:disabled) { border-color: var(--accent); }
+.sc-controls button:disabled { opacity: .4; cursor: default; }
+.sc-step-label { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-faint); margin-left: auto; }
+
+.sc-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11.5px; color: var(--text-faint); margin-bottom: 16px; }
+.sc-legend span { display: flex; align-items: center; gap: 6px; }
+.sc-key { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
+.sc-key.scope { background: color-mix(in srgb, var(--accent) 30%, transparent); border: 2px solid var(--accent); }
+.sc-key.target { background: color-mix(in srgb, var(--accent-3) 30%, transparent); border: 2px solid var(--accent-3); }
+
+.sc-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.sc-panel { border: 1.5px solid var(--border); border-radius: 10px; padding: 14px; background: var(--bg-card); }
+.sc-panel.bad { border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); }
+.sc-panel.good { border-color: color-mix(in srgb, var(--success) 45%, var(--border)); }
+.sc-panel-head { font-size: 13px; font-weight: 650; margin-bottom: 10px; color: var(--text); }
+.sc-panel.bad .sc-panel-head { color: var(--danger); }
+.sc-panel.good .sc-panel-head { color: var(--success); }
+.sc-code {
+  font-family: var(--font-mono); font-size: 11.5px; color: var(--text-dim);
+  background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px;
+  padding: 8px 10px; margin-bottom: 14px; min-height: 34px;
+  overflow-wrap: anywhere; line-height: 1.5;
+}
+
+/* the card diagram — plain nested boxes, no DOM-tree reading required */
+.sc-card {
+  border: 2px dashed var(--border); border-radius: 10px; padding: 26px 12px 12px;
+  position: relative; transition: all .4s ease; background: var(--bg-elevated);
+}
+.sc-card-tag {
+  position: absolute; top: 6px; left: 10px;
+  font-family: var(--font-mono); font-size: 10px; color: var(--text-faint);
+}
+.sc-child {
+  border: 2px dashed var(--border); border-radius: 8px;
+  padding: 10px 12px; margin-bottom: 8px; position: relative;
+  transition: all .4s ease; background: var(--bg-card);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.sc-child:last-child { margin-bottom: 0; }
+.sc-child-tag { font-family: var(--font-mono); font-size: 10px; color: var(--text-faint); }
+.sc-child-label { font-size: 13px; font-weight: 600; color: var(--text); }
+.sc-target-flag {
+  margin-left: auto; font-family: var(--font-mono); font-size: 9.5px;
+  text-transform: uppercase; letter-spacing: .06em;
+  padding: 2px 7px; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-3) 20%, transparent);
+  border: 1px solid var(--accent-3); color: var(--accent-3);
+}
+
+/* the search region */
+.sc-scope {
+  border-style: solid !important;
+  border-color: var(--accent) !important;
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-elevated)) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.sc-scope > .sc-card-tag, .sc-scope > .sc-child-tag { color: var(--accent); }
+.sc-scope::after {
+  content: "searching here";
+  position: absolute; top: -9px; right: 10px;
+  font-family: var(--font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: .06em;
+  background: var(--accent); color: var(--bg); padding: 2px 7px; border-radius: 999px;
+}
+/* anything the current scope can't reach */
+.sc-outside { opacity: .3; }
+.sc-outside .sc-child-label { text-decoration: line-through; }
+
+.sc-status {
+  margin-top: 12px; font-size: 12.5px; color: var(--text-dim); line-height: 1.55;
+  padding: 10px 12px; border-radius: 7px; border: 1px solid var(--border);
+  background: var(--bg-elevated); min-height: 40px; transition: all .3s ease;
+}
+.sc-status b { color: var(--text); }
+.sc-status.fail { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+.sc-status.pass { border-color: var(--success); background: color-mix(in srgb, var(--success) 10%, transparent); }
+.sc-status.info { border-color: var(--accent-3); background: color-mix(in srgb, var(--accent-3) 10%, transparent); }
+
+@media (max-width: 700px) {
+  .sc-panels { grid-template-columns: 1fr; }
+}
+
 /* ---------- Chain compare: where does a locator chain land in the DOM? ---------- */
 .chain-compare {
   border: 1px solid var(--border);

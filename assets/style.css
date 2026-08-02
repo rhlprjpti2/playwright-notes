@@ -215,6 +215,29 @@ a:hover { text-decoration: underline; }
   gap: 16px;
   padding: 24px 0 60px;
 }
+/* Grouped mode: #grid itself becomes a vertical stack of phase sections; each
+   section's own nested .grid (rendered inside .hub-phase) keeps the normal
+   multi-column card layout. */
+.grid.grid-grouped {
+  display: block;
+  padding: 8px 0 60px;
+}
+.grid.grid-grouped .grid {
+  padding: 0;
+}
+.hub-phase { margin-bottom: 34px; }
+.hub-phase:last-child { margin-bottom: 0; }
+.hub-phase-head {
+  display: flex; align-items: baseline; gap: 10px;
+  padding-bottom: 8px; margin-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.hub-phase-label { font-size: 13px; font-weight: 650; text-transform: uppercase; letter-spacing: .06em; color: var(--text); }
+.hub-phase-count {
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-faint);
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 999px; padding: 2px 8px;
+}
 .card {
   position: relative;
   background: var(--bg-card);

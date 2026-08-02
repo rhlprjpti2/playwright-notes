@@ -34,8 +34,16 @@ function initHub() {
   const statSources = document.getElementById("stat-sources");
   if (!grid) return;
 
-  const topics = (window.TOPICS_INDEX || []).slice().sort((a, b) =>
-    (b.lastUpdated || "").localeCompare(a.lastUpdated || ""));
+  // Grouped by learning phase (course-roadmap order), not sorted by lastUpdated —
+  // a flat date sort stopped reflecting the course sequence once enough topics
+  // existed that edits landed all over the timeline instead of front-to-back.
+  const phaseOrder = window.PHASE_ORDER || [{ key: "_", label: "All topics" }];
+  const topics = (window.TOPICS_INDEX || []).slice().sort((a, b) => {
+    const pa = phaseOrder.findIndex(p => p.key === a.phase);
+    const pb = phaseOrder.findIndex(p => p.key === b.phase);
+    if (pa !== pb) return (pa === -1 ? 999 : pa) - (pb === -1 ? 999 : pb);
+    return (a.order || 0) - (b.order || 0);
+  });
 
   const allTags = Array.from(new Set(topics.flatMap(t => t.tags || []))).sort();
   let activeTag = null;
@@ -100,11 +108,11 @@ function initHub() {
     }
     emptyState.style.display = "none";
 
-    filtered.forEach((t, i) => {
+    function makeCard(t, i) {
       const card = document.createElement("a");
       card.href = t.file;
       card.className = "card";
-      card.style.animationDelay = `${i * 40}ms`;
+      card.style.animationDelay = `${i * 30}ms`;
       const slug = (t.file || "").replace(/^pages\//, "").replace(/\.html$/, "");
       const isVisited = visitedSlugs.includes(slug);
       card.style.borderTop = `3px solid ${categoryColorFor(t.tags)}`;
@@ -117,8 +125,40 @@ function initHub() {
           <span>${t.sources ? t.sources.length : 0} source${t.sources && t.sources.length === 1 ? "" : "s"}</span>
           <span>${t.lastUpdated || ""}</span>
         </div>`;
-      grid.appendChild(card);
+      return card;
+    }
+
+    const searching = !!(activeTag || q);
+    if (searching) {
+      // Flat result list while actively filtering — grouping headers add
+      // nothing when you're scanning for a specific match.
+      grid.classList.remove("grid-grouped");
+      filtered.forEach((t, i) => grid.appendChild(makeCard(t, i)));
+      return;
+    }
+
+    // Default view: grouped into the same phases as the course roadmap, in order.
+    grid.classList.add("grid-grouped");
+    let cardIndex = 0;
+    phaseOrder.forEach((phase) => {
+      const inPhase = filtered.filter(t => t.phase === phase.key);
+      if (inPhase.length === 0) return;
+      const section = document.createElement("div");
+      section.className = "hub-phase";
+      section.innerHTML = `<div class="hub-phase-head">
+        <span class="hub-phase-label">${phase.label}</span>
+        <span class="hub-phase-count">${inPhase.length}</span>
+      </div>`;
+      const sectionGrid = document.createElement("div");
+      sectionGrid.className = "grid";
+      inPhase.forEach((t) => { sectionGrid.appendChild(makeCard(t, cardIndex++)); });
+      section.appendChild(sectionGrid);
+      grid.appendChild(section);
     });
+
+    // Anything without a recognised phase still needs to show up somewhere.
+    const orphans = filtered.filter(t => !phaseOrder.some(p => p.key === t.phase));
+    orphans.forEach((t) => grid.appendChild(makeCard(t, cardIndex++)));
   }
 
   searchInput.addEventListener("input", (e) => {

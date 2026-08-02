@@ -525,6 +525,30 @@ window.ALL_QUESTIONS = [
   "file": "pages/playwright-dynamic-locators.html"
  },
  {
+  "q": "What's the difference between <code>.filter(has_text=\"X\")</code> and chaining <code>.get_by_role(...)</code> onto a locator?",
+  "a": "Direction. <code>filter()</code> narrows the current set <em>without changing what kind of element you're pointing at</em> — you had app-cards, you still have app-cards, just fewer. A chained locator <em>descends</em> into the matched elements and leaves you pointing at whatever it found. So <code>locator(\"app-card\").get_by_role(\"link\", name=\"iphone X\")</code> points at the <code>&lt;a&gt;</code> tag, not the card containing it — and any further chaining searches inside that anchor.",
+  "level": "mid",
+  "topic": "playwright-dynamic-locators",
+  "topicLabel": "Dynamic Locators",
+  "file": "pages/playwright-dynamic-locators.html"
+ },
+ {
+  "q": "<code>page.locator(\"app-card\").get_by_role(\"link\", name=\"iphone X\").get_by_role(\"button\", name=\"Add \").click()</code> times out saying the button wasn't found — but the button is clearly on the card. Why?",
+  "a": "The scope is wrong, not the button locator. After the second call the locator points at the <code>&lt;a&gt;iphone X&lt;/a&gt;</code> element itself, because chaining descends to what it matched. The final call then searches for a button <em>inside that anchor</em>, which contains only text — the Add button lives in a sibling branch under <code>card-footer</code>. Fix by using <code>.filter(has_text=\"iphone X\")</code>, which narrows to the card without descending, or <code>.filter(has=page.get_by_role(\"link\", name=\"iphone X\"))</code> if you specifically want to identify the card by the link it contains.",
+  "level": "scenario",
+  "topic": "playwright-dynamic-locators",
+  "topicLabel": "Dynamic Locators",
+  "file": "pages/playwright-dynamic-locators.html"
+ },
+ {
+  "q": "When would you use <code>filter(has=...)</code> instead of <code>filter(has_text=...)</code>?",
+  "a": "When the thing identifying the container is structural rather than just text. <code>has_text</code> does a substring match on all text within, which can over-match — a card for \"iphone X Pro\" also contains \"iphone X\". <code>filter(has=locator)</code> filters containers by whether they contain a <em>specific matching element</em>, so you can require an exact role and accessible name: <code>filter(has=page.get_by_role(\"link\", name=\"iphone X\", exact=True))</code>. Both keep you at the container level; <code>has=</code> just gives you a far more precise predicate.",
+  "level": "senior",
+  "topic": "playwright-dynamic-locators",
+  "topicLabel": "Dynamic Locators",
+  "file": "pages/playwright-dynamic-locators.html"
+ },
+ {
   "q": "Are Playwright locators evaluated when you create them?",
   "a": "No — locators are lazy. Creating one just describes <em>how</em> to find an element; the DOM query runs at the moment you act or assert on it, and re-runs on each auto-wait retry. That's why a locator stored in a variable still works after the page updates, and why locators don't go stale the way a Selenium <code>WebElement</code> reference does.",
   "level": "mid",

@@ -1127,6 +1127,72 @@ footer.site-footer {
   .qhub-filter-label { padding-top: 0; }
 }
 
+/* ---------- Chain compare: where does a locator chain land in the DOM? ---------- */
+.chain-compare {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  padding: 18px;
+  margin: 20px 0;
+}
+.cc-chainpick { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.cc-chain-btn {
+  font-size: 12.5px; padding: 8px 14px; border-radius: 8px;
+  border: 1.5px solid var(--border); background: var(--bg-card);
+  color: var(--text-dim); cursor: pointer; transition: all .15s ease; text-align: left;
+}
+.cc-chain-btn:hover { border-color: var(--accent); }
+.cc-chain-btn.active { color: var(--text); }
+.cc-chain-btn.active.bad { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+.cc-chain-btn.active.good { border-color: var(--success); background: color-mix(in srgb, var(--success) 12%, transparent); }
+.cc-chain-btn code { background: none; padding: 0; font-size: 11.5px; color: inherit; }
+
+.cc-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.cc-controls button {
+  font-family: var(--font-mono); font-size: 12.5px; padding: 6px 12px; border-radius: 7px;
+  border: 1.5px solid var(--border); background: var(--bg-card); color: var(--text);
+  cursor: pointer; transition: border-color .15s ease;
+}
+.cc-controls button:hover:not(:disabled) { border-color: var(--accent); }
+.cc-controls button:disabled { opacity: .4; cursor: default; }
+.cc-step-label { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-faint); margin-left: auto; }
+
+.cc-code {
+  font-family: var(--font-mono); font-size: 12.5px; color: var(--accent);
+  padding: 9px 12px; background: var(--code-bg); border: 1px solid var(--border);
+  border-radius: 7px; margin-bottom: 14px; min-height: 18px; overflow-x: auto; white-space: pre;
+}
+.cc-tree {
+  background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px; font-family: var(--font-mono); font-size: 12px; line-height: 1.9;
+  overflow-x: auto;
+}
+.cc-node {
+  padding: 2px 6px; border-radius: 4px; white-space: nowrap;
+  transition: background .3s ease, outline-color .3s ease, opacity .3s ease;
+  border-left: 2px solid transparent;
+}
+.cc-tag { color: var(--text-dim); }
+.cc-note { color: var(--text-faint); margin-left: 10px; font-size: 11px; font-style: italic; }
+.cc-node.cc-searching {
+  background: color-mix(in srgb, var(--accent-3) 14%, transparent);
+  border-left-color: var(--accent-3);
+}
+.cc-node.cc-lands {
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+  outline: 1.5px solid var(--accent); outline-offset: -1px;
+}
+.cc-node.cc-lands .cc-tag { color: var(--accent); font-weight: 700; }
+.cc-desc {
+  margin-top: 14px; min-height: 44px; font-size: 13.5px; color: var(--text-dim);
+  padding: 12px 14px; background: var(--bg-card); border-radius: 8px;
+  border: 1px solid var(--border); line-height: 1.6; transition: all .3s ease;
+}
+.cc-desc b { color: var(--text); }
+.cc-desc.fail { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+.cc-desc.pass { border-color: var(--success); background: color-mix(in srgb, var(--success) 10%, transparent); }
+.cc-desc.info { border-color: var(--accent-3); background: color-mix(in srgb, var(--accent-3) 10%, transparent); }
+
 /* ---------- Frame scope demo: real nested iframe ---------- */
 .frame-scope {
   border: 1px solid var(--border);

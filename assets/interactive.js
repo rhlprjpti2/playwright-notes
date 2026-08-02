@@ -1044,6 +1044,123 @@ function renderScopeCompare(containerId, config) {
   render();
 }
 
+/**
+ * renderMemoryModel("container-id", { steps })
+ *
+ * Draws Python's actual model — names as tags pointing at objects living in a
+ * heap, not "boxes holding values." Built for the specific things that trip
+ * people up: aliasing (two names, one object), rebinding vs mutating, and
+ * why `is` and `==` disagree.
+ *
+ * steps: [{
+ *   code, desc,
+ *   heap: [{ id, display, type, tone }],     // every object that exists at this step
+ *   vars: [{ name, pointsTo }],              // which object id each name currently targets
+ *   verdict: { tone, text }
+ * }]
+ */
+function renderMemoryModel(containerId, config) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const steps = config.steps || [];
+
+  el.innerHTML = `
+    <div class="mm-controls">
+      <button class="btn-back" disabled>&#9668; Back</button>
+      <button class="btn-step">Step &#9658;</button>
+      <button class="btn-auto">&#9654; Autoplay</button>
+      <button class="btn-reset" disabled>&#8635; Reset</button>
+      <span class="mm-step-label"></span>
+    </div>
+    <div class="mm-code"></div>
+    <div class="mm-stage">
+      <div class="mm-names-row"></div>
+      <div class="mm-heap-label">the heap — where objects actually live</div>
+      <div class="mm-heap"></div>
+    </div>
+    <div class="mm-desc"></div>
+  `;
+
+  const codeEl = el.querySelector(".mm-code");
+  const namesRow = el.querySelector(".mm-names-row");
+  const heap = el.querySelector(".mm-heap");
+  const descEl = el.querySelector(".mm-desc");
+  const label = el.querySelector(".mm-step-label");
+  const backBtn = el.querySelector(".btn-back");
+  const stepBtn = el.querySelector(".btn-step");
+  const autoBtn = el.querySelector(".btn-auto");
+  const resetBtn = el.querySelector(".btn-reset");
+
+  let index = 0;
+  let playing = false;
+
+  function render() {
+    const step = index > 0 ? steps[index - 1] : null;
+    const heapObjs = step ? step.heap : (steps[0] ? steps[0].heap.map(h => ({ ...h, tone: "" })) : []);
+    const vars = step ? step.vars : [];
+
+    heap.innerHTML = "";
+    (step ? step.heap : []).forEach((obj) => {
+      const referenced = vars.some((v) => v.pointsTo === obj.id);
+      const bubble = document.createElement("div");
+      bubble.className = "mm-bubble" + (referenced ? "" : " mm-unreferenced") + (obj.tone ? " " + obj.tone : "");
+      bubble.dataset.id = obj.id;
+      bubble.innerHTML = `
+        <span class="mm-bubble-type">${obj.type || ""}</span>
+        <span class="mm-bubble-value">${obj.display}</span>
+        <span class="mm-bubble-names"></span>
+      `;
+      heap.appendChild(bubble);
+    });
+
+    namesRow.innerHTML = "";
+    vars.forEach((v) => {
+      const targetBubble = heap.querySelector(`.mm-bubble[data-id="${v.pointsTo}"] .mm-bubble-names`);
+      const tag = document.createElement("span");
+      tag.className = "mm-var-tag";
+      tag.textContent = v.name;
+      if (targetBubble) {
+        targetBubble.appendChild(tag);
+      } else {
+        namesRow.appendChild(tag);
+      }
+    });
+
+    if (step) {
+      codeEl.textContent = step.code || "";
+      descEl.className = "mm-desc" + (step.verdict ? " " + step.verdict.tone : "");
+      descEl.innerHTML = (step.verdict ? `<b>${step.verdict.text}</b><br>` : "") + (step.desc || "");
+    } else {
+      codeEl.textContent = config.introCode || "";
+      descEl.className = "mm-desc";
+      descEl.textContent = config.introText || "Step through to watch names bind to objects in memory.";
+    }
+
+    label.textContent = index === 0 ? `Ready — step 0 of ${steps.length}` : `Step ${index} of ${steps.length}`;
+    backBtn.disabled = index === 0;
+    resetBtn.disabled = index === 0;
+    const atEnd = index === steps.length;
+    stepBtn.disabled = atEnd || playing;
+    autoBtn.disabled = atEnd || playing;
+    stepBtn.textContent = atEnd ? "Done ✓" : "Step ▸";
+  }
+
+  stepBtn.addEventListener("click", () => { if (index < steps.length) { index++; render(); } });
+  backBtn.addEventListener("click", () => { if (index > 0) { index--; render(); } });
+  autoBtn.addEventListener("click", () => {
+    playing = true; render();
+    const tick = () => {
+      if (index >= steps.length) { playing = false; render(); return; }
+      index++; render();
+      setTimeout(tick, 1900);
+    };
+    tick();
+  });
+  resetBtn.addEventListener("click", () => { index = 0; playing = false; render(); });
+
+  render();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initScrollProgress();
   initQuizzes();

@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>String Methods for Automation · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / String Methods for Automation</div>
+    <h1>String Methods for Automation</h1>
+    <p class="lede">More automation code touches strings than any other type — extracting an ID from a URL, cleaning scraped text, building a locator dynamically. This page is the method toolkit; the <a href="playwright-child-windows.html#extract">split()/strip() bug walkthrough</a> already on this site is the worked example of what goes wrong when you don't know it well.</p>
+    <div class="card-tags">
+      <span>python</span>
+      <span>strings</span>
+      <span>fundamentals</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone Python Learning section — authored directly, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#immutable">Strings are immutable</a>
+      <a href="#slicing">Slicing</a>
+      <a href="#visual">Watch slicing happen</a>
+      <a href="#methods">The methods you'll actually use</a>
+      <a href="#fstrings">f-strings</a>
+      <a href="#regex">When methods aren't enough: re</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="immutable">
+        <h2>Strings are immutable</h2>
+        <p>Every method on this page <strong>returns a new string</strong> — none of them modify the original in place, because <code>str</code> is immutable (see <a href="python-memory-model.html">Memory Model</a>). This trips people who expect <code>.strip()</code> to clean up a variable directly:</p>
+        <pre><code>text = "  hello  "
+text.strip()          # returns "hello" — but text itself is unchanged!
+print(text)            # "  hello  " — still has the spaces
+
+text = text.strip()   # this is what you actually want — rebind the name
+print(text)             # "hello"</code></pre>
+        <div class="callout warn">
+          <strong>The single most common string bug</strong>
+          Calling a string method for its side effect, as if strings were mutable like lists. There is no side effect — every method is read-only and returns a new object. If you don't capture the return value, nothing happens to your variable.
+        </div>
+      </section>
+
+      <section id="slicing">
+        <h2>Slicing</h2>
+        <p><code>string[start:stop:step]</code> — the single most-used piece of string syntax, and the one that trips people up with negative indices and off-by-one boundaries.</p>
+        <pre><code>s = "Playwright"
+s[0]        # 'P'          — single character
+s[0:4]      # 'Play'       — index 4 is EXCLUDED (stop is exclusive)
+s[-1]       # 't'          — negative indices count from the end
+s[-6:]      # 'wright'     — from index -6 to the end
+s[::2]      # 'Pywih'      — every 2nd character
+s[::-1]     # 'thgirwyalP' — step -1 reverses the whole string</code></pre>
+        <div class="callout tip">
+          <strong>Reading a slice out loud</strong>
+          <code>s[a:b]</code> reads as "start at index a, stop <em>before</em> index b." The length of the result is always <code>b - a</code>. Omitting <code>a</code> means "from the start"; omitting <code>b</code> means "to the end."
+        </div>
+      </section>
+
+      <section id="visual">
+        <h2>Watch slicing happen</h2>
+        <p class="lead">The exact same visible-whitespace pipeline used to debug the split/strip bug elsewhere on this site — here tracing a slice operation on a URL, showing precisely which characters end up on each side of the boundary.</p>
+
+        <div class="string-pipeline" id="slice-pipeline"></div>
+        <script>
+          renderStringPipeline("slice-pipeline", {
+            initialExpr: 'url = "https://shop.example.com/product/8842"',
+            introText: "Goal: extract just the product id, 8842, from the end of the URL.",
+            initialParts: [{ t: "https://shop.example.com/product/8842", tone: "keep" }],
+            steps: [
+              {
+                code: 'url.rfind("/")',
+                parts: [
+                  { t: "https://shop.example.com/product", tone: "drop" },
+                  { t: "/", tone: "delim" },
+                  { t: "8842", tone: "keep" }
+                ],
+                result: { label: "returns", value: "34  (the index of the LAST /)", tone: "neutral" },
+                note: '<code>rfind()</code> searches from the right — the last <code>/</code> is exactly the boundary between the path and the id. Plain <code>find()</code> would return the position of the <em>first</em> <code>/</code> instead, which is not what we want here.'
+              },
+              {
+                code: 'url[34:]',
+                parts: [
+                  { t: "https://shop.example.com/product/", tone: "drop" },
+                  { t: "8842", tone: "hit" }
+                ],
+                result: { label: "returns", value: "'/8842'", tone: "neutral" },
+                note: "Slicing from index 34 to the end includes the / itself — the slice starts exactly at the delimiter, not after it."
+              },
+              {
+                code: 'url[url.rfind("/") + 1:]',
+                parts: [
+                  { t: "https://shop.example.com/product/", tone: "drop" },
+                  { t: "8842", tone: "hit" }
+                ],
+                result: { label: "product_id", value: "'8842'", tone: "pass" },
+                note: 'Adding <code>+ 1</code> moves the start index past the <code>/</code> itself. This one-character-off adjustment is the most common slicing mistake — always double check whether you want to include or exclude the character you searched for.'
+              }
+            ]
+          });
+        </script>
+      </section>
+
+      <section id="methods">
+        <h2>The methods you'll actually use</h2>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Method</th><th>What it does</th><th>Automation use case</th></tr></thead>
+            <tbody>
+              <tr><td><code>.strip()</code></td><td>Removes leading/trailing whitespace</td><td>Cleaning scraped text — see the <a href="playwright-child-windows.html#extract">full worked bug</a></td></tr>
+              <tr><td><code>.split(sep)</code></td><td>Breaks a string into a list on every occurrence of <code>sep</code></td><td>Parsing delimited log lines, breaking apart URLs</td></tr>
+              <tr><td><code>.join(iterable)</code></td><td>Opposite of split — glues a list into one string</td><td><code>", ".join(["a","b","c"])</code> → <code>"a, b, c"</code></td></tr>
+              <tr><td><code>.replace(old, new)</code></td><td>Replaces all occurrences</td><td>Sanitizing test data before an assertion</td></tr>
+              <tr><td><code>in</code></td><td>Substring containment check</td><td><code>"error" in log_line</code> — often clearer than a locator-based text check</td></tr>
+              <tr><td><code>.startswith()</code> / <code>.endswith()</code></td><td>Prefix/suffix check</td><td>Validating a URL or filename pattern</td></tr>
+              <tr><td><code>.find()</code> / <code>.index()</code></td><td>Position of a substring</td><td><code>find()</code> returns -1 if missing; <code>index()</code> raises <code>ValueError</code> — pick based on whether "missing" is an error case</td></tr>
+              <tr><td><code>.lower()</code> / <code>.upper()</code></td><td>Case conversion</td><td>Case-insensitive comparisons — <code>a.lower() == b.lower()</code></td></tr>
+              <tr><td><code>.format()</code> / f-strings</td><td>Building strings from variables</td><td>See below — f-strings are the modern default</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="fstrings">
+        <h2>f-strings</h2>
+        <p>The modern, preferred way to build a string from variables — a literal prefixed with <code>f</code>, where anything inside <code>{}</code> is evaluated as code rather than printed as text (this exact mechanism is already used in the <a href="playwright-web-tables.html">Web Tables</a> page's <code>f"Price column index is {price_column}"</code>):</p>
+        <pre><code>name = "Rice"
+price = 37
+f"{name} costs {price}"          # "Rice costs 37"
+f"{name} costs {price:.2f}"      # "Rice costs 37.00"  -- format spec after the colon
+f"{price * 1.1:.2f}"              # "40.70" -- any expression works, not just variable names</code></pre>
+        <p>Predates f-strings and still common in older code: <code>"{} costs {}".format(name, price)</code> and the oldest style, <code>"%s costs %s" % (name, price)</code>. All three produce identical output — f-strings are simply more readable and slightly faster, so prefer them in new code, but expect to read the older styles in existing codebases.</p>
+      </section>
+
+      <section id="regex">
+        <h2>When methods aren't enough: re</h2>
+        <p>String methods handle fixed, known delimiters well. When the pattern is more flexible — "an email-shaped substring somewhere in this text," not "the text after the word 'at'" — that's what the <code>re</code> module is for:</p>
+        <pre><code>import re
+
+text = "Contact us at support@shop.example.com for help"
+match = re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", text)
+if match:
+    print(match.group())   # "support@shop.example.com"</code></pre>
+        <p>This is genuinely more robust than the <code>split("at")</code> approach used elsewhere on this site — it doesn't depend on the word "at" appearing in the sentence at all, just on an email-shaped pattern existing somewhere in the text. The tradeoff is readability: regex is powerful but a lot less self-explanatory than chained string methods, so many teams reserve it for cases where simple methods genuinely can't express the pattern.</p>
+        <div class="callout supplement">
+          <strong>Beyond this page <span class="src-tag">— regex is a full topic on its own</span></strong>
+          This is intentionally the shallow end. <code>re.search()</code> (first match), <code>re.findall()</code> (all matches), <code>re.match()</code> (anchored to the start only), and <code>re.sub()</code> (find-and-replace by pattern) cover most automation needs. A dedicated regex page is a reasonable future addition to this section if it comes up often enough in practice.
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> Why doesn't calling `.strip()` on a variable change it?</summary>
+          <div class="qa-body">Strings are immutable — every string method returns a new string rather than modifying the original in place. Calling <code>text.strip()</code> without capturing the result discards the cleaned string; you need <code>text = text.strip()</code> to actually update the variable.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the difference between .find() and .index()?</summary>
+          <div class="qa-body">Both return the position of the first occurrence of a substring. <code>.find()</code> returns <code>-1</code> if the substring isn't found; <code>.index()</code> raises a <code>ValueError</code> instead. Use <code>.find()</code> when "not found" is a normal, expected outcome you'll handle; use <code>.index()</code> when not finding it should be treated as an error.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What does `s[2:-1]` do?</summary>
+          <div class="qa-body">Starts at index 2 and stops before the last character (index -1 is the last character, and the stop bound is exclusive) — so it returns everything from index 2 up to, but not including, the final character. Mixing positive start and negative stop indices like this is common when trimming a known prefix and an unknown-length suffix in one slice.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level scenario">Scenario</span> You need to extract a numeric ID from URLs that sometimes end in a trailing slash and sometimes don't. Why is string splitting fragile here, and what's more robust?</summary>
+          <div class="qa-body">A fixed approach like <code>url.split("/")[-1]</code> breaks the moment a trailing slash is present — the last split segment becomes an empty string instead of the id. More robust: strip trailing slashes first (<code>url.rstrip("/")</code>) before splitting, or use a regex anchored to digits at the end (<code>re.search(r"(\d+)/?$", url)</code>), which tolerates the optional trailing slash by design rather than by a defensive preprocessing step.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> When would you reach for regex instead of chained string methods?</summary>
+          <div class="qa-body">When the thing you're matching is a <em>pattern</em> rather than a fixed, known delimiter — validating an email shape, extracting all numbers from free text, matching one of several possible formats. String methods like <code>split()</code>/<code>find()</code> work well when you know exactly what surrounds your target text; regex is the right tool when what surrounds it varies but the target itself has a recognizable shape.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>split() with no separator behaves differently than split(" ")</strong>
+          <code>"a  b".split()</code> (no argument) treats runs of any whitespace as one delimiter and returns <code>['a', 'b']</code>. <code>"a  b".split(" ")</code> (explicit space) splits on every single space character and returns <code>['a', '', 'b']</code> — the double space produces an empty string in the middle. These are not interchangeable, and the difference is exactly the kind of thing that silently breaks a script when input has inconsistent spacing.
+        </div>
+        <div class="callout warn">
+          <strong>String concatenation in a loop is O(n²)</strong>
+          <code>result = ""; for x in big_list: result += x</code> creates a new string object on every iteration (strings are immutable), copying everything accumulated so far each time. For large loops, build a list and <code>"".join(list)</code> at the end instead — one allocation instead of one per iteration.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="python-memory-model.html">Variables &amp; the Memory Model →</a>
+          <a href="python-data-types.html">Core Data Types →</a>
+          <a href="playwright-child-windows.html#extract">split()/strip() Worked Bug →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Original content, written for this notes site — not sourced from a video transcript. — added 2026-07-30</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

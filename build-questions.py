@@ -34,6 +34,9 @@ TOPIC_LABELS = {
     "playwright-alerts-dialogs": "Alerts &amp; Dialogs",
     "playwright-frames": "Frames &amp; iFrames",
     "framework-system-design": "Framework &amp; System Design",
+    "python-memory-model": "Python: Memory Model",
+    "python-data-types": "Python: Data Types",
+    "python-strings": "Python: Strings",
 }
 
 QA_RE = re.compile(

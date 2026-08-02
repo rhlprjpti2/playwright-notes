@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Variables &amp; the Memory Model · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Variables &amp; the Memory Model</div>
+    <h1>Variables &amp; the Memory Model</h1>
+    <p class="lede">A Python variable is not a box that holds a value. It's a <strong>name tag</strong> pointing at an object living somewhere else — in the heap. That single correction explains aliasing, the mutable-default-argument trap, and why <code>is</code> and <code>==</code> disagree, all at once.</p>
+    <div class="card-tags">
+      <span>python</span>
+      <span>memory-model</span>
+      <span>fundamentals</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    This page and the rest of the Python Learning section are authored directly rather than transcribed from a course. Standard, well-established Python behavior — nothing here is opinion, but it's my writing, not a lecture transcript.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Names, not boxes</a>
+      <a href="#visual">Watch it happen</a>
+      <a href="#mutable">Mutable vs immutable</a>
+      <a href="#is-vs-eq">is vs ==</a>
+      <a href="#gotcha">The mutable-default trap</a>
+      <a href="#leads-to">Where this leads</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Names, not boxes</h2>
+        <p>In a language like C, a variable <em>is</em> a labeled slot of memory — assigning to it overwrites what's in that slot. Python works differently: every value is an <strong>object</strong> living in the heap, and a variable is just a <strong>name bound to</strong> one of those objects. Assignment doesn't copy a value into a slot; it points a name at an object.</p>
+        <p>Two consequences fall directly out of that one fact:</p>
+        <ul>
+          <li><strong>Multiple names can point at the same object.</strong> <code>b = a</code> doesn't copy <code>a</code>'s value — it makes <code>b</code> point at the exact same object <code>a</code> already points at.</li>
+          <li><strong>"Changing a variable" can mean two very different things</strong> — pointing the name at a <em>different</em> object (rebinding), or changing the object itself while every name still pointing at it sees the change (mutating). Which one happens depends entirely on whether the object is mutable.</li>
+        </ul>
+      </section>
+
+      <section id="visual">
+        <h2>Watch it happen</h2>
+        <p class="lead">Step through five lines of code and watch what's actually happening: names moving between objects in the heap, not values changing in boxes.</p>
+
+        <div class="memory-model" id="mem-demo"></div>
+        <script>
+          renderMemoryModel("mem-demo", {
+            introCode: "a = 3",
+            introText: "Step through to build up the heap.",
+            steps: [
+              {
+                code: "a = 3",
+                heap: [{ id: "o1", type: "int", display: "3" }],
+                vars: [{ name: "a", pointsTo: "o1" }],
+                desc: "Python creates an int object holding 3 somewhere in the heap, then points the name <code>a</code> at it.",
+                verdict: { tone: "info", text: "1 object, 1 name" }
+              },
+              {
+                code: "b = a",
+                heap: [{ id: "o1", type: "int", display: "3" }],
+                vars: [{ name: "a", pointsTo: "o1" }, { name: "b", pointsTo: "o1" }],
+                desc: "No new object is created. <code>b</code> is pointed at the <em>same</em> object <code>a</code> already points at — this is aliasing.",
+                verdict: { tone: "info", text: "Still 1 object — now 2 names pointing at it" }
+              },
+              {
+                code: "b = 5",
+                heap: [{ id: "o1", type: "int", display: "3" }, { id: "o2", type: "int", display: "5", tone: "new" }],
+                vars: [{ name: "a", pointsTo: "o1" }, { name: "b", pointsTo: "o2" }],
+                desc: "int is immutable — Python can't change the 3 object in place. Instead it creates a brand-new object for 5 and rebinds <em>only</em> <code>b</code> to it. <code>a</code> never moved.",
+                verdict: { tone: "pass", text: "a is still 3 — rebinding b didn't touch it" }
+              },
+              {
+                code: "lst1 = [1, 2, 3]\nlst2 = lst1",
+                heap: [{ id: "o1", type: "int", display: "3" }, { id: "o2", type: "int", display: "5" }, { id: "o3", type: "list", display: "[1, 2, 3]" }],
+                vars: [{ name: "a", pointsTo: "o1" }, { name: "b", pointsTo: "o2" }, { name: "lst1", pointsTo: "o3" }, { name: "lst2", pointsTo: "o3" }],
+                desc: "Same aliasing pattern as step 2 — <code>lst2</code> points at the exact list <code>lst1</code> points at. So far, identical to the int case.",
+                verdict: { tone: "info", text: "2 names, 1 list object" }
+              },
+              {
+                code: "lst2.append(4)",
+                heap: [{ id: "o1", type: "int", display: "3" }, { id: "o2", type: "int", display: "5" }, { id: "o3", type: "list", display: "[1, 2, 3, 4]", tone: "new" }],
+                vars: [{ name: "a", pointsTo: "o1" }, { name: "b", pointsTo: "o2" }, { name: "lst1", pointsTo: "o3" }, { name: "lst2", pointsTo: "o3" }],
+                desc: "list <em>is</em> mutable — <code>.append()</code> changes the object in place rather than creating a new one. Both <code>lst1</code> and <code>lst2</code> still point at that same object, so both now \"see\" 4 in it — even though only <code>lst2</code> was touched.",
+                verdict: { tone: "fail", text: "⚠ lst1 changed too — this is the surprise" }
+              }
+            ]
+          });
+        </script>
+
+        <div class="callout tip">
+          <strong>The one-sentence rule</strong>
+          Rebinding (<code>b = 5</code>) moves a name to a different object and never affects other names. Mutating (<code>lst2.append(4)</code>) changes the object itself, so <em>every</em> name pointing at it sees the change. Whether an operation rebinds or mutates depends on the type — not on which variable you used.
+        </div>
+
+        <div class="quiz">
+          <div class="quiz-q">After <code>x = [1, 2]; y = x; y += [3]</code>, what is <code>x</code>?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">[1, 2] — y is a separate copy</button>
+            <button class="quiz-opt" data-correct="true">[1, 2, 3] — y and x point at the same list, and += on a list mutates in place</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="mutable">
+        <h2>Mutable vs immutable</h2>
+        <p>This single property — can the object change in place, or not — determines whether aliasing is a non-issue or a bug waiting to happen. It's a fixed property of the <em>type</em>, not something you choose per variable.</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Immutable</th><th>Mutable</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight"><code>int</code>, <code>float</code>, <code>bool</code></td><td class="highlight"><code>list</code></td></tr>
+              <tr><td class="highlight"><code>str</code></td><td class="highlight"><code>dict</code></td></tr>
+              <tr><td class="highlight"><code>tuple</code></td><td class="highlight"><code>set</code></td></tr>
+              <tr><td class="highlight"><code>frozenset</code></td><td class="highlight">most custom classes, by default</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Notice <code>tuple</code> is immutable but can <em>contain</em> mutable objects — <code>t = ([1,2], 3)</code>. The tuple itself can never point at different objects, but if one of those objects is a list, that list can still be mutated in place. "Immutable" describes the container's bindings, not everything reachable through it.</p>
+      </section>
+
+      <section id="is-vs-eq">
+        <h2>is vs ==</h2>
+        <p>Once "variable = name pointing at an object" clicks, this distinction stops being a rule to memorize:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th></th><th>Asks</th><th>Use it for</th></tr></thead>
+            <tbody>
+              <tr><td><code>==</code></td><td>Do these two objects have <strong>equal values</strong>?</td><td>Almost everything — comparing data</td></tr>
+              <tr><td class="highlight"><code>is</code></td><td>Are these two names pointing at the <strong>exact same object</strong> in memory?</td><td><code>is None</code>, <code>is True</code>/<code>is False</code>, and identity checks specifically</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <pre><code>a = [1, 2, 3]
+b = [1, 2, 3]
+a == b   # True  — same values
+a is b   # False — two different list objects that happen to hold equal values
+
+c = a
+c is a   # True  — c and a point at the literal same object</code></pre>
+        <div class="callout warn">
+          <strong>Why is None, not == None</strong>
+          <code>None</code> is a singleton — there is exactly one <code>None</code> object for the entire life of your program, so identity comparison is both correct and slightly faster than equality. It's also safer: a custom class could override <code>__eq__</code> in a way that makes <code>obj == None</code> behave unexpectedly, but no class can hijack <code>is</code>.
+        </div>
+      </section>
+
+      <section id="gotcha">
+        <h2>The mutable-default trap</h2>
+        <p>This is one of the most-cited Python gotchas — and it's a direct consequence of everything above. A function's default argument value is created <strong>once</strong>, when the <code>def</code> statement runs, not fresh on every call:</p>
+        <pre><code>def add_item(item, cart=[]):    # this list is created ONCE, at def time
+    cart.append(item)
+    return cart
+
+add_item("apple")     # ['apple']
+add_item("banana")    # ['apple', 'banana']  -- not a fresh cart!</code></pre>
+        <p>Every call that doesn't pass <code>cart</code> explicitly reuses the exact same list object — because a default value is just another name bound to an object, and that binding happens once. The fix is a well-known idiom:</p>
+        <pre><code>def add_item(item, cart=None):
+    if cart is None:
+        cart = []          # a fresh list object, created fresh every call
+    cart.append(item)
+    return cart</code></pre>
+        <div class="quiz">
+          <div class="quiz-q">Why does using <code>cart=None</code> and creating the list inside the function fix the bug?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">None is a special value that resets lists automatically</button>
+            <button class="quiz-opt" data-correct="true">The list creation moves inside the function body, which runs fresh on every call — unlike the default argument, which is evaluated once at def time</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="leads-to">
+        <h2>Where this leads</h2>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Concept here</th><th>Shows up again as</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">Objects and identity</td><td>Every collection type page in this section builds on "mutable = shared, immutable = safe to alias"</td></tr>
+              <tr><td class="highlight">Pass-by-object-reference</td><td>Why passing a Playwright <code>page</code> object into a fixture, or a list into a function, lets that function affect the caller — covered on <a href="pytest-fixtures.html">Pytest Fixtures</a></td></tr>
+              <tr><td class="highlight"><code>is None</code></td><td>Used throughout this site's own JS state code and idiomatic in virtually every Python codebase you'll read in an interview</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the difference between <code>is</code> and <code>==</code>?</summary>
+          <div class="qa-body"><code>==</code> compares values — are these two objects equal? <code>is</code> compares identity — are these two names pointing at the literal same object in memory. Two separate lists with identical contents are <code>==</code> but not <code>is</code>. Use <code>is</code> specifically for <code>None</code>/<code>True</code>/<code>False</code> and genuine identity checks; use <code>==</code> for everything else.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Explain what happens in memory when you write <code>b = a</code> for a list, versus for an int.</summary>
+          <div class="qa-body">In both cases, no new object is created — <code>b</code> is simply pointed at the same object <code>a</code> already points at. The difference shows up later: if the object is a mutable list and you call <code>b.append(x)</code>, the object itself changes, so <code>a</code> sees it too, because both names point at the same object. If the object is an immutable int and you write <code>b = b + 1</code>, that creates a brand-new int object and rebinds only <code>b</code> — <code>a</code> is untouched.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level scenario">Scenario</span> A function that appends to a "default empty list" parameter accumulates results across unrelated calls. What's wrong and how do you fix it?</summary>
+          <div class="qa-body">The classic mutable-default-argument bug — <code>def f(x, acc=[])</code> creates that list once, when the function is defined, not per call. Every call that omits <code>acc</code> shares and mutates the same list object. Fix: default to <code>None</code>, and create a fresh list inside the function body if it's still <code>None</code> — <code>if acc is None: acc = []</code> — so a new object is created on every call instead of once at definition time.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Is Python "pass by value" or "pass by reference"?</summary>
+          <div class="qa-body">Neither term fits cleanly — Python is "pass by object reference" (also called "pass by assignment"). The function parameter becomes a new name pointing at the same object the caller's argument pointed at — not a copy of a value (as in true pass-by-value), and not an alias that lets you rebind the caller's variable (as in true pass-by-reference, e.g. C++'s <code>&amp;</code>). Concretely: mutating a passed-in mutable object (e.g. <code>lst.append(x)</code>) is visible to the caller; rebinding the parameter name itself (<code>lst = []</code>) inside the function is not — the caller's variable still points at the original object.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Is a tuple truly immutable if it contains a list?</summary>
+          <div class="qa-body">The tuple's own bindings are immutable — it can never be made to point at different objects in its slots. But if one of those slots holds a mutable object like a list, that list can still be mutated in place through the tuple: <code>t = ([1,2], 3); t[0].append(4)</code> works fine. "Immutable" describes what the container itself can be reassigned to, not everything transitively reachable through it.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Small-integer caching</strong>
+          CPython caches (interns) small integers from -5 to 256 and reuses the same object for them. So <code>a = 100; b = 100; a is b</code> is <code>True</code> — not because of aliasing you wrote, but as a CPython implementation detail. Try the same with <code>1000</code> and it's usually <code>False</code>. Never rely on <code>is</code> for integer comparison — this is exactly why <code>==</code> is the correct default and <code>is</code> is reserved for identity-specific cases like <code>None</code>.
+        </div>
+        <div class="callout warn">
+          <strong>String interning is similarly unreliable to depend on</strong>
+          Short, simple string literals are sometimes interned (reused) by CPython too, making <code>is</code> appear to work for string comparison in quick tests. This is an optimization detail, not a language guarantee — it can differ between Python versions and even between how a string was constructed. Use <code>==</code> for string comparison, always.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="python-data-types.html">Core Data Types →</a>
+          <a href="python-strings.html">String Methods for Automation →</a>
+          <a href="pytest-fixtures.html">Pytest Fixtures &amp; Fundamentals →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Original content, written for this notes site — not sourced from a video transcript. — added 2026-07-30</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

@@ -861,6 +861,126 @@ window.ALL_QUESTIONS = [
   "file": "pages/python-basics.html"
  },
  {
+  "q": "Why prefer isinstance() over type() == for type checks?",
+  "a": "<code>isinstance()</code> accounts for inheritance — it returns True if the object is an instance of the class <em>or any subclass of it</em>. <code>type(x) == SomeClass</code> only matches the exact type, so it silently breaks for subclasses. <code>isinstance()</code> also accepts a tuple of types for an \"or\" check: <code>isinstance(x, (int, float))</code>.",
+  "level": "junior",
+  "topic": "python-data-types",
+  "topicLabel": "Python: Data Types",
+  "file": "pages/python-data-types.html"
+ },
+ {
+  "q": "What values are falsy in Python?",
+  "a": "Zero of any numeric type (<code>0</code>, <code>0.0</code>), empty sequences and collections (<code>\"\"</code>, <code>[]</code>, <code>{}</code>, <code>()</code>, <code>set()</code>), and <code>None</code>. Everything else — including any non-empty string, non-zero number, or non-empty collection — is truthy. This is why <code>if my_list:</code> is idiomatic for \"does this list have anything in it.\"",
+  "level": "junior",
+  "topic": "python-data-types",
+  "topicLabel": "Python: Data Types",
+  "file": "pages/python-data-types.html"
+ },
+ {
+  "q": "Is bool actually a separate type from int in Python?",
+  "a": "No — <code>bool</code> is a subclass of <code>int</code>. <code>True</code> and <code>False</code> behave as <code>1</code> and <code>0</code> in arithmetic contexts (<code>True + True == 2</code>), and <code>isinstance(True, int)</code> is <code>True</code>. This is a real design quirk from Python's history, not a common misconception to dismiss — it genuinely works this way.",
+  "level": "mid",
+  "topic": "python-data-types",
+  "topicLabel": "Python: Data Types",
+  "file": "pages/python-data-types.html"
+ },
+ {
+  "q": "Why does <code>\"3\" + 3</code> raise an error in Python but work in JavaScript?",
+  "a": "Python does not perform implicit type coercion across incompatible types — <code>str</code> and <code>int</code> have no defined <code>+</code> relationship, so it raises <code>TypeError</code> rather than guessing an interpretation. JavaScript's <code>+</code> coerces the number to a string and concatenates. Python requires an explicit conversion (<code>int(\"3\") + 3</code> or <code>str(3) + \"3\"</code>) — a deliberate design choice favoring predictability over convenience.",
+  "level": "mid",
+  "topic": "python-data-types",
+  "topicLabel": "Python: Data Types",
+  "file": "pages/python-data-types.html"
+ },
+ {
+  "q": "What actually distinguishes None from other \"empty\" values like 0, \"\", or []?",
+  "a": "None represents the <em>absence</em> of a value, not an empty instance of some type — there's no meaningful \"type\" to it beyond NoneType. Practically: a function returning None is signaling \"nothing to return\" (e.g. a lookup that found nothing), which is semantically different from returning an empty list (a lookup that found zero matching items, but the operation itself succeeded and produced a valid, typed result). Conflating the two — e.g. returning None instead of an empty list from a search function — forces every caller to add a None-check before it can safely iterate, which a consistently-typed empty collection wouldn't require.",
+  "level": "senior",
+  "topic": "python-data-types",
+  "topicLabel": "Python: Data Types",
+  "file": "pages/python-data-types.html"
+ },
+ {
+  "q": "What's the difference between <code>is</code> and <code>==</code>?",
+  "a": "<code>==</code> compares values — are these two objects equal? <code>is</code> compares identity — are these two names pointing at the literal same object in memory. Two separate lists with identical contents are <code>==</code> but not <code>is</code>. Use <code>is</code> specifically for <code>None</code>/<code>True</code>/<code>False</code> and genuine identity checks; use <code>==</code> for everything else.",
+  "level": "junior",
+  "topic": "python-memory-model",
+  "topicLabel": "Python: Memory Model",
+  "file": "pages/python-memory-model.html"
+ },
+ {
+  "q": "Explain what happens in memory when you write <code>b = a</code> for a list, versus for an int.",
+  "a": "In both cases, no new object is created — <code>b</code> is simply pointed at the same object <code>a</code> already points at. The difference shows up later: if the object is a mutable list and you call <code>b.append(x)</code>, the object itself changes, so <code>a</code> sees it too, because both names point at the same object. If the object is an immutable int and you write <code>b = b + 1</code>, that creates a brand-new int object and rebinds only <code>b</code> — <code>a</code> is untouched.",
+  "level": "mid",
+  "topic": "python-memory-model",
+  "topicLabel": "Python: Memory Model",
+  "file": "pages/python-memory-model.html"
+ },
+ {
+  "q": "A function that appends to a \"default empty list\" parameter accumulates results across unrelated calls. What's wrong and how do you fix it?",
+  "a": "The classic mutable-default-argument bug — <code>def f(x, acc=[])</code> creates that list once, when the function is defined, not per call. Every call that omits <code>acc</code> shares and mutates the same list object. Fix: default to <code>None</code>, and create a fresh list inside the function body if it's still <code>None</code> — <code>if acc is None: acc = []</code> — so a new object is created on every call instead of once at definition time.",
+  "level": "scenario",
+  "topic": "python-memory-model",
+  "topicLabel": "Python: Memory Model",
+  "file": "pages/python-memory-model.html"
+ },
+ {
+  "q": "Is Python \"pass by value\" or \"pass by reference\"?",
+  "a": "Neither term fits cleanly — Python is \"pass by object reference\" (also called \"pass by assignment\"). The function parameter becomes a new name pointing at the same object the caller's argument pointed at — not a copy of a value (as in true pass-by-value), and not an alias that lets you rebind the caller's variable (as in true pass-by-reference, e.g. C++'s <code>&amp;</code>). Concretely: mutating a passed-in mutable object (e.g. <code>lst.append(x)</code>) is visible to the caller; rebinding the parameter name itself (<code>lst = []</code>) inside the function is not — the caller's variable still points at the original object.",
+  "level": "senior",
+  "topic": "python-memory-model",
+  "topicLabel": "Python: Memory Model",
+  "file": "pages/python-memory-model.html"
+ },
+ {
+  "q": "Is a tuple truly immutable if it contains a list?",
+  "a": "The tuple's own bindings are immutable — it can never be made to point at different objects in its slots. But if one of those slots holds a mutable object like a list, that list can still be mutated in place through the tuple: <code>t = ([1,2], 3); t[0].append(4)</code> works fine. \"Immutable\" describes what the container itself can be reassigned to, not everything transitively reachable through it.",
+  "level": "mid",
+  "topic": "python-memory-model",
+  "topicLabel": "Python: Memory Model",
+  "file": "pages/python-memory-model.html"
+ },
+ {
+  "q": "Why doesn't calling `.strip()` on a variable change it?",
+  "a": "Strings are immutable — every string method returns a new string rather than modifying the original in place. Calling <code>text.strip()</code> without capturing the result discards the cleaned string; you need <code>text = text.strip()</code> to actually update the variable.",
+  "level": "junior",
+  "topic": "python-strings",
+  "topicLabel": "Python: Strings",
+  "file": "pages/python-strings.html"
+ },
+ {
+  "q": "What's the difference between .find() and .index()?",
+  "a": "Both return the position of the first occurrence of a substring. <code>.find()</code> returns <code>-1</code> if the substring isn't found; <code>.index()</code> raises a <code>ValueError</code> instead. Use <code>.find()</code> when \"not found\" is a normal, expected outcome you'll handle; use <code>.index()</code> when not finding it should be treated as an error.",
+  "level": "junior",
+  "topic": "python-strings",
+  "topicLabel": "Python: Strings",
+  "file": "pages/python-strings.html"
+ },
+ {
+  "q": "What does `s[2:-1]` do?",
+  "a": "Starts at index 2 and stops before the last character (index -1 is the last character, and the stop bound is exclusive) — so it returns everything from index 2 up to, but not including, the final character. Mixing positive start and negative stop indices like this is common when trimming a known prefix and an unknown-length suffix in one slice.",
+  "level": "mid",
+  "topic": "python-strings",
+  "topicLabel": "Python: Strings",
+  "file": "pages/python-strings.html"
+ },
+ {
+  "q": "You need to extract a numeric ID from URLs that sometimes end in a trailing slash and sometimes don't. Why is string splitting fragile here, and what's more robust?",
+  "a": "A fixed approach like <code>url.split(\"/\")[-1]</code> breaks the moment a trailing slash is present — the last split segment becomes an empty string instead of the id. More robust: strip trailing slashes first (<code>url.rstrip(\"/\")</code>) before splitting, or use a regex anchored to digits at the end (<code>re.search(r\"(\\d+)/?$\", url)</code>), which tolerates the optional trailing slash by design rather than by a defensive preprocessing step.",
+  "level": "scenario",
+  "topic": "python-strings",
+  "topicLabel": "Python: Strings",
+  "file": "pages/python-strings.html"
+ },
+ {
+  "q": "When would you reach for regex instead of chained string methods?",
+  "a": "When the thing you're matching is a <em>pattern</em> rather than a fixed, known delimiter — validating an email shape, extracting all numbers from free text, matching one of several possible formats. String methods like <code>split()</code>/<code>find()</code> work well when you know exactly what surrounds your target text; regex is the right tool when what surrounds it varies but the target itself has a recognizable shape.",
+  "level": "mid",
+  "topic": "python-strings",
+  "topicLabel": "Python: Strings",
+  "file": "pages/python-strings.html"
+ },
+ {
   "q": "Playwright supports multiple browsers and OSes — isn't that the same as Selenium? What's actually unique about it then?",
   "a": "Cross-browser and cross-OS support are shared with Selenium, not exclusive to Playwright. What's genuinely different: (1) built-in automatic waiting, so you don't hand-write synchronization/explicit-wait code; (2) the ability to do web <em>and</em> API automation in the same tool/script, enabling combined front-end + back-end end-to-end tests; (3) inbuilt logging/tracing and automatic before/after screenshots with no extra reporting setup.",
   "level": "mid",

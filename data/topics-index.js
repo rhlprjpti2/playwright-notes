@@ -39,6 +39,69 @@ window.PHASE_ORDER = [
   { key: "practical", label: "Practical & Strategy" }
 ];
 
+// ---------- Python Learning (standalone track, original content) ----------
+window.TOPICS_INDEX_PYTHON = [
+  {
+    slug: "python-memory-model",
+    title: "Variables & the Memory Model",
+    file: "pages/python-memory-model.html",
+    tags: ["python", "memory-model", "fundamentals"],
+    keyTerms: [
+      "variable", "object", "reference", "id()", "is vs ==", "identity", "aliasing",
+      "mutable", "immutable", "rebinding", "mutating", "heap", "pass by object reference",
+      "mutable default argument", "None singleton", "small integer caching", "interning",
+      "garbage collection"
+    ],
+    summary: "A variable is a name pointing at an object, not a box holding a value — the one idea that explains aliasing, mutable defaults, and is vs ==.",
+    related: ["python-data-types", "python-strings", "pytest-fixtures"],
+    sources: [
+      { title: "Original content — Python Learning series", addedDate: "2026-07-30" }
+    ],
+    lastUpdated: "2026-07-30",
+    phase: "python-track",
+    order: 1
+  },
+  {
+    slug: "python-data-types",
+    title: "Core Data Types",
+    file: "pages/python-data-types.html",
+    tags: ["python", "data-types", "fundamentals"],
+    keyTerms: [
+      "int", "float", "str", "bool", "None", "NoneType", "type()", "isinstance()",
+      "truthy", "falsy", "type coercion", "bool subclass of int", "singleton",
+      "arbitrary precision", "IEEE 754", "decimal module"
+    ],
+    summary: "int, float, str, bool, None — and the handful of behaviors around them (truthy/falsy, no coercion, bool-is-int) that actually come up in interviews.",
+    related: ["python-memory-model", "python-strings"],
+    sources: [
+      { title: "Original content — Python Learning series", addedDate: "2026-07-30" }
+    ],
+    lastUpdated: "2026-07-30",
+    phase: "python-track",
+    order: 2
+  },
+  {
+    slug: "python-strings",
+    title: "String Methods for Automation",
+    file: "pages/python-strings.html",
+    tags: ["python", "strings", "fundamentals"],
+    keyTerms: [
+      "string methods", "slicing", "split", "strip", "join", "replace", "find", "index",
+      "startswith", "endswith", "f-strings", "format", "immutable strings", "regex", "re module",
+      "re.search", "re.findall", "re.sub", "string concatenation performance"
+    ],
+    summary: "The string method toolkit for automation — slicing, split/join/replace, f-strings, and when to reach for regex instead.",
+    related: ["python-memory-model", "python-data-types", "playwright-child-windows"],
+    sources: [
+      { title: "Original content — Python Learning series", addedDate: "2026-07-30" }
+    ],
+    lastUpdated: "2026-07-30",
+    phase: "python-track",
+    order: 3
+  }
+];
+window.TOPICS_INDEX = window.TOPICS_INDEX.concat(window.TOPICS_INDEX_PYTHON);
+
 window.TOPICS_INDEX = [
   {
     slug: "why-playwright-and-python",

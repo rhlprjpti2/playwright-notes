@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Core Data Types · Playwright Interview Notes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Playwright Interview Notes</a>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Core Data Types</div>
+    <h1>Core Data Types</h1>
+    <p class="lede">The five types you'll use in nearly every script: <code>int</code>, <code>float</code>, <code>str</code>, <code>bool</code>, <code>None</code>. The interesting part isn't the list — it's the handful of behaviors around them that surprise people coming from other languages.</p>
+    <div class="card-tags">
+      <span>python</span>
+      <span>data-types</span>
+      <span>fundamentals</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone Python Learning section — authored directly, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">The five types</a>
+      <a href="#type-check">type() vs isinstance()</a>
+      <a href="#truthy">Truthy and falsy</a>
+      <a href="#none">None specifically</a>
+      <a href="#coercion">No silent type coercion</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>The five types</h2>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Type</th><th>Example</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight"><code>int</code></td><td><code>42</code>, <code>-7</code></td><td>Arbitrary precision — Python ints don't overflow, unlike fixed-width integers in C/Java</td></tr>
+              <tr><td class="highlight"><code>float</code></td><td><code>3.14</code>, <code>2.0</code></td><td>Standard 64-bit binary floating point — same rounding quirks as every other language (see gotchas)</td></tr>
+              <tr><td class="highlight"><code>str</code></td><td><code>"hello"</code></td><td>Immutable (see <a href="python-memory-model.html">Memory Model</a>) — every "modification" makes a new string</td></tr>
+              <tr><td class="highlight"><code>bool</code></td><td><code>True</code>, <code>False</code></td><td>Technically a subclass of <code>int</code> — see below</td></tr>
+              <tr><td class="highlight"><code>NoneType</code></td><td><code>None</code></td><td>The absence of a value. A singleton — exactly one instance exists ever.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>All five are immutable — reinforcing the pattern from the Memory Model page: reassigning a variable of any of these types never mutates the old object, it rebinds the name to a new one.</p>
+      </section>
+
+      <section id="type-check">
+        <h2>type() vs isinstance()</h2>
+        <pre><code>type(5) == int          # True
+isinstance(5, int)      # True — but prefer this one</code></pre>
+        <p><code>isinstance()</code> is idiomatic Python for a reason that matters once inheritance enters the picture: it respects subclasses, while <code>type() ==</code> does not.</p>
+        <pre><code>class Animal: pass
+class Dog(Animal): pass
+
+d = Dog()
+isinstance(d, Animal)      # True  — Dog IS an Animal
+type(d) == Animal          # False — type(d) is exactly Dog, not Animal</code></pre>
+        <div class="callout tip">
+          <strong>The bool/int connection, made visible</strong>
+          <code>bool</code> is a subclass of <code>int</code> — <code>True == 1</code> and <code>False == 0</code> are both <code>True</code>, and <code>isinstance(True, int)</code> is <code>True</code> too. This is a genuine language design choice (booleans arrived late in Python's history and were bolted onto the existing int type), and it's a favorite "did you know" interview question.
+        </div>
+      </section>
+
+      <section id="truthy">
+        <h2>Truthy and falsy</h2>
+        <p>Every object in Python has an implicit boolean value, used whenever it appears where a condition is expected — <code>if some_value:</code> — without needing <code>== True</code> anywhere. This is why idiomatic Python reads <code>if my_list:</code> rather than <code>if len(my_list) > 0:</code>.</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Falsy (evaluate to False)</th><th>Truthy (everything else)</th></tr></thead>
+            <tbody>
+              <tr><td><code>0</code>, <code>0.0</code></td><td class="highlight">Any non-zero number</td></tr>
+              <tr><td><code>""</code> (empty string)</td><td class="highlight">Any non-empty string</td></tr>
+              <tr><td><code>[]</code>, <code>{}</code>, <code>()</code>, <code>set()</code></td><td class="highlight">Any non-empty collection</td></tr>
+              <tr><td><code>None</code></td><td class="highlight">Any object, by default</td></tr>
+              <tr><td><code>False</code></td><td class="highlight"><code>True</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <pre><code>results = []
+if results:              # False — empty list is falsy
+    print("has results")
+else:
+    print("empty")        # this runs</code></pre>
+      </section>
+
+      <section id="none">
+        <h2>None specifically</h2>
+        <p><code>None</code> represents "no value" — Python's equivalent of <code>null</code>. It's the default return value of any function that doesn't explicitly <code>return</code> something, and the idiomatic default for "optional" function parameters (see the mutable-default-argument fix on the <a href="python-memory-model.html">Memory Model</a> page, which relies on exactly this).</p>
+        <pre><code>def no_return():
+    x = 1 + 1
+    # no return statement
+
+print(no_return())    # None</code></pre>
+        <p>Always compare with <code>is None</code>, not <code>== None</code> — covered in depth on the Memory Model page, but worth repeating: <code>None</code> is a singleton, so identity comparison is both idiomatic and safe from custom <code>__eq__</code> surprises.</p>
+      </section>
+
+      <section id="coercion">
+        <h2>No silent type coercion</h2>
+        <p>Coming from JavaScript, this is one of the first genuine surprises. JavaScript will happily coerce types across an operator; Python raises an error instead:</p>
+        <pre><code>"3" + 3
+# TypeError: can only concatenate str (not "int") to str</code></pre>
+        <p>You must convert explicitly:</p>
+        <pre><code>int("3") + 3        # 6
+str(3) + "3"         # "33"</code></pre>
+        <p>The one exception: numeric types <em>do</em> mix freely, because Python defines a clear promotion rule between them — <code>int</code> combined with <code>float</code> always promotes to <code>float</code>:</p>
+        <pre><code>3 + 2.5      # 5.5  (float)
+type(3 + 2.5)  # &lt;class 'float'&gt;</code></pre>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> Why prefer isinstance() over type() == for type checks?</summary>
+          <div class="qa-body"><code>isinstance()</code> accounts for inheritance — it returns True if the object is an instance of the class <em>or any subclass of it</em>. <code>type(x) == SomeClass</code> only matches the exact type, so it silently breaks for subclasses. <code>isinstance()</code> also accepts a tuple of types for an "or" check: <code>isinstance(x, (int, float))</code>.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What values are falsy in Python?</summary>
+          <div class="qa-body">Zero of any numeric type (<code>0</code>, <code>0.0</code>), empty sequences and collections (<code>""</code>, <code>[]</code>, <code>{}</code>, <code>()</code>, <code>set()</code>), and <code>None</code>. Everything else — including any non-empty string, non-zero number, or non-empty collection — is truthy. This is why <code>if my_list:</code> is idiomatic for "does this list have anything in it."</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Is bool actually a separate type from int in Python?</summary>
+          <div class="qa-body">No — <code>bool</code> is a subclass of <code>int</code>. <code>True</code> and <code>False</code> behave as <code>1</code> and <code>0</code> in arithmetic contexts (<code>True + True == 2</code>), and <code>isinstance(True, int)</code> is <code>True</code>. This is a real design quirk from Python's history, not a common misconception to dismiss — it genuinely works this way.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why does <code>"3" + 3</code> raise an error in Python but work in JavaScript?</summary>
+          <div class="qa-body">Python does not perform implicit type coercion across incompatible types — <code>str</code> and <code>int</code> have no defined <code>+</code> relationship, so it raises <code>TypeError</code> rather than guessing an interpretation. JavaScript's <code>+</code> coerces the number to a string and concatenates. Python requires an explicit conversion (<code>int("3") + 3</code> or <code>str(3) + "3"</code>) — a deliberate design choice favoring predictability over convenience.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> What actually distinguishes None from other "empty" values like 0, "", or []?</summary>
+          <div class="qa-body">None represents the <em>absence</em> of a value, not an empty instance of some type — there's no meaningful "type" to it beyond NoneType. Practically: a function returning None is signaling "nothing to return" (e.g. a lookup that found nothing), which is semantically different from returning an empty list (a lookup that found zero matching items, but the operation itself succeeded and produced a valid, typed result). Conflating the two — e.g. returning None instead of an empty list from a search function — forces every caller to add a None-check before it can safely iterate, which a consistently-typed empty collection wouldn't require.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Float rounding is not a Python-specific bug</strong>
+          <code>0.1 + 0.2 == 0.3</code> is <code>False</code> in Python — and in virtually every language using IEEE 754 binary floating point, because 0.1 and 0.2 can't be represented exactly in binary. For exact decimal arithmetic (money, for instance), use the <code>decimal</code> module instead of <code>float</code>.
+        </div>
+        <div class="callout warn">
+          <strong>Empty containers are falsy but not None</strong>
+          <code>if some_list:</code> and <code>if some_list is not None:</code> are <em>not</em> equivalent — an empty list is falsy but is not <code>None</code>. Confusing these two checks is a common source of subtle bugs when a function might return either <code>None</code> ("nothing found") or an empty list ("search succeeded, zero results").
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="python-memory-model.html">Variables &amp; the Memory Model →</a>
+          <a href="python-strings.html">String Methods for Automation →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Original content, written for this notes site — not sourced from a video transcript. — added 2026-07-30</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

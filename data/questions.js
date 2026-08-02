@@ -805,6 +805,30 @@ window.ALL_QUESTIONS = [
   "file": "pages/pytest-fixtures.html"
  },
  {
+  "q": "What does the params argument on @pytest.fixture actually do?",
+  "a": "It reruns every test that uses the fixture once per value in the list — not just changes the value once. <code>@pytest.fixture(params=[\"chromium\", \"firefox\", \"webkit\"])</code> turns one test function into three independent test runs, each with a different <code>request.param</code>, each reported separately in the results. This is how cross-browser test matrices are typically built without hand-writing three near-identical test functions.",
+  "level": "mid",
+  "topic": "pytest-fixtures",
+  "topicLabel": "Pytest Fixtures",
+  "file": "pages/pytest-fixtures.html"
+ },
+ {
+  "q": "Inside a parametrized fixture, how does the fixture actually access the current value?",
+  "a": "Through the built-in <code>request</code> fixture — declare it as a parameter and read <code>request.param</code>. It only holds a value when the fixture is parametrized; calling it on a fixture with no <code>params</code> raises an error, since there's no value to hand back.",
+  "level": "junior",
+  "topic": "pytest-fixtures",
+  "topicLabel": "Pytest Fixtures",
+  "file": "pages/pytest-fixtures.html"
+ },
+ {
+  "q": "A parametrized fixture with 3 values is used by 2 different tests. How many total test runs does that produce?",
+  "a": "6. Parametrization multiplies — each of the 2 tests gets re-run once per value in the fixture's params list, independently. This is worth doing the arithmetic on explicitly in an interview, since it's a common source of \"why did my suite suddenly report way more tests than I wrote\" surprise once params get combined with multiple consuming tests, or worse, multiple parametrized fixtures on the same test (which multiplies further, not adds).",
+  "level": "scenario",
+  "topic": "pytest-fixtures",
+  "topicLabel": "Pytest Fixtures",
+  "file": "pages/pytest-fixtures.html"
+ },
+ {
   "q": "Can one fixture depend on another? How does Pytest resolve the chain?",
   "a": "Yes — a fixture declares another fixture as a parameter exactly like a test does. Pytest builds the full dependency graph and instantiates them in order, caching each according to its scope. So a session-scoped fixture consumed by three function-scoped fixtures is still created only once.",
   "level": "mid",

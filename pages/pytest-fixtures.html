@@ -27,7 +27,7 @@
   <div class="topic-header">
     <div class="breadcrumb"><a href="../index.html">All topics</a> / Pytest Fixtures &amp; Fundamentals</div>
     <h1>Pytest Fixtures &amp; Fundamentals</h1>
-    <p class="lede">The single most interview-relevant Pytest topic before Playwright even enters the picture: how tests get discovered, how fixtures work, why they don't run automatically like JUnit/TestNG hooks, the four scopes, conftest.py, and the yield-based setup/teardown pattern. Play with the simulators below — don't just read past them.</p>
+    <p class="lede">The single most interview-relevant Pytest topic before Playwright even enters the picture: how tests get discovered, how fixtures work, why they don't run automatically like JUnit/TestNG hooks, and every option <code>@pytest.fixture</code> actually accepts — scope, params, autouse, ids, name — plus conftest.py and the yield-based setup/teardown pattern. Play with the simulators below — don't just read past them.</p>
     <div class="card-tags">
       <span>pytest</span>
       <span>fundamentals</span>
@@ -39,10 +39,13 @@
     <nav class="toc">
       <div>On this page</div>
       <a href="#concept">Concept</a>
+      <a href="#anatomy">The decorator, in full</a>
       <a href="#discovery">Test discovery rules</a>
       <a href="#running">Running &amp; selecting tests</a>
       <a href="#visual-linkage">Fixture linkage &amp; resolution</a>
       <a href="#scopes">Fixture scopes</a>
+      <a href="#params">Parametrized fixtures</a>
+      <a href="#autouse">autouse</a>
       <a href="#conftest">conftest.py</a>
       <a href="#visual-yield">Setup/teardown with yield</a>
       <a href="#returning-data">Returning data from fixtures</a>
@@ -83,6 +86,71 @@
         <h2>Concept</h2>
         <p><strong>Pytest</strong> is Python's testing framework/engine — the direct equivalent of JUnit for Java. Playwright's Python tests are written and run <em>on top of</em> Pytest, which is why Pytest fundamentals are a prerequisite, not an optional side topic.</p>
         <p><strong>Fixtures</strong> are Pytest's mechanism for reusable setup code shared across multiple tests — think "reusable pre-work," like spinning up a browser instance before every test that needs one.</p>
+      </section>
+
+      <section id="anatomy">
+        <h2>The decorator, in full</h2>
+        <p><code>@pytest.fixture</code> works with no arguments at all — that's every example so far on this page. But it also accepts five keyword arguments that change how the fixture behaves, and each one is fair game in an interview. This section is the map; the next few sections each zoom into one entry.</p>
+
+        <figure class="concept-art">
+          <svg viewBox="0 0 640 260" width="100%" height="auto" role="img" aria-label="The full pytest.fixture decorator signature with each of its five keyword arguments labeled: scope, params, autouse, ids, and name">
+            <rect x="20" y="20" width="600" height="46" rx="8" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1"/>
+            <text x="35" y="49" style="font-family:var(--font-mono); font-size:13px; text-anchor:start; fill:var(--text)">@pytest.fixture(<tspan fill="#e0b429">scope</tspan>=.., <tspan fill="#7fd8c9">params</tspan>=.., <tspan fill="#c98bd6">autouse</tspan>=.., <tspan fill="#f4a4a4">ids</tspan>=.., <tspan fill="#a4c8f0">name</tspan>=..)</text>
+
+            <line x1="90" y1="66" x2="90" y2="95" stroke="#e0b429" stroke-width="1.5"/>
+            <rect x="30" y="95" width="120" height="60" rx="8" fill="none" stroke="#e0b429" stroke-width="2"/>
+            <text x="90" y="118" class="ca-lbl" style="font-size:12px">scope</text>
+            <text x="90" y="136" class="ca-sub">how often it runs</text>
+
+            <line x1="230" y1="66" x2="230" y2="95" stroke="#7fd8c9" stroke-width="1.5"/>
+            <rect x="170" y="95" width="120" height="60" rx="8" fill="none" stroke="#7fd8c9" stroke-width="2"/>
+            <text x="230" y="118" class="ca-lbl" style="font-size:12px">params</text>
+            <text x="230" y="136" class="ca-sub">reruns per value</text>
+
+            <line x1="360" y1="66" x2="360" y2="95" stroke="#c98bd6" stroke-width="1.5"/>
+            <rect x="300" y="95" width="120" height="60" rx="8" fill="none" stroke="#c98bd6" stroke-width="2"/>
+            <text x="360" y="118" class="ca-lbl" style="font-size:12px">autouse</text>
+            <text x="360" y="136" class="ca-sub">skip the linkage</text>
+
+            <line x1="470" y1="66" x2="470" y2="95" stroke="#f4a4a4" stroke-width="1.5"/>
+            <rect x="430" y="95" width="90" height="60" rx="8" fill="none" stroke="#f4a4a4" stroke-width="2"/>
+            <text x="475" y="118" class="ca-lbl" style="font-size:12px">ids</text>
+            <text x="475" y="136" class="ca-sub">name each run</text>
+
+            <line x1="580" y1="66" x2="580" y2="95" stroke="#a4c8f0" stroke-width="1.5"/>
+            <rect x="540" y="95" width="90" height="60" rx="8" fill="none" stroke="#a4c8f0" stroke-width="2"/>
+            <text x="585" y="118" class="ca-lbl" style="font-size:12px">name</text>
+            <text x="585" y="136" class="ca-sub">rename it</text>
+
+            <text x="320" y="190" class="ca-sub">All five are optional — bare @pytest.fixture uses the default for every one</text>
+          </svg>
+        </figure>
+
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Option</th><th>Default</th><th>Changes</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight"><code>scope</code></td><td><code>"function"</code></td><td>How often the fixture body actually runs — covered in <a href="#scopes">Fixture scopes</a></td></tr>
+              <tr><td class="highlight"><code>params</code></td><td><code>None</code></td><td>Reruns every test that uses this fixture once per value — covered in <a href="#params">Parametrized fixtures</a></td></tr>
+              <tr><td class="highlight"><code>autouse</code></td><td><code>False</code></td><td>Runs for every test in scope without being named as an argument — covered in <a href="#autouse">autouse</a></td></tr>
+              <tr><td><code>ids</code></td><td><code>None</code></td><td>Custom readable names for each parametrized run, instead of Pytest's auto-generated <code>[0]</code>, <code>[1]</code>, ...</td></tr>
+              <tr><td><code>name</code></td><td>the function's own name</td><td>Lets tests request the fixture under a different argument name than the function is defined with</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <pre><code># ids and name in practice
+@pytest.fixture(params=["chromium", "firefox"], ids=["chrome", "ff"])
+def browser_name(request):
+    return request.param
+# without ids: test names show test_x[chromium], test_x[firefox]
+# with ids:    test names show test_x[chrome], test_x[ff]
+
+@pytest.fixture(name="page")
+def _page_impl(browser):
+    return browser.new_page()
+# tests request it as `page`, not `_page_impl` — useful when the function
+# name would otherwise shadow a variable, or you want a shorter public name</code></pre>
       </section>
 
       <section id="discovery">
@@ -136,9 +204,9 @@
           <div class="quiz-feedback"></div>
         </div>
 
-        <div class="callout supplement">
-          <strong>Beyond this video <span class="src-tag">— the one exception to "must be referenced as an argument"</span></strong>
-          <code>@pytest.fixture(autouse=True)</code> is the one case where a fixture runs without being named as a test argument — it applies automatically to every test in its scope (function/class/module/session, same scope rules as normal). Used sparingly, for things every test genuinely needs regardless of whether it explicitly asks for them — e.g. a session-scoped autouse fixture that starts a browser once for an entire framework run.
+        <div class="callout tip">
+          <strong>One exception coming up</strong>
+          <code>autouse=True</code> is the one case where a fixture runs without being named as a test argument at all — covered in full in <a href="#autouse">autouse</a> below.
         </div>
       </section>
 
@@ -169,6 +237,108 @@
             <button class="quiz-opt" data-correct="false">It re-runs before every test function anyway, ignoring the scope setting</button>
           </div>
           <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="params">
+        <h2>Parametrized fixtures</h2>
+        <p><code>params</code> is the option that changes behavior the most: instead of running once, the fixture runs <strong>once per value in the list</strong> — and every test that uses it gets re-run once per value too, each with a different <code>request.param</code>.</p>
+        <pre><code>@pytest.fixture(params=["chromium", "firefox", "webkit"])
+def browser_name(request):
+    return request.param   # whichever value this particular run is on
+
+def test_login(browser_name):
+    print(f"running on {browser_name}")
+    # this one test function becomes THREE test runs — one per browser</code></pre>
+
+        <figure class="concept-art">
+          <div class="cs-scene">
+            <div class="cs-code">
+              <div class="cs-code-line cs-p1">request.param &#8594; "chromium"</div>
+              <div class="cs-code-line cs-p2">request.param &#8594; "firefox"</div>
+              <div class="cs-code-line cs-p3">request.param &#8594; "webkit"</div>
+            </div>
+            <svg viewBox="0 0 640 190" width="100%" height="auto" role="img" aria-label="One test function, test_login, runs three separate times — once for each value in the params list, each getting a different request.param">
+              <rect x="220" y="15" width="200" height="46" rx="10" fill="none" stroke="#8a5e91" stroke-width="1.5"/>
+              <text x="320" y="43" class="ca-lbl" style="font-size:12px">def test_login(browser_name)</text>
+              <path d="M270 61 C230 80 170 90 130 100" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+              <path d="M320 61 L320 100" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+              <path d="M370 61 C410 80 470 90 510 100" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+
+              <rect class="cs-p1" x="60" y="105" width="140" height="55" rx="8" fill="#ffb15c"/>
+              <text x="130" y="128" class="ca-lbl" style="font-size:11px">test_login</text>
+              <text x="130" y="146" class="ca-lbl" style="font-size:10.5px">[chromium]</text>
+
+              <rect class="cs-p2" x="250" y="105" width="140" height="55" rx="8" fill="#7fd8c9"/>
+              <text x="320" y="128" class="ca-lbl" style="font-size:11px">test_login</text>
+              <text x="320" y="146" class="ca-lbl" style="font-size:10.5px">[firefox]</text>
+
+              <rect class="cs-p3" x="440" y="105" width="140" height="55" rx="8" fill="#c98bd6"/>
+              <text x="510" y="128" class="ca-lbl" style="font-size:11px">test_login</text>
+              <text x="510" y="146" class="ca-lbl" style="font-size:10.5px">[webkit]</text>
+
+              <text x="320" y="183" class="ca-sub">3 values in params &#8594; 3 independent test runs, 3 separate pass/fail results</text>
+            </svg>
+          </div>
+          <figcaption>Same test body, run three times — Pytest reports them as three distinct results, not one</figcaption>
+        </figure>
+
+        <div class="quiz">
+          <div class="quiz-q">A fixture has <code>params=["a", "b", "c"]</code> and one test uses it. How many results show up in the test report?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">One — params only affects the value, not how many times it runs</button>
+            <button class="quiz-opt" data-correct="true">Three — one full test run per param value, each reported separately</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="callout tip">
+          <strong>Where the value actually comes from</strong>
+          <code>request</code> is a special built-in fixture — ask for it as a parameter and Pytest hands you an object describing the current test run, including <code>request.param</code> for whichever value this particular run is on. It only carries a value when the fixture is parametrized; using <code>request.param</code> on a non-parametrized fixture raises an error.
+        </div>
+      </section>
+
+      <section id="autouse">
+        <h2>autouse</h2>
+        <p>Every fixture on this page so far only runs because a test named it as an argument. <code>autouse=True</code> is the one exception — the fixture runs for <strong>every test in its scope</strong>, whether or not anything asks for it by name.</p>
+
+        <figure class="concept-art">
+          <div class="cs-scene">
+            <div class="cs-code">
+              <div class="cs-code-line cs-q1">@pytest.fixture   <span class="cs-num"># autouse=False, the default</span></div>
+              <div class="cs-code-line cs-q2">@pytest.fixture(autouse=True)</div>
+            </div>
+            <svg viewBox="0 0 640 190" width="100%" height="auto" role="img" aria-label="Without autouse, a fixture only runs for tests that name it as an argument; with autouse=True, it runs for every test regardless">
+              <rect x="30" y="20" width="150" height="46" rx="10" fill="none" stroke="#8a5e91" stroke-width="1.5"/>
+              <text x="105" y="48" class="ca-lbl" style="font-size:11px">log_setup fixture</text>
+
+              <g class="cs-q1">
+                <path d="M105 66 L105 100" fill="none" stroke="#e07a5f" stroke-width="1.5" stroke-dasharray="4 4"/>
+                <text x="105" y="120" class="ca-sub" style="fill:#e07a5f">not referenced</text>
+                <rect x="35" y="130" width="140" height="40" rx="8" fill="#c2b8a3" opacity=".5"/>
+                <text x="105" y="154" class="ca-lbl" style="font-size:10.5px; fill:#4a4230">test_a — never runs it</text>
+              </g>
+
+              <g class="cs-q2">
+                <path d="M105 66 C105 90 250 90 300 100" fill="none" stroke="#7fd870" stroke-width="1.5"/>
+                <path d="M105 66 C105 90 400 90 450 100" fill="none" stroke="#7fd870" stroke-width="1.5"/>
+                <path d="M105 66 C105 90 550 90 570 100" fill="none" stroke="#7fd870" stroke-width="1.5"/>
+                <rect x="230" y="105" width="140" height="40" rx="8" fill="#7fd870"/>
+                <text x="300" y="129" class="ca-lbl" style="font-size:10.5px">test_a — runs anyway</text>
+                <rect x="380" y="105" width="140" height="40" rx="8" fill="#7fd870"/>
+                <text x="450" y="129" class="ca-lbl" style="font-size:10.5px">test_b — runs anyway</text>
+                <rect x="500" y="105" width="110" height="40" rx="8" fill="#7fd870"/>
+                <text x="555" y="129" class="ca-lbl" style="font-size:10.5px">test_c — too</text>
+              </g>
+              <text x="320" y="180" class="ca-sub">still respects scope — just skips the "must be named" rule</text>
+            </svg>
+          </div>
+          <figcaption>autouse doesn't ignore scope, it only removes the requirement to reference the fixture by name</figcaption>
+        </figure>
+
+        <div class="callout warn">
+          <strong>Use it sparingly</strong>
+          A test's fixture arguments are its documented dependencies — anyone reading <code>def test_login(page, api_client):</code> knows exactly what ran before it. An autouse fixture is invisible from every test signature it affects, so overusing it makes tests harder to reason about. Reserve it for things every test genuinely needs regardless of whether it asks — global logging, a session-wide browser launch, resetting shared state between tests.
         </div>
       </section>
 
@@ -335,6 +505,18 @@
           <div class="qa-body">It makes a fixture run for every test in its scope without any test naming it as an argument — the one exception to the normal linkage rule. Appropriate for genuinely universal concerns like global logging setup or a session-wide browser launch. Overusing it hurts readability, because a test's dependencies become invisible from its signature: someone reading the test can no longer tell what ran before it.</div>
         </details>
         <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What does the params argument on @pytest.fixture actually do?</summary>
+          <div class="qa-body">It reruns every test that uses the fixture once per value in the list — not just changes the value once. <code>@pytest.fixture(params=["chromium", "firefox", "webkit"])</code> turns one test function into three independent test runs, each with a different <code>request.param</code>, each reported separately in the results. This is how cross-browser test matrices are typically built without hand-writing three near-identical test functions.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> Inside a parametrized fixture, how does the fixture actually access the current value?</summary>
+          <div class="qa-body">Through the built-in <code>request</code> fixture — declare it as a parameter and read <code>request.param</code>. It only holds a value when the fixture is parametrized; calling it on a fixture with no <code>params</code> raises an error, since there's no value to hand back.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level scenario">Scenario</span> A parametrized fixture with 3 values is used by 2 different tests. How many total test runs does that produce?</summary>
+          <div class="qa-body">6. Parametrization multiplies — each of the 2 tests gets re-run once per value in the fixture's params list, independently. This is worth doing the arithmetic on explicitly in an interview, since it's a common source of "why did my suite suddenly report way more tests than I wrote" surprise once params get combined with multiple consuming tests, or worse, multiple parametrized fixtures on the same test (which multiplies further, not adds).</div>
+        </details>
+        <details class="qa">
           <summary><span class="q-level mid">Mid</span> Can one fixture depend on another? How does Pytest resolve the chain?</summary>
           <div class="qa-body">Yes — a fixture declares another fixture as a parameter exactly like a test does. Pytest builds the full dependency graph and instantiates them in order, caching each according to its scope. So a session-scoped fixture consumed by three function-scoped fixtures is still created only once.</div>
         </details>
@@ -361,6 +543,10 @@
         <div class="callout warn">
           <strong>Watch out</strong>
           A fixture must be referenced <em>by name as an argument</em> to activate — simply having <code>@pytest.fixture</code> above a function is not enough for it to execute.
+        </div>
+        <div class="callout warn">
+          <strong>Watch out</strong>
+          <code>params</code> multiplies, it doesn't add. Two parametrized fixtures on the same test (3 values and 4 values) produce <strong>12</strong> runs, not 7 — every combination of both, not a run per fixture. A suite's test count can balloon fast once more than one parametrized fixture is in play.
         </div>
         <div class="callout interview">
           <strong>Interview framing</strong>

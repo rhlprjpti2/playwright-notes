@@ -318,9 +318,10 @@ window.TOPICS_INDEX = [
       "class scope", "session scope", "conftest.py", "yield", "setup", "teardown",
       "assert", "test discovery", "test_ prefix", "fixture linkage", "return value fixture",
       "pytest.mark", "pytest.mark.skip", "pytest -m", "tagging", "marks", "deselected", "smoke test",
-      "autouse", "autouse=True"
+      "autouse", "autouse=True", "params", "parametrize", "parametrized fixture", "request.param",
+      "request fixture", "ids", "name parameter", "fixture options", "cross-browser test matrix"
     ],
-    summary: "How Pytest discovers tests, how fixtures work (and why they don't auto-run), the four fixture scopes, conftest.py, yield-based setup/teardown, and running/tagging tests via CLI.",
+    summary: "How Pytest discovers tests, how fixtures work, and every option @pytest.fixture accepts — scope, params, autouse, ids, name — plus conftest.py and yield-based setup/teardown.",
     related: ["environment-setup", "python-basics", "course-roadmap", "playwright-browser-context-page"],
     sources: [
       { title: "Pytest Basics: Test Functions & Fixtures", addedDate: "2026-07-29" },

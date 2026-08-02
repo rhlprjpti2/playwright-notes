@@ -36,7 +36,12 @@
       <span id="stat-sources"></span>
     </div>
     <div class="progress-strip" id="progress-strip" style="display:none;"></div>
-    <div class="tag-row" id="tag-row"></div>
+    <div class="quick-filters">
+      <button type="button" class="quick-filters-toggle" id="quick-filters-toggle" aria-expanded="false">
+        <span class="section-chevron">&#9662;</span> Quick filters <span class="quick-filters-count" id="quick-filters-count"></span><span class="quick-filters-active" id="quick-filters-active" style="display:none;"></span>
+      </button>
+      <div class="tag-row" id="tag-row" style="display:none;"></div>
+    </div>
   </div>
 
   <div id="empty-state" class="empty-state" style="display:none;">

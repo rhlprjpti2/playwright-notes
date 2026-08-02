@@ -185,10 +185,37 @@ a:hover { text-decoration: underline; }
 }
 .stats b { color: var(--text); font-size: 15px; }
 
+/* ---------- Quick filters (collapsible tag row) ---------- */
+.quick-filters { margin: 18px 0 8px; }
+.quick-filters-toggle {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.quick-filters-toggle:hover { border-color: var(--accent); color: var(--text); }
+.quick-filters-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.quick-filters-toggle .section-chevron {
+  font-size: 11px; color: var(--text-faint);
+  transition: transform .2s ease;
+}
+.quick-filters-toggle.expanded .section-chevron { transform: rotate(-180deg); }
+.quick-filters-count { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-faint); }
+.quick-filters-active { color: var(--accent); font-size: 12.5px; }
+.quick-filters-toggle.has-active-filter {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
 /* ---------- Tag filter row ---------- */
 .tag-row {
   display: flex; flex-wrap: wrap; gap: 8px;
-  margin: 18px 0 8px;
+  margin: 10px 0 8px;
 }
 .tag-pill {
   padding: 5px 12px;
@@ -341,6 +368,13 @@ a:hover { text-decoration: underline; }
   border-bottom: 1px solid var(--border);
 }
 .breadcrumb { font-size: 13px; color: var(--text-faint); margin-bottom: 14px; }
+.breadcrumb-sep { color: var(--text-faint); opacity: .6; margin: 0 1px; }
+.breadcrumb-seg { color: var(--text-faint); }
+.breadcrumb-current { color: var(--text-dim); }
+@media (max-width: 480px) {
+  .breadcrumb-seg { display: none; }
+  .breadcrumb-seg:last-of-type { display: inline; }
+}
 .topic-header h1 { font-size: clamp(26px, 3.6vw, 34px); margin: 0 0 10px; letter-spacing: -0.02em; }
 .topic-header .lede { color: var(--text-dim); max-width: 720px; }
 .topic-header .card-tags { margin-top: 14px; }
@@ -2146,7 +2180,7 @@ code, .qa-body, .sc-status, .ts-desc, .wf-desc, .fs-explain, .pg-explain {
   .theme-toggle { width: 40px; height: 40px; }
   .card-bookmark-badge { width: 34px; height: 34px; }
   .bookmark-section-btn { padding: 8px; font-size: 18px; }
-  .bookmark-page-btn, .bookmark-filter-btn { padding: 10px 15px; }
+  .bookmark-page-btn, .bookmark-filter-btn, .quick-filters-toggle { padding: 10px 15px; }
 
   /* Stepper controls wrap rather than squeeze on narrow screens. */
   .sim-controls, .sc-controls, .ts-controls, .sp-controls,

@@ -107,6 +107,21 @@ function initHub() {
     tagRow.appendChild(pill);
   });
 
+  // Collapsed by default — dozens of tag pills otherwise eat a full screen
+  // of vertical space before a reader sees a single topic card.
+  const quickFiltersToggle = document.getElementById("quick-filters-toggle");
+  const quickFiltersCount = document.getElementById("quick-filters-count");
+  const quickFiltersActive = document.getElementById("quick-filters-active");
+  if (quickFiltersCount) quickFiltersCount.textContent = `(${allTags.length})`;
+  if (quickFiltersToggle) {
+    quickFiltersToggle.addEventListener("click", () => {
+      const expanded = tagRow.style.display !== "none";
+      tagRow.style.display = expanded ? "none" : "flex";
+      quickFiltersToggle.setAttribute("aria-expanded", String(!expanded));
+      quickFiltersToggle.classList.toggle("expanded", !expanded);
+    });
+  }
+
   function render() {
     const q = query.trim().toLowerCase();
     let filtered = topics.filter(t => {
@@ -126,6 +141,11 @@ function initHub() {
     Array.from(tagRow.children).forEach(pill => {
       pill.classList.toggle("active", pill.textContent === activeTag);
     });
+    if (quickFiltersActive) {
+      quickFiltersActive.style.display = activeTag ? "inline" : "none";
+      quickFiltersActive.textContent = activeTag ? `· filtering: ${activeTag}` : "";
+    }
+    if (quickFiltersToggle) quickFiltersToggle.classList.toggle("has-active-filter", !!activeTag);
 
     grid.innerHTML = "";
     if (filtered.length === 0) {
@@ -333,7 +353,36 @@ function initTopicPage() {
   }
 }
 
+/* ---------- Topic page: breadcrumb shows where the topic actually sits ---------- */
+/* A flat "All topics / Page Title" breadcrumb doesn't say which part of the
+   course a topic belongs to. Rebuilds it from topics-index.js at runtime —
+   every topic page loads that file already, and this stays correct
+   automatically as topics move between phases, instead of needing 24 pages
+   of hardcoded breadcrumb text kept in sync by hand. */
+function initBreadcrumb() {
+  const bc = document.querySelector(".topic-header .breadcrumb");
+  if (!bc || !window.TOPICS_INDEX) return;
+
+  const slug = location.pathname.split("/").pop().replace(/\.html$/, "");
+  if (!slug) return;
+  const entry = window.TOPICS_INDEX.find(t => (t.file || "").replace(/^pages\//, "").replace(/\.html$/, "") === slug);
+  if (!entry) return;
+
+  const phaseOrder = window.PHASE_ORDER || [];
+  const trackOrder = window.TRACK_ORDER || [];
+  const phase = phaseOrder.find(p => p.key === entry.phase);
+  const track = trackOrder.find(t => t.phases.includes(entry.phase));
+
+  const parts = ['<a href="../index.html">All topics</a>'];
+  if (track) parts.push(`<span class="breadcrumb-seg">${track.label}</span>`);
+  if (phase && (!track || track.phases.length > 1)) parts.push(`<span class="breadcrumb-seg">${phase.label}</span>`);
+  parts.push(`<span class="breadcrumb-current">${entry.title}</span>`);
+
+  bc.innerHTML = parts.join(' <span class="breadcrumb-sep">/</span> ');
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initHub();
   initTopicPage();
+  initBreadcrumb();
 });

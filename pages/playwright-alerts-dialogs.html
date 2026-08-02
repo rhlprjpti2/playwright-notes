@@ -49,6 +49,31 @@
 
     <div class="content">
 
+      <figure class="concept-art">
+        <div class="cs-scene">
+          <div class="cs-code">
+            <div class="cs-code-line cs-p1">page.on("dialog", lambda d: d.accept())</div>
+            <div class="cs-code-line cs-p2">page.get_by_role("button", name="Confirm").click()</div>
+            <div class="cs-code-line cs-p3"># handled automatically — no code needed here</div>
+          </div>
+          <svg viewBox="0 0 640 170" width="100%" height="auto" role="img" aria-label="A dialog handler registered before the click means the dialog gets accepted automatically the moment it fires">
+            <rect class="cs-p1" x="30" y="40" width="170" height="70" rx="10" fill="none" stroke="#f4d35e" stroke-width="3"/>
+            <text x="115" y="72" class="ca-lbl" style="font-size:12px">listener armed</text>
+            <text x="115" y="90" class="ca-sub">nothing happens yet</text>
+            <path d="M210 75 L260 75" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+            <rect class="cs-p2" x="265" y="40" width="150" height="70" rx="10" fill="#ffb15c"/>
+            <text x="340" y="72" class="ca-lbl" style="font-size:12px">click fires</text>
+            <text x="340" y="90" class="ca-lbl" style="font-size:11px">dialog appears</text>
+            <path d="M425 75 L475 75" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+            <ellipse class="cs-ring cs-ring-p3" cx="550" cy="75" rx="90" ry="45" stroke="#7fd8c9" stroke-width="3"/>
+            <rect class="cs-p3" x="480" y="40" width="140" height="70" rx="10" fill="#7fd8c9"/>
+            <text x="550" y="68" class="ca-lbl" style="font-size:12px">accept() fires</text>
+            <text x="550" y="88" class="ca-lbl" style="font-size:11px">handled, no wait</text>
+          </svg>
+        </div>
+        <figcaption>The handler is armed before anything happens — by the time the dialog fires, there's already someone listening</figcaption>
+      </figure>
+
       <section id="concept">
         <h2>Why locators don't work</h2>
         <p>A JavaScript <code>alert()</code>, <code>confirm()</code>, or <code>prompt()</code> is rendered by the <strong>browser itself</strong>, not by the page. Right-click and inspect it and there is no element to find — no tag, no class, no id — because it isn't part of the document at all. Every DOM-based tool hits the same wall here; this isn't a Playwright limitation specifically.</p>

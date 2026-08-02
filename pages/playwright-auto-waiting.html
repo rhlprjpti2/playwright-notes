@@ -47,6 +47,45 @@
 
     <div class="content">
 
+      <figure class="concept-art">
+        <div class="cs-scene">
+          <div class="cs-code">
+            <div class="cs-code-line cs-q1">page.get_by_role("button", name="Login").click()</div>
+            <div class="cs-code-line cs-q2"># all checks passed → click actually happens</div>
+          </div>
+          <svg viewBox="0 0 640 150" width="100%" height="auto" role="img" aria-label="Four actionability checks — visible, stable, receives events, enabled — all pending then all passing before the click fires">
+            <g transform="translate(30,30)">
+              <rect width="130" height="60" rx="10" fill="#c2b8a3" opacity=".4"/>
+              <text x="65" y="26" class="ca-lbl" style="font-size:11px">visible</text>
+              <text x="65" y="46" class="ca-sub cs-swap-q1" style="font-size:11px">checking…</text>
+              <text x="65" y="46" class="ca-sub cs-swap-q2" style="font-size:11px; fill:#7fd870">&#10003; passed</text>
+            </g>
+            <g transform="translate(175,30)">
+              <rect width="130" height="60" rx="10" fill="#c2b8a3" opacity=".4"/>
+              <text x="65" y="26" class="ca-lbl" style="font-size:11px">stable</text>
+              <text x="65" y="46" class="ca-sub cs-swap-q1" style="font-size:11px">checking…</text>
+              <text x="65" y="46" class="ca-sub cs-swap-q2" style="font-size:11px; fill:#7fd870">&#10003; passed</text>
+            </g>
+            <g transform="translate(320,30)">
+              <rect width="150" height="60" rx="10" fill="#c2b8a3" opacity=".4"/>
+              <text x="75" y="26" class="ca-lbl" style="font-size:11px">receives events</text>
+              <text x="75" y="46" class="ca-sub cs-swap-q1" style="font-size:11px">checking…</text>
+              <text x="75" y="46" class="ca-sub cs-swap-q2" style="font-size:11px; fill:#7fd870">&#10003; passed</text>
+            </g>
+            <g transform="translate(485,30)">
+              <rect width="125" height="60" rx="10" fill="#c2b8a3" opacity=".4"/>
+              <text x="62" y="26" class="ca-lbl" style="font-size:11px">enabled</text>
+              <text x="62" y="46" class="ca-sub cs-swap-q1" style="font-size:11px">checking…</text>
+              <text x="62" y="46" class="ca-sub cs-swap-q2" style="font-size:11px; fill:#7fd870">&#10003; passed</text>
+            </g>
+            <ellipse class="cs-ring cs-glow-q2" cx="320" cy="60" rx="300" ry="55" stroke="#7fd870" stroke-width="2"/>
+            <text x="320" y="120" class="ca-sub cs-swap-q1">retrying automatically until every check clears</text>
+            <text x="320" y="120" class="ca-sub cs-swap-q2" style="fill:#7fd870">all four cleared — click proceeds</text>
+          </svg>
+        </div>
+        <figcaption>One failed check and the whole loop retries — nothing proceeds until all four agree</figcaption>
+      </figure>
+
       <section id="concept">
         <h2>Concept</h2>
         <p>Before performing most actions (click, fill, check, etc.), Playwright runs a series of <strong>actionability checks</strong> on the target element: is it visible, is it stable (fully finished loading/animating, not still moving), does it receive events (nothing else obscuring it), and is it enabled (not disabled). If any check fails, Playwright automatically retries — it does not fail immediately the way a naive single check would.</p>

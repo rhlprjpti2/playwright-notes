@@ -49,6 +49,25 @@
 
     <div class="content">
 
+      <figure class="concept-art">
+        <div class="cs-scene">
+          <div class="cs-code">
+            <div class="cs-code-line cs-p1">browser = playwright.chromium.launch()</div>
+            <div class="cs-code-line cs-p2">context = browser.new_context()</div>
+            <div class="cs-code-line cs-p3">page = context.new_page()</div>
+          </div>
+          <svg viewBox="0 0 640 190" width="100%" height="auto" role="img" aria-label="Browser contains context, which contains page — each is nested one level deeper inside the last">
+            <rect class="cs-p1" x="30" y="20" width="580" height="150" rx="22" fill="none" stroke="#c98bd6" stroke-width="3"/>
+            <text x="50" y="42" class="ca-sub" style="text-anchor:start; fill:#a06bb0">Browser — one running engine</text>
+            <rect class="cs-p2" x="70" y="55" width="480" height="105" rx="16" fill="none" stroke="#7fd8c9" stroke-width="3"/>
+            <text x="90" y="76" class="ca-sub" style="text-anchor:start; fill:#3f7d71">Context — isolated cookies/storage, like a private window</text>
+            <rect class="cs-p3" x="220" y="95" width="180" height="52" rx="10" fill="#ffb15c"/>
+            <text x="310" y="125" class="ca-lbl" style="font-size:13px">Page — one tab</text>
+          </svg>
+        </div>
+        <figcaption>One browser can hold several isolated contexts — each context can hold several pages, all sharing that context's storage</figcaption>
+      </figure>
+
       <section id="concept">
         <h2>Concept</h2>
         <p>The <code>pytest-playwright</code> plugin ships a global <strong>playwright</strong> fixture — no need to define or implement it yourself, just reference it as a test argument and start using it. From there, three explicit steps build up to something you can actually automate on: <strong>browser</strong> → <strong>context</strong> → <strong>page</strong>.</p>

@@ -53,6 +53,32 @@
 
     <div class="content">
 
+      <figure class="concept-art">
+        <div class="cs-scene">
+          <div class="cs-code">
+            <div class="cs-code-line cs-p1">page = browser.new_page()</div>
+            <div class="cs-code-line cs-p2">yield page   <span class="cs-num"># test runs here</span></div>
+            <div class="cs-code-line cs-p3">page.close()  <span class="cs-num"># after the test finishes</span></div>
+          </div>
+          <svg viewBox="0 0 640 150" width="100%" height="auto" role="img" aria-label="A fixture pauses at yield while the test runs, then resumes to run teardown once the test finishes">
+            <rect class="cs-p1" x="20" y="35" width="170" height="65" rx="10" fill="none" stroke="#f4d35e" stroke-width="3"/>
+            <text x="105" y="65" class="ca-lbl" style="font-size:12px">setup</text>
+            <text x="105" y="83" class="ca-sub">runs once</text>
+            <path d="M195 68 L235 68" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+            <rect class="cs-p2" x="240" y="35" width="170" height="65" rx="10" fill="#ffb15c"/>
+            <text x="325" y="60" class="ca-lbl" style="font-size:12px">yield page</text>
+            <text x="325" y="78" class="ca-lbl" style="font-size:10.5px">paused — test uses it</text>
+            <path d="M415 68 L455 68" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+            <ellipse class="cs-ring cs-ring-p3" cx="540" cy="68" rx="90" ry="42" stroke="#7fd8c9" stroke-width="3"/>
+            <rect class="cs-p3" x="460" y="35" width="160" height="65" rx="10" fill="#7fd8c9"/>
+            <text x="540" y="60" class="ca-lbl" style="font-size:12px">teardown</text>
+            <text x="540" y="78" class="ca-lbl" style="font-size:10.5px">resumes after test</text>
+            <text x="320" y="130" class="ca-sub">one paused generator — not three separate calls</text>
+          </svg>
+        </div>
+        <figcaption>The exact same pause-and-resume mechanism as a generator's yield — that's what a fixture actually is</figcaption>
+      </figure>
+
       <section id="concept">
         <h2>Concept</h2>
         <p><strong>Pytest</strong> is Python's testing framework/engine — the direct equivalent of JUnit for Java. Playwright's Python tests are written and run <em>on top of</em> Pytest, which is why Pytest fundamentals are a prerequisite, not an optional side topic.</p>

@@ -49,6 +49,7 @@ function pwSave(key, obj) {
 const PW_QUIZ_KEY = "pw-notes-quiz-state";
 const PW_QA_MASTERY_KEY = "pw-notes-qa-mastery";
 const PW_VISITED_KEY = "pw-notes-visited";
+const PW_BOOKMARK_KEY = "pw-notes-bookmarks";
 
 function pwTrackVisit() {
   const slug = location.pathname.split("/").pop().replace(/\.html$/, "");
@@ -56,6 +57,110 @@ function pwTrackVisit() {
   const visited = pwLoad(PW_VISITED_KEY);
   visited[slug] = Date.now();
   pwSave(PW_VISITED_KEY, visited);
+}
+
+/* ---------- Bookmarks: whole topics or specific sections within one ---------- */
+/* Same localStorage namespace as everything else here — a flat dict keyed by
+   "slug" (page-level) or "slug::sectionId" (section-level) so both
+   granularities can be queried and rendered together. */
+
+function pwBookmarkId(slug, sectionId) {
+  return sectionId ? `${slug}::${sectionId}` : slug;
+}
+
+function pwToggleBookmark(entry) {
+  const bookmarks = pwLoad(PW_BOOKMARK_KEY);
+  const id = pwBookmarkId(entry.slug, entry.sectionId || null);
+  const wasOn = !!bookmarks[id];
+  if (wasOn) {
+    delete bookmarks[id];
+  } else {
+    bookmarks[id] = {
+      slug: entry.slug,
+      sectionId: entry.sectionId || null,
+      pageTitle: entry.pageTitle,
+      sectionTitle: entry.sectionTitle || null,
+      ts: Date.now()
+    };
+  }
+  pwSave(PW_BOOKMARK_KEY, bookmarks);
+  document.dispatchEvent(new CustomEvent("pw-bookmark-change"));
+  return !wasOn;
+}
+
+function pwSlugHasBookmark(slug) {
+  return Object.values(pwLoad(PW_BOOKMARK_KEY)).some((b) => b.slug === slug);
+}
+
+function pwBookmarksForSlug(slug) {
+  return Object.values(pwLoad(PW_BOOKMARK_KEY)).filter((b) => b.slug === slug);
+}
+
+/** Same idea as pwQuestionText — strips the icons a heading picks up (collapse
+ *  chevron, bookmark star) so the stored title stays clean plain text. */
+function pwHeadingText(heading) {
+  const clone = heading.cloneNode(true);
+  clone.querySelectorAll(".section-chevron, .bookmark-section-btn, .bookmark-page-btn").forEach((n) => n.remove());
+  return clone.textContent.replace(/\s+/g, " ").trim();
+}
+
+/** Adds a page-level bookmark star next to the topic's H1, and a section-level
+ *  star inside every collapsible section heading — so a specific sub-section
+ *  can be flagged for revisit independent of the whole topic. Bookmarking a
+ *  section also tints that section (.section-bookmarked) so it's scannable
+ *  while scrolling, without needing to reopen the star's tooltip. */
+function initBookmarks() {
+  const slug = location.pathname.split("/").pop().replace(/\.html$/, "");
+  if (!slug || slug === "index") return;
+
+  const header = document.querySelector(".topic-header");
+  const h1 = header ? header.querySelector("h1") : null;
+  if (header && h1 && !header.querySelector(".bookmark-page-btn")) {
+    const pageTitle = pwHeadingText(h1);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "bookmark-page-btn";
+    function paint() {
+      const on = !!pwLoad(PW_BOOKMARK_KEY)[pwBookmarkId(slug, null)];
+      btn.classList.toggle("active", on);
+      btn.setAttribute("aria-pressed", String(on));
+      btn.innerHTML = `<span class="bookmark-star">${on ? "&#9733;" : "&#9734;"}</span> ${on ? "Bookmarked" : "Bookmark this topic"}`;
+    }
+    btn.addEventListener("click", () => {
+      pwToggleBookmark({ slug, sectionId: null, pageTitle, sectionTitle: null });
+      paint();
+    });
+    paint();
+    h1.insertAdjacentElement("afterend", btn);
+  }
+
+  document.querySelectorAll(".content section[id]").forEach((section) => {
+    const heading = section.querySelector(":scope > h2");
+    if (!heading || heading.querySelector(".bookmark-section-btn")) return;
+    const sectionId = section.id;
+    const sectionTitle = pwHeadingText(heading);
+    const pageTitle = h1 ? pwHeadingText(h1) : slug;
+
+    const star = document.createElement("button");
+    star.type = "button";
+    star.className = "bookmark-section-btn";
+    star.title = "Bookmark this section";
+    function paintSection() {
+      const on = !!pwLoad(PW_BOOKMARK_KEY)[pwBookmarkId(slug, sectionId)];
+      star.classList.toggle("active", on);
+      star.setAttribute("aria-pressed", String(on));
+      star.innerHTML = on ? "&#9733;" : "&#9734;";
+      section.classList.toggle("section-bookmarked", on);
+    }
+    star.addEventListener("click", (e) => {
+      e.stopPropagation();
+      pwToggleBookmark({ slug, sectionId, pageTitle, sectionTitle });
+      paintSection();
+    });
+    star.addEventListener("keydown", (e) => { e.stopPropagation(); });
+    paintSection();
+    heading.appendChild(star);
+  });
 }
 
 /** Strips difficulty/topic badges out of a Q&A summary so the remaining question
@@ -1169,4 +1274,5 @@ document.addEventListener("DOMContentLoaded", () => {
   initInteractionLegend();
   initFirstVisitHint();
   pwTrackVisit();
+  initBookmarks();
 });

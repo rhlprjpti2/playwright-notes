@@ -1781,6 +1781,97 @@ footer.site-footer {
   display: flex; align-items: center; justify-content: center;
 }
 
+/* ---------- Bookmarks: filter toggle, card badge, in-page stars ---------- */
+.bookmark-filter-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin: 14px 0 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.bookmark-filter-btn:hover { border-color: var(--accent-3); color: var(--text); }
+.bookmark-filter-btn.active {
+  background: color-mix(in srgb, var(--accent-3) 18%, transparent);
+  border-color: var(--accent-3);
+  color: var(--accent-3);
+}
+.bookmark-filter-btn .bookmark-star { font-size: 14px; }
+#bookmark-filter-count {
+  font-family: var(--font-mono); font-size: 11px;
+  color: inherit; opacity: .8;
+}
+
+.card-bookmark-badge {
+  position: absolute; top: 12px; left: 12px;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-faint);
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all .15s ease;
+}
+.card-bookmark-badge:hover { border-color: var(--accent-3); color: var(--accent-3); transform: scale(1.08); }
+.card-bookmark-badge.active {
+  background: color-mix(in srgb, var(--accent-3) 22%, var(--bg-card));
+  border-color: var(--accent-3);
+  color: var(--accent-3);
+}
+.card-bookmarked-sections {
+  display: flex; flex-direction: column; gap: 4px;
+  margin-top: -6px;
+}
+.card-bookmark-link {
+  font-size: 12px;
+  color: var(--accent-3);
+  text-decoration: none;
+}
+.card-bookmark-link:hover { text-decoration: underline; }
+
+.bookmark-page-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin: 12px 0 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.bookmark-page-btn:hover { border-color: var(--accent-3); color: var(--text); }
+.bookmark-page-btn.active {
+  background: color-mix(in srgb, var(--accent-3) 18%, transparent);
+  border-color: var(--accent-3);
+  color: var(--accent-3);
+}
+.bookmark-page-btn .bookmark-star { font-size: 14px; }
+
+.bookmark-section-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-faint);
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 4px;
+  transition: color .15s ease, transform .15s ease;
+  flex-shrink: 0;
+}
+.bookmark-section-btn:hover { color: var(--accent-3); transform: scale(1.15); }
+.bookmark-section-btn.active { color: var(--accent-3); }
+
+.content section.section-bookmarked {
+  border-left: 3px solid var(--accent-3);
+  padding-left: 14px;
+}
+
 /* Long identifiers (locator chains, file paths) must be allowed to break.
    `anywhere` rather than `break-word` because only `anywhere` also reduces an
    element's intrinsic min-content width — which is what stops one long inline
@@ -1821,6 +1912,9 @@ code, .qa-body, .sc-status, .ts-desc, .wf-desc, .fs-explain, .pg-explain {
   .breadcrumb { padding: 4px 0; }
   .breadcrumb a { display: inline-block; padding: 8px 0; }
   .theme-toggle { width: 40px; height: 40px; }
+  .card-bookmark-badge { width: 34px; height: 34px; }
+  .bookmark-section-btn { padding: 8px; font-size: 18px; }
+  .bookmark-page-btn, .bookmark-filter-btn { padding: 10px 15px; }
 
   /* Stepper controls wrap rather than squeeze on narrow screens. */
   .sim-controls, .sc-controls, .ts-controls, .sp-controls,

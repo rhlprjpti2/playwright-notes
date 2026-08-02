@@ -73,6 +73,7 @@ function initHub() {
   const allTags = Array.from(new Set(topics.flatMap(t => t.tags || []))).sort();
   let activeTag = null;
   let query = "";
+  let showBookmarksOnly = false;
 
   statTopics.innerHTML = `<b>${topics.length}</b> topic${topics.length === 1 ? "" : "s"}`;
   const totalSources = topics.reduce((sum, t) => sum + (t.sources ? t.sources.length : 0), 0);
@@ -108,13 +109,19 @@ function initHub() {
 
   function render() {
     const q = query.trim().toLowerCase();
-    const filtered = topics.filter(t => {
+    let filtered = topics.filter(t => {
       const matchesTag = !activeTag || (t.tags || []).includes(activeTag);
       const haystack = [t.title, t.summary, ...(t.tags || []), ...(t.keyTerms || [])]
         .join(" ").toLowerCase();
       const matchesQuery = !q || haystack.includes(q);
       return matchesTag && matchesQuery;
     });
+    if (showBookmarksOnly && typeof pwSlugHasBookmark === "function") {
+      filtered = filtered.filter(t => {
+        const slug = (t.file || "").replace(/^pages\//, "").replace(/\.html$/, "");
+        return pwSlugHasBookmark(slug);
+      });
+    }
 
     Array.from(tagRow.children).forEach(pill => {
       pill.classList.toggle("active", pill.textContent === activeTag);
@@ -123,12 +130,17 @@ function initHub() {
     grid.innerHTML = "";
     if (filtered.length === 0) {
       emptyState.style.display = "block";
-      emptyState.querySelector("h3").textContent = topics.length === 0
-        ? "No topics yet"
-        : "No matches";
-      emptyState.querySelector("p").textContent = topics.length === 0
-        ? "Send over a video transcript and the first topic page will show up here."
-        : "Try a different search term or clear the tag filter.";
+      if (showBookmarksOnly) {
+        emptyState.querySelector("h3").textContent = "No bookmarks yet";
+        emptyState.querySelector("p").textContent = "Star a topic card, or a section heading inside any topic page, to save it here for later.";
+      } else {
+        emptyState.querySelector("h3").textContent = topics.length === 0
+          ? "No topics yet"
+          : "No matches";
+        emptyState.querySelector("p").textContent = topics.length === 0
+          ? "Send over a video transcript and the first topic page will show up here."
+          : "Try a different search term or clear the tag filter.";
+      }
       return;
     }
     emptyState.style.display = "none";
@@ -141,19 +153,34 @@ function initHub() {
       const slug = (t.file || "").replace(/^pages\//, "").replace(/\.html$/, "");
       const isVisited = visitedSlugs.includes(slug);
       card.style.borderTop = `3px solid ${categoryColorFor(t.tags)}`;
+      const isBookmarked = typeof pwSlugHasBookmark === "function" && pwSlugHasBookmark(slug);
+      const bookmarkedSections = typeof pwBookmarksForSlug === "function"
+        ? pwBookmarksForSlug(slug).filter(b => b.sectionId)
+        : [];
       card.innerHTML = `
         ${isVisited ? '<span class="card-visited-badge" title="Visited">&#10003;</span>' : ""}
+        <button type="button" class="card-bookmark-badge${isBookmarked ? " active" : ""}" title="${isBookmarked ? "Remove bookmark" : "Bookmark this topic"}" aria-pressed="${isBookmarked}">${isBookmarked ? "&#9733;" : "&#9734;"}</button>
         <div class="card-title">${t.title}</div>
         <div class="card-summary">${t.summary || ""}</div>
+        ${bookmarkedSections.length ? `<div class="card-bookmarked-sections">${bookmarkedSections.map(b => `<a href="${t.file}#${b.sectionId}" class="card-bookmark-link">&#9733; ${b.sectionTitle}</a>`).join("")}</div>` : ""}
         <div class="card-tags">${(t.tags || []).map(tag => `<span>${tag}</span>`).join("")}</div>
         <div class="card-meta">
           <span>${t.sources ? t.sources.length : 0} source${t.sources && t.sources.length === 1 ? "" : "s"}</span>
           <span>${t.lastUpdated || ""}</span>
         </div>`;
+      const bookmarkBtn = card.querySelector(".card-bookmark-badge");
+      bookmarkBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof pwToggleBookmark === "function") {
+          pwToggleBookmark({ slug, sectionId: null, pageTitle: t.title, sectionTitle: null });
+        }
+        render();
+      });
       return card;
     }
 
-    const searching = !!(activeTag || q);
+    const searching = !!(activeTag || q || showBookmarksOnly);
     if (searching) {
       // Flat result list while actively filtering — grouping headers add
       // nothing when you're scanning for a specific match.
@@ -215,6 +242,27 @@ function initHub() {
     query = e.target.value;
     render();
   });
+
+  const bookmarkFilterBtn = document.getElementById("bookmark-filter-btn");
+  const bookmarkFilterCount = document.getElementById("bookmark-filter-count");
+  function updateBookmarkCount() {
+    if (bookmarkFilterCount && typeof pwLoad === "function") {
+      bookmarkFilterCount.textContent = Object.keys(pwLoad("pw-notes-bookmarks")).length;
+    }
+  }
+  if (bookmarkFilterBtn) {
+    bookmarkFilterBtn.addEventListener("click", () => {
+      showBookmarksOnly = !showBookmarksOnly;
+      bookmarkFilterBtn.classList.toggle("active", showBookmarksOnly);
+      bookmarkFilterBtn.setAttribute("aria-pressed", String(showBookmarksOnly));
+      render();
+    });
+    updateBookmarkCount();
+    document.addEventListener("pw-bookmark-change", () => {
+      updateBookmarkCount();
+      if (showBookmarksOnly) render();
+    });
+  }
 
   render();
 }

@@ -927,114 +927,6 @@ function renderTableScan(containerId, config) {
 }
 
 /**
- * renderChainCompare("container-id", { nodes, chains })
- *
- * Renders a DOM tree and shows where a locator chain "lands" after each step —
- * built for the descend-vs-narrow distinction, where two nearly identical
- * chains diverge because one moves deeper into the tree and the other stays
- * at the same level.
- *
- * nodes:  [{ id, depth, tag, note }]
- * chains: [{ key, label, tone, steps: [{ code, lands: [ids], searchIn: id,
- *            desc, verdict: {tone,text} }] }]
- */
-function renderChainCompare(containerId, config) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  const nodes = config.nodes || [];
-  const chains = config.chains || [];
-
-  el.innerHTML = `
-    <div class="cc-chainpick"></div>
-    <div class="cc-controls">
-      <button class="btn-back" disabled>&#9668; Back</button>
-      <button class="btn-step">Step &#9658;</button>
-      <button class="btn-reset" disabled>&#8635; Reset</button>
-      <span class="cc-step-label"></span>
-    </div>
-    <div class="cc-code"></div>
-    <div class="cc-tree">
-      ${nodes.map((n) => `
-        <div class="cc-node" data-id="${n.id}" style="padding-left:${n.depth * 18}px">
-          <span class="cc-tag">${n.tag}</span>
-          ${n.note ? `<span class="cc-note">${n.note}</span>` : ""}
-        </div>`).join("")}
-    </div>
-    <div class="cc-desc"></div>
-  `;
-
-  const pick = el.querySelector(".cc-chainpick");
-  const tree = el.querySelector(".cc-tree");
-  const codeEl = el.querySelector(".cc-code");
-  const descEl = el.querySelector(".cc-desc");
-  const label = el.querySelector(".cc-step-label");
-  const backBtn = el.querySelector(".btn-back");
-  const stepBtn = el.querySelector(".btn-step");
-  const resetBtn = el.querySelector(".btn-reset");
-
-  let chainIdx = 0;
-  let index = 0;
-
-  chains.forEach((c, i) => {
-    const b = document.createElement("button");
-    b.className = "cc-chain-btn" + (i === 0 ? " active" : "") + (c.tone ? " " + c.tone : "");
-    b.innerHTML = c.label;
-    b.addEventListener("click", () => {
-      chainIdx = i;
-      index = 0;
-      pick.querySelectorAll(".cc-chain-btn").forEach((x) => x.classList.remove("active"));
-      b.classList.add("active");
-      render();
-    });
-    pick.appendChild(b);
-  });
-
-  function render() {
-    const chain = chains[chainIdx];
-    const step = index > 0 ? chain.steps[index - 1] : null;
-
-    tree.querySelectorAll(".cc-node").forEach((n) =>
-      n.classList.remove("cc-lands", "cc-searching", "cc-dim")
-    );
-
-    if (step) {
-      if (step.searchIn) {
-        const scope = tree.querySelector(`.cc-node[data-id="${step.searchIn}"]`);
-        if (scope) scope.classList.add("cc-searching");
-      }
-      (step.lands || []).forEach((id) => {
-        const n = tree.querySelector(`.cc-node[data-id="${id}"]`);
-        if (n) n.classList.add("cc-lands");
-      });
-      codeEl.textContent = step.code || "";
-      descEl.className = "cc-desc" + (step.verdict ? " " + step.verdict.tone : "");
-      descEl.innerHTML = (step.verdict ? `<b>${step.verdict.text}</b><br>` : "") + (step.desc || "");
-    } else {
-      codeEl.textContent = chain.introCode || "";
-      descEl.className = "cc-desc";
-      descEl.innerHTML = chain.introText || "Step through to see where each call lands in the tree.";
-    }
-
-    label.textContent = index === 0
-      ? `Ready — step 0 of ${chain.steps.length}`
-      : `Step ${index} of ${chain.steps.length}`;
-    backBtn.disabled = index === 0;
-    resetBtn.disabled = index === 0;
-    const atEnd = index === chain.steps.length;
-    stepBtn.disabled = atEnd;
-    stepBtn.textContent = atEnd ? "Done ✓" : "Step ▸";
-  }
-
-  stepBtn.addEventListener("click", () => {
-    if (index < chains[chainIdx].steps.length) { index++; render(); }
-  });
-  backBtn.addEventListener("click", () => { if (index > 0) { index--; render(); } });
-  resetBtn.addEventListener("click", () => { index = 0; render(); });
-
-  render();
-}
-
-/**
  * renderScopeCompare("container-id", { panels })
  *
  * Two side-by-side card diagrams that advance IN SYNC from one Step button, so
@@ -1072,6 +964,7 @@ function renderScopeCompare(containerId, config) {
     <div class="sc-controls">
       <button class="btn-back" disabled>&#9668; Back</button>
       <button class="btn-step">Step &#9658;</button>
+      <button class="btn-auto">&#9654; Autoplay</button>
       <button class="btn-reset" disabled>&#8635; Reset</button>
       <span class="sc-step-label"></span>
     </div>
@@ -1092,9 +985,11 @@ function renderScopeCompare(containerId, config) {
 
   const stepBtn = el.querySelector(".btn-step");
   const backBtn = el.querySelector(".btn-back");
+  const autoBtn = el.querySelector(".btn-auto");
   const resetBtn = el.querySelector(".btn-reset");
   const label = el.querySelector(".sc-step-label");
   let index = 0;
+  let playing = false;
 
   function render() {
     panels.forEach((p, i) => {
@@ -1128,13 +1023,24 @@ function renderScopeCompare(containerId, config) {
     label.textContent = index === 0 ? `Ready — step 0 of ${total}` : `Step ${index} of ${total}`;
     backBtn.disabled = index === 0;
     resetBtn.disabled = index === 0;
-    stepBtn.disabled = index === total;
-    stepBtn.textContent = index === total ? "Done ✓" : "Step ▸";
+    const atEnd = index === total;
+    stepBtn.disabled = atEnd || playing;
+    autoBtn.disabled = atEnd || playing;
+    stepBtn.textContent = atEnd ? "Done ✓" : "Step ▸";
   }
 
   stepBtn.addEventListener("click", () => { if (index < total) { index++; render(); } });
   backBtn.addEventListener("click", () => { if (index > 0) { index--; render(); } });
-  resetBtn.addEventListener("click", () => { index = 0; render(); });
+  autoBtn.addEventListener("click", () => {
+    playing = true; render();
+    const tick = () => {
+      if (index >= total) { playing = false; render(); return; }
+      index++; render();
+      setTimeout(tick, 1800);
+    };
+    tick();
+  });
+  resetBtn.addEventListener("click", () => { index = 0; playing = false; render(); });
   render();
 }
 

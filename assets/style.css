@@ -1197,6 +1197,13 @@ footer.site-footer {
   border-color: var(--accent) !important;
   background: color-mix(in srgb, var(--accent) 12%, var(--bg-elevated)) !important;
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
+  transform: scale(1.02);
+}
+/* when the region has contracted to a child, visibly de-emphasise the card it left */
+.sc-card:has(.sc-child.sc-scope) {
+  border-color: color-mix(in srgb, var(--border) 70%, transparent);
+  background: transparent;
+  transform: scale(0.985);
 }
 .sc-scope > .sc-card-tag, .sc-scope > .sc-child-tag { color: var(--accent); }
 .sc-scope::after {
@@ -1222,72 +1229,6 @@ footer.site-footer {
 @media (max-width: 700px) {
   .sc-panels { grid-template-columns: 1fr; }
 }
-
-/* ---------- Chain compare: where does a locator chain land in the DOM? ---------- */
-.chain-compare {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg-elevated);
-  padding: 18px;
-  margin: 20px 0;
-}
-.cc-chainpick { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-.cc-chain-btn {
-  font-size: 12.5px; padding: 8px 14px; border-radius: 8px;
-  border: 1.5px solid var(--border); background: var(--bg-card);
-  color: var(--text-dim); cursor: pointer; transition: all .15s ease; text-align: left;
-}
-.cc-chain-btn:hover { border-color: var(--accent); }
-.cc-chain-btn.active { color: var(--text); }
-.cc-chain-btn.active.bad { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
-.cc-chain-btn.active.good { border-color: var(--success); background: color-mix(in srgb, var(--success) 12%, transparent); }
-.cc-chain-btn code { background: none; padding: 0; font-size: 11.5px; color: inherit; }
-
-.cc-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-.cc-controls button {
-  font-family: var(--font-mono); font-size: 12.5px; padding: 6px 12px; border-radius: 7px;
-  border: 1.5px solid var(--border); background: var(--bg-card); color: var(--text);
-  cursor: pointer; transition: border-color .15s ease;
-}
-.cc-controls button:hover:not(:disabled) { border-color: var(--accent); }
-.cc-controls button:disabled { opacity: .4; cursor: default; }
-.cc-step-label { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-faint); margin-left: auto; }
-
-.cc-code {
-  font-family: var(--font-mono); font-size: 12.5px; color: var(--accent);
-  padding: 9px 12px; background: var(--code-bg); border: 1px solid var(--border);
-  border-radius: 7px; margin-bottom: 14px; min-height: 18px; overflow-x: auto; white-space: pre;
-}
-.cc-tree {
-  background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
-  padding: 12px; font-family: var(--font-mono); font-size: 12px; line-height: 1.9;
-  overflow-x: auto;
-}
-.cc-node {
-  padding: 2px 6px; border-radius: 4px; white-space: nowrap;
-  transition: background .3s ease, outline-color .3s ease, opacity .3s ease;
-  border-left: 2px solid transparent;
-}
-.cc-tag { color: var(--text-dim); }
-.cc-note { color: var(--text-faint); margin-left: 10px; font-size: 11px; font-style: italic; }
-.cc-node.cc-searching {
-  background: color-mix(in srgb, var(--accent-3) 14%, transparent);
-  border-left-color: var(--accent-3);
-}
-.cc-node.cc-lands {
-  background: color-mix(in srgb, var(--accent) 24%, transparent);
-  outline: 1.5px solid var(--accent); outline-offset: -1px;
-}
-.cc-node.cc-lands .cc-tag { color: var(--accent); font-weight: 700; }
-.cc-desc {
-  margin-top: 14px; min-height: 44px; font-size: 13.5px; color: var(--text-dim);
-  padding: 12px 14px; background: var(--bg-card); border-radius: 8px;
-  border: 1px solid var(--border); line-height: 1.6; transition: all .3s ease;
-}
-.cc-desc b { color: var(--text); }
-.cc-desc.fail { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); }
-.cc-desc.pass { border-color: var(--success); background: color-mix(in srgb, var(--success) 10%, transparent); }
-.cc-desc.info { border-color: var(--accent-3); background: color-mix(in srgb, var(--accent-3) 10%, transparent); }
 
 /* ---------- Frame scope demo: real nested iframe ---------- */
 .frame-scope {
@@ -1678,7 +1619,49 @@ footer.site-footer {
   display: flex; align-items: center; justify-content: center;
 }
 
+/* Long identifiers (locator chains, file paths) must be allowed to break.
+   `anywhere` rather than `break-word` because only `anywhere` also reduces an
+   element's intrinsic min-content width — which is what stops one long inline
+   <code> from forcing the whole page wider than the viewport. */
+code, .qa-body, .sc-status, .ts-desc, .wf-desc, .fs-explain, .pg-explain {
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 760px) {
   .topic-layout { grid-template-columns: 1fr; }
   .toc { position: static; border-left: none; padding-left: 0; margin-bottom: 20px; }
+
+  /* Grid and flex children default to min-width:auto, so they refuse to shrink
+     below their content's intrinsic width — which was stretching the single
+     mobile column far past the viewport and forcing sideways scroll. */
+  .topic-layout > *,
+  .content,
+  .content * {
+    min-width: 0;
+  }
+
+  /* Illustrative mockups carry desktop-sized fixed widths; cap them on mobile. */
+  .mock-window,
+  .mock-caption,
+  .layer-stack,
+  .layer-desc {
+    max-width: 100%;
+  }
+
+  /* Thumb-friendly tap targets (were 28–32px). */
+  .toc a { padding: 9px 0 9px 14px; }
+  .qhub-chip,
+  .qa-mastery-btn,
+  .toggle-btn,
+  .qhub-btn { padding: 9px 14px; }
+  .quiz-opt { padding: 13px 14px; }
+  .breadcrumb { padding: 4px 0; }
+  .breadcrumb a { display: inline-block; padding: 5px 0; }
+
+  /* Stepper controls wrap rather than squeeze on narrow screens. */
+  .sim-controls, .sc-controls, .ts-controls, .sp-controls,
+  .wf-controls, .layer-stack-controls, .diagram-controls { gap: 8px; }
+  .sim-controls button, .sc-controls button, .ts-controls button,
+  .sp-controls button, .wf-controls button, .layer-stack-controls button,
+  .diagram-controls button { padding: 9px 13px; }
 }

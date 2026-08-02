@@ -137,27 +137,56 @@ function initHub() {
       return;
     }
 
-    // Default view: grouped into the same phases as the course roadmap, in order.
+    // Default view: two top-level tracks (Python Learning, Playwright Course),
+    // each holding its phases as child sub-groups — a track with only one
+    // phase skips the redundant sub-header and lists cards directly.
     grid.classList.add("grid-grouped");
     let cardIndex = 0;
-    phaseOrder.forEach((phase) => {
-      const inPhase = filtered.filter(t => t.phase === phase.key);
-      if (inPhase.length === 0) return;
-      const section = document.createElement("div");
-      section.className = "hub-phase";
-      section.innerHTML = `<div class="hub-phase-head">
-        <span class="hub-phase-label">${phase.label}</span>
-        <span class="hub-phase-count">${inPhase.length}</span>
+    const trackOrder = window.TRACK_ORDER || [{ key: "_all", label: "All topics", phases: phaseOrder.map(p => p.key) }];
+    trackOrder.forEach((track) => {
+      const trackTopics = filtered.filter(t => track.phases.includes(t.phase));
+      if (trackTopics.length === 0) return;
+      const phasesInTrack = phaseOrder.filter(p => track.phases.includes(p.key));
+
+      const trackSection = document.createElement("div");
+      trackSection.className = "hub-track";
+      trackSection.innerHTML = `<div class="hub-track-head">
+        <span class="hub-track-label">${track.label}</span>
+        <span class="hub-track-count">${trackTopics.length}</span>
       </div>`;
-      const sectionGrid = document.createElement("div");
-      sectionGrid.className = "grid";
-      inPhase.forEach((t) => { sectionGrid.appendChild(makeCard(t, cardIndex++)); });
-      section.appendChild(sectionGrid);
-      grid.appendChild(section);
+      const trackBody = document.createElement("div");
+      trackBody.className = "hub-track-body";
+
+      if (phasesInTrack.length <= 1) {
+        const sectionGrid = document.createElement("div");
+        sectionGrid.className = "grid";
+        trackTopics.forEach((t) => { sectionGrid.appendChild(makeCard(t, cardIndex++)); });
+        trackBody.appendChild(sectionGrid);
+      } else {
+        phasesInTrack.forEach((phase) => {
+          const inPhase = filtered.filter(t => t.phase === phase.key);
+          if (inPhase.length === 0) return;
+          const section = document.createElement("div");
+          section.className = "hub-phase hub-phase-nested";
+          section.innerHTML = `<div class="hub-phase-head">
+            <span class="hub-phase-label">${phase.label}</span>
+            <span class="hub-phase-count">${inPhase.length}</span>
+          </div>`;
+          const sectionGrid = document.createElement("div");
+          sectionGrid.className = "grid";
+          inPhase.forEach((t) => { sectionGrid.appendChild(makeCard(t, cardIndex++)); });
+          section.appendChild(sectionGrid);
+          trackBody.appendChild(section);
+        });
+      }
+
+      trackSection.appendChild(trackBody);
+      grid.appendChild(trackSection);
     });
 
-    // Anything without a recognised phase still needs to show up somewhere.
-    const orphans = filtered.filter(t => !phaseOrder.some(p => p.key === t.phase));
+    // Anything outside every track's phase list still needs to show up somewhere.
+    const trackedKeys = trackOrder.flatMap(t => t.phases);
+    const orphans = filtered.filter(t => !trackedKeys.includes(t.phase));
     orphans.forEach((t) => grid.appendChild(makeCard(t, cardIndex++)));
   }
 

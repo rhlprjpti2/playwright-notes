@@ -39,6 +39,15 @@ window.PHASE_ORDER = [
   { key: "practical", label: "Practical & Strategy" }
 ];
 
+// Top-level hub grouping: two tracks, each containing one or more phases from
+// PHASE_ORDER above. The hub renders a track as a single un-nested section when
+// it only has one phase (Python Learning today), and as a labeled parent with
+// phase sub-groups as children when it has several (the Playwright course).
+window.TRACK_ORDER = [
+  { key: "python", label: "Python Learning", phases: ["python-track"] },
+  { key: "playwright", label: "Playwright Course", phases: ["intro", "fundamentals", "core", "advanced", "practical"] }
+];
+
 // ---------- Python Learning (standalone track, original content) ----------
 window.TOPICS_INDEX_PYTHON = [
   {
@@ -57,7 +66,7 @@ window.TOPICS_INDEX_PYTHON = [
     sources: [
       { title: "Original content — Python Learning series", addedDate: "2026-07-30" }
     ],
-    lastUpdated: "2026-07-30",
+    lastUpdated: "2026-08-02",
     phase: "python-track",
     order: 1
   },
@@ -76,7 +85,7 @@ window.TOPICS_INDEX_PYTHON = [
     sources: [
       { title: "Original content — Python Learning series", addedDate: "2026-07-30" }
     ],
-    lastUpdated: "2026-07-30",
+    lastUpdated: "2026-08-02",
     phase: "python-track",
     order: 2
   },
@@ -95,7 +104,7 @@ window.TOPICS_INDEX_PYTHON = [
     sources: [
       { title: "Original content — Python Learning series", addedDate: "2026-07-30" }
     ],
-    lastUpdated: "2026-07-30",
+    lastUpdated: "2026-08-02",
     phase: "python-track",
     order: 3
   }
@@ -118,7 +127,7 @@ window.TOPICS_INDEX = [
     sources: [
       { title: "Course Introduction — Why Playwright, Why Python (Lecture 1)", addedDate: "2026-07-29" }
     ],
-    lastUpdated: "2026-07-29",
+    lastUpdated: "2026-07-31",
     phase: "intro",
     order: 1
   },
@@ -141,7 +150,7 @@ window.TOPICS_INDEX = [
     sources: [
       { title: "Course Curriculum Overview (Lecture 2)", addedDate: "2026-07-29" }
     ],
-    lastUpdated: "2026-07-29",
+    lastUpdated: "2026-08-02",
     phase: "intro",
     order: 2
   },
@@ -164,7 +173,7 @@ window.TOPICS_INDEX = [
       { title: "Installing PyCharm IDE & Syncing Interpreter", addedDate: "2026-07-29" },
       { title: "Pip & Installing Pytest/Playwright Packages", addedDate: "2026-07-29" }
     ],
-    lastUpdated: "2026-07-29",
+    lastUpdated: "2026-07-31",
     phase: "fundamentals",
     order: 1
   },
@@ -182,7 +191,7 @@ window.TOPICS_INDEX = [
     sources: [
       { title: "Python Basics: Print, Comments, Variables", addedDate: "2026-07-29" }
     ],
-    lastUpdated: "2026-07-29",
+    lastUpdated: "2026-08-02",
     phase: "fundamentals",
     order: 2
   },
@@ -206,7 +215,7 @@ window.TOPICS_INDEX = [
       { title: "Pytest Fixtures: Return Values & Yield (Setup/Teardown)", addedDate: "2026-07-29" },
       { title: "Running & Tagging Tests via CLI", addedDate: "2026-07-29" }
     ],
-    lastUpdated: "2026-07-29",
+    lastUpdated: "2026-08-02",
     phase: "fundamentals",
     order: 3
   },
@@ -227,7 +236,7 @@ window.TOPICS_INDEX = [
       { title: "The Page Fixture Shortcut", addedDate: "2026-07-29" },
       { title: "Running Tests in Firefox", addedDate: "2026-07-29" }
     ],
-    lastUpdated: "2026-07-29",
+    lastUpdated: "2026-08-02",
     phase: "core",
     order: 1
   },
@@ -249,7 +258,7 @@ window.TOPICS_INDEX = [
       { title: "get_by_label Limitations", addedDate: "2026-07-29" },
       { title: "Handling Buttons, Links & CSS Selectors", addedDate: "2026-07-29" }
     ],
-    lastUpdated: "2026-07-29",
+    lastUpdated: "2026-08-02",
     phase: "core",
     order: 2
   },
@@ -268,7 +277,7 @@ window.TOPICS_INDEX = [
     sources: [
       { title: "Auto-Waiting & Assertions in Playwright", addedDate: "2026-07-29" }
     ],
-    lastUpdated: "2026-07-29",
+    lastUpdated: "2026-08-02",
     phase: "core",
     order: 3
   },
@@ -288,7 +297,7 @@ window.TOPICS_INDEX = [
     sources: [
       { title: "Synthesis of course material covered so far", addedDate: "2026-07-30" }
     ],
-    lastUpdated: "2026-07-30",
+    lastUpdated: "2026-08-02",
     phase: "practical",
     order: 1
   },
@@ -308,7 +317,7 @@ window.TOPICS_INDEX = [
     sources: [
       { title: "Original content — written for Lead/Staff SDET interview prep, not sourced from a transcript", addedDate: "2026-07-30" }
     ],
-    lastUpdated: "2026-07-30",
+    lastUpdated: "2026-07-31",
     phase: "practical",
     order: 2
   },
@@ -329,7 +338,7 @@ window.TOPICS_INDEX = [
       { title: "Handling Child Windows / Popups in Playwright", addedDate: "2026-07-30" },
       { title: "Extracting Text with split() & strip() + Pytest Assertions", addedDate: "2026-07-30" }
     ],
-    lastUpdated: "2026-07-30",
+    lastUpdated: "2026-08-02",
     phase: "advanced",
     order: 1
   },
@@ -348,7 +357,7 @@ window.TOPICS_INDEX = [
     sources: [
       { title: "Handling Dynamic Web Tables", addedDate: "2026-07-30" }
     ],
-    lastUpdated: "2026-07-30",
+    lastUpdated: "2026-08-02",
     phase: "advanced",
     order: 4
   },
@@ -367,7 +376,7 @@ window.TOPICS_INDEX = [
     sources: [
       { title: "Handling Alerts & JavaScript Dialogs", addedDate: "2026-07-30" }
     ],
-    lastUpdated: "2026-07-30",
+    lastUpdated: "2026-08-02",
     phase: "advanced",
     order: 2
   },
@@ -385,7 +394,7 @@ window.TOPICS_INDEX = [
     sources: [
       { title: "Handling Frames & iFrames", addedDate: "2026-07-30" }
     ],
-    lastUpdated: "2026-07-30",
+    lastUpdated: "2026-08-02",
     phase: "advanced",
     order: 3
   },
@@ -403,7 +412,7 @@ window.TOPICS_INDEX = [
     sources: [
       { title: "Dynamic Element Scanning: Product Cart Example", addedDate: "2026-07-29" }
     ],
-    lastUpdated: "2026-07-29",
+    lastUpdated: "2026-08-02",
     phase: "core",
     order: 4
   }

@@ -97,21 +97,29 @@ s[::-1]     # 'thgirwyalP' — step -1 reverses the whole string</code></pre>
           </div>
           <div class="illus-panel active" data-view="art">
             <figure class="concept-art">
-              <svg viewBox="0 0 640 210" width="100%" height="auto" role="img" aria-label="A URL string split at the last slash — the front portion dropped, the tail 8842 kept and lifted into a new product_id capsule">
-                <rect x="30" y="90" width="330" height="42" rx="8" fill="#b9b0a0" opacity=".55"/>
-                <text x="195" y="116" class="ca-lbl" style="font-size:11.5px; fill:#4a4230">.../product/</text>
-                <rect x="370" y="90" width="90" height="42" rx="8" fill="#7fd8c9"/>
-                <text x="415" y="116" class="ca-lbl" style="font-size:12.5px">8842</text>
-                <path d="M415 90 L415 55 C415 40 440 32 470 32" fill="none" stroke="#4f8f83" stroke-width="1.5" class="ca-flow"/>
-                <circle r="5" fill="#3f7d71" class="ca-pointer-dot" style="offset-path: path('M415 90 L415 55 C415 40 440 32 470 32')"/>
-                <g transform="translate(470,10)"><g class="ca-bob ca-bob2">
-                  <ellipse class="ca-arrive-ring" cx="80" cy="22" rx="80" ry="26" stroke="#7fd8c9" stroke-width="2.5"/>
-                  <rect width="160" height="44" rx="22" fill="#7fd8c9"/>
-                  <text x="80" y="27" class="ca-lbl" style="font-size:11.5px">product_id</text>
-                </g></g>
-                <text x="195" y="160" class="ca-sub">original string, untouched</text>
-                <text x="415" y="160" class="ca-sub">sliced tail</text>
-              </svg>
+              <div class="cs-scene">
+                <div class="cs-code">
+                  <div class="cs-code-line cs-q1"><span class="cs-var">url</span> = "https://shop.example.com/product/8842"</div>
+                  <div class="cs-code-line cs-q2"><span class="cs-var">product_id</span> = <span class="cs-var">url</span>[idx+1:]</div>
+                </div>
+                <svg viewBox="0 0 640 210" width="100%" height="auto" role="img" aria-label="A URL string split at the last slash — the front portion dropped, the tail 8842 kept and lifted into a new product_id object">
+                  <rect x="30" y="90" width="330" height="42" rx="8" fill="#b9b0a0" opacity=".55"/>
+                  <text x="195" y="116" class="ca-lbl" style="font-size:11.5px; fill:#4a4230">.../product/</text>
+                  <rect x="370" y="90" width="90" height="42" rx="8" fill="#7fd8c9"/>
+                  <text x="415" y="116" class="ca-lbl" style="font-size:12.5px">8842</text>
+                  <g transform="translate(105,30)"><g class="cs-q1">
+                    <path d="M0 0 H60 V28 L30 42 L0 28 Z" fill="#f4d35e"/>
+                    <text x="30" y="22" class="ca-lbl" style="font-size:11px">url</text>
+                  </g></g>
+                  <ellipse class="cs-ring cs-glow-q2" cx="490" cy="32" rx="82" ry="26" stroke="#7fd8c9" stroke-width="3"/>
+                  <g class="cs-q2" transform="translate(410,10)">
+                    <rect width="160" height="44" rx="22" fill="#7fd8c9"/>
+                    <text x="80" y="27" class="ca-lbl" style="font-size:11.5px">product_id</text>
+                  </g>
+                  <text x="195" y="160" class="ca-sub">original string, untouched</text>
+                  <text x="415" y="160" class="ca-sub">sliced tail</text>
+                </svg>
+              </div>
               <figcaption>Slicing never edits the original — it produces a brand new string object</figcaption>
             </figure>
           </div>

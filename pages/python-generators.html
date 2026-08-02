@@ -55,19 +55,25 @@
     <div class="content">
 
       <figure class="concept-art">
-        <svg viewBox="0 0 640 200" width="100%" height="auto" role="img" aria-label="A generator producing one item at a time on a loop, next to a list crate holding every item at once">
-          <ellipse cx="150" cy="100" rx="110" ry="55" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
-          <rect class="ca-pointer-loop" x="-6" y="-6" width="12" height="12" rx="3" fill="#e0b429" style="offset-path: path('M260 100 A110 55 0 1 1 259.9 100')"/>
-          <text x="150" y="105" class="ca-lbl" style="font-size:12px">yield</text>
-          <text x="150" y="170" class="ca-sub">generator — one value exists at a time</text>
-          <rect x="420" y="55" width="180" height="100" rx="10" fill="none" stroke="#8a5e91" stroke-width="1.5"/>
-          <rect class="ca-bob ca-bob2" x="435" y="68" width="34" height="34" rx="6" fill="#c98bd6"/>
-          <rect class="ca-bob ca-bob3" x="478" y="68" width="34" height="34" rx="6" fill="#c98bd6"/>
-          <rect class="ca-bob ca-bob4" x="521" y="68" width="34" height="34" rx="6" fill="#c98bd6"/>
-          <rect class="ca-bob ca-bob2" x="435" y="108" width="34" height="34" rx="6" fill="#c98bd6"/>
-          <rect class="ca-bob ca-bob3" x="478" y="108" width="34" height="34" rx="6" fill="#c98bd6"/>
-          <text x="510" y="180" class="ca-sub">list — every value loaded at once</text>
-        </svg>
+        <div class="cs-scene">
+          <div class="cs-code">
+            <div class="cs-code-line">for line in read_lines_gen(path):</div>
+            <div class="cs-code-line">lines = read_lines_list(path)</div>
+          </div>
+          <svg viewBox="0 0 640 200" width="100%" height="auto" role="img" aria-label="A generator producing one item at a time on a loop, next to a list crate holding every item at once">
+            <ellipse cx="150" cy="100" rx="110" ry="55" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+            <rect class="ca-pointer-loop" x="-6" y="-6" width="12" height="12" rx="3" fill="#e0b429" style="offset-path: path('M260 100 A110 55 0 1 1 259.9 100')"/>
+            <text x="150" y="105" class="ca-lbl" style="font-size:12px">yield</text>
+            <text x="150" y="170" class="ca-sub">generator — one value exists at a time</text>
+            <rect x="420" y="55" width="180" height="100" rx="10" fill="none" stroke="#8a5e91" stroke-width="1.5"/>
+            <rect class="ca-bob ca-bob2" x="435" y="68" width="34" height="34" rx="6" fill="#c98bd6"/>
+            <rect class="ca-bob ca-bob3" x="478" y="68" width="34" height="34" rx="6" fill="#c98bd6"/>
+            <rect class="ca-bob ca-bob4" x="521" y="68" width="34" height="34" rx="6" fill="#c98bd6"/>
+            <rect class="ca-bob ca-bob2" x="435" y="108" width="34" height="34" rx="6" fill="#c98bd6"/>
+            <rect class="ca-bob ca-bob3" x="478" y="108" width="34" height="34" rx="6" fill="#c98bd6"/>
+            <text x="510" y="180" class="ca-sub">list — every value loaded at once</text>
+          </svg>
+        </div>
         <figcaption>Same end result, very different memory footprint while it's happening</figcaption>
       </figure>
 

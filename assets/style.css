@@ -580,10 +580,35 @@ a:hover { text-decoration: underline; }
 @keyframes csSwapA { 0%, 4% { opacity: 0; } 9%, 42% { opacity: 1; } 47%, 100% { opacity: 0; } }
 @keyframes csSwapB { 0%, 53% { opacity: 0; } 58%, 92% { opacity: 1; } 97%, 100% { opacity: 0; } }
 
+/* Same hard-swap idea, but for the 3-phase (7.5s) timeline: a value that's
+   correct through phases 1+2 and gets replaced only once, at phase 3 (e.g.
+   a value that stays constant while several names attach to it, then
+   changes when the last line mutates it). */
+.cs-swap-12 { animation: csSwap12 7.5s ease-in-out infinite; }
+.cs-swap-3 { animation: csSwap3 7.5s ease-in-out infinite; }
+@keyframes csSwap12 { 0%, 61% { opacity: 1; } 66%, 100% { opacity: 0; } }
+@keyframes csSwap3 { 0%, 66% { opacity: 0; } 71%, 100% { opacity: 1; } }
+
+/* Fully isolated per-phase visibility (hard 0/1, never both up at once) —
+   for three or more overlapping labels at the same spot on the 3-phase
+   timeline, where the dim-not-hide emphasis classes would garble together. */
+.cs-only-p1 { animation: csOnly1 7.5s ease-in-out infinite; }
+.cs-only-p2 { animation: csOnly2 7.5s ease-in-out infinite; }
+.cs-only-p3 { animation: csOnly3 7.5s ease-in-out infinite; }
+@keyframes csOnly1 { 0%, 2% { opacity: 0; } 6%, 29% { opacity: 1; } 33%, 100% { opacity: 0; } }
+@keyframes csOnly2 { 0%, 35% { opacity: 0; } 39%, 62% { opacity: 1; } 66%, 100% { opacity: 0; } }
+@keyframes csOnly3 { 0%, 68% { opacity: 0; } 72%, 98% { opacity: 1; } 100% { opacity: 0; } }
+
 @media (prefers-reduced-motion: reduce) {
   .cs-p1, .cs-p2, .cs-p3, .cs-tag-p1, .cs-tag-p2, .cs-tag-p3,
   .cs-ring-p1, .cs-ring-p2, .cs-ring-p3, .cs-ring-both,
   .cs-q1, .cs-q2, .cs-glow-q1, .cs-glow-q2 { animation: none; opacity: 1; }
+  /* Swap pairs: freeze on the "after" state rather than showing both
+     overlapping labels at once. */
+  .cs-swap-q1, .cs-swap-12 { animation: none; opacity: 0; }
+  .cs-swap-q2, .cs-swap-3 { animation: none; opacity: 1; }
+  .cs-only-p1, .cs-only-p2 { animation: none; opacity: 0; }
+  .cs-only-p3 { animation: none; opacity: 1; }
 }
 
 .content h2 {

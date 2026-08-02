@@ -56,26 +56,33 @@
     <div class="content">
 
       <figure class="concept-art">
-        <svg viewBox="0 0 640 240" width="100%" height="auto" role="img" aria-label="Three key-value pigeonholes for a dict, and a bag of unique marbles for a set">
-          <rect x="30" y="20" width="170" height="66" rx="10" fill="#ffb15c"/>
-          <text x="115" y="42" class="ca-lbl" style="font-size:11px">"status"</text>
-          <text x="115" y="66" class="ca-lbl" style="font-size:12.5px">"passed"</text>
-          <rect x="235" y="20" width="170" height="66" rx="10" fill="#7fd8c9"/>
-          <text x="320" y="42" class="ca-lbl" style="font-size:11px">"duration_ms"</text>
-          <text x="320" y="66" class="ca-lbl" style="font-size:12.5px">342</text>
-          <rect x="440" y="20" width="170" height="66" rx="10" fill="#c98bd6"/>
-          <text x="525" y="42" class="ca-lbl" style="font-size:11px">"retries"</text>
-          <text x="525" y="66" class="ca-lbl" style="font-size:12.5px">0</text>
-          <text x="320" y="112" class="ca-sub">dict — each key jumps straight to its bucket</text>
-          <ellipse cx="320" cy="185" rx="270" ry="42" fill="none" stroke="#9ba0ab" stroke-width="1.5" stroke-dasharray="4 5"/>
-          <circle class="ca-bob ca-bob2" cx="160" cy="185" r="16" fill="#ffb15c"/>
-          <circle class="ca-bob ca-bob3" cx="230" cy="185" r="16" fill="#7fd8c9"/>
-          <circle class="ca-bob ca-bob4" cx="300" cy="185" r="16" fill="#c98bd6"/>
-          <circle class="ca-bob ca-bob2" cx="380" cy="185" r="16" fill="#f4d35e"/>
-          <circle class="ca-bob ca-bob3" cx="460" cy="185" r="16" fill="#e07a5f"/>
-          <text x="320" y="235" class="ca-sub">set — every marble unique, no duplicates allowed</text>
-        </svg>
-        <figcaption>Both are hash tables underneath — that's why lookups are instant either way</figcaption>
+        <div class="cs-scene">
+          <div class="cs-code">
+            <div class="cs-code-line">"passed" in status_list   <span class="cs-num"># O(n)</span></div>
+            <div class="cs-code-line">"passed" in status_set    <span class="cs-num"># O(1)</span></div>
+          </div>
+          <svg viewBox="0 0 640 190" width="100%" height="auto" role="img" aria-label="A list membership check scans every item one by one; a set jumps directly to the right bucket via a hash">
+            <text x="150" y="24" class="ca-sub" style="font-size:11px">list — checks each in turn</text>
+            <rect x="40" y="45" width="60" height="42" rx="8" fill="#c2b8a3" opacity=".6"/>
+            <rect x="110" y="45" width="60" height="42" rx="8" fill="#c2b8a3" opacity=".6"/>
+            <rect x="180" y="45" width="60" height="42" rx="8" fill="#c2b8a3" opacity=".6"/>
+            <rect x="250" y="45" width="60" height="42" rx="8" fill="#7fd8c9"/>
+            <text x="280" y="70" class="ca-lbl" style="font-size:11px">hit</text>
+            <circle r="6" fill="#e0b429" class="ca-pointer-loop" style="offset-path: path('M70 45 L70 30 L310 30 L310 45 L280 45 L280 66 L250 66 L250 45 L40 45')"/>
+            <text x="150" y="115" class="ca-sub">has to walk past every earlier item first</text>
+
+            <line x1="360" y1="15" x2="360" y2="150" stroke="var(--border)" stroke-width="1"/>
+            <text x="500" y="24" class="ca-sub" style="font-size:11px">set — one jump via hash(x)</text>
+            <text x="440" y="55" class="ca-lbl" style="font-size:11px">hash("passed")</text>
+            <path d="M440 62 L440 75 C440 85 470 85 500 85" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+            <circle r="5" fill="#e0b429" class="ca-pointer-dot" style="offset-path: path('M440 62 L440 75 C440 85 470 85 500 85')"/>
+            <ellipse class="cs-ring ca-arrive-ring" cx="530" cy="85" rx="55" ry="30" stroke="#7fd8c9" stroke-width="3"/>
+            <rect x="480" y="65" width="100" height="40" rx="8" fill="#7fd8c9"/>
+            <text x="530" y="90" class="ca-lbl" style="font-size:11px">bucket</text>
+            <text x="500" y="130" class="ca-sub">goes straight there — no walking past anything</text>
+          </svg>
+        </div>
+        <figcaption>Same membership check, two very different amounts of work — this is why "in" against a large set stays fast</figcaption>
       </figure>
 
       <section id="basics">

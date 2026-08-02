@@ -570,6 +570,16 @@ a:hover { text-decoration: underline; }
 @keyframes csGlowA { 0%, 6% { opacity: 0; } 12% { opacity: .8; } 42%, 100% { opacity: 0; } }
 @keyframes csGlowB { 0%, 56% { opacity: 0; } 62% { opacity: .8; } 92%, 100% { opacity: 0; } }
 
+/* Hard swap — for two elements occupying the exact same position (e.g. a
+   value label being replaced by its mutated version). Goes fully to 0,
+   with a shared dead gap in the middle, so the two never render
+   simultaneously and garble together mid-crossfade the way cs-q1/cs-q2's
+   dim-not-hide floor would. */
+.cs-swap-q1 { animation: csSwapA 5s ease-in-out infinite; }
+.cs-swap-q2 { animation: csSwapB 5s ease-in-out infinite; }
+@keyframes csSwapA { 0%, 4% { opacity: 0; } 9%, 42% { opacity: 1; } 47%, 100% { opacity: 0; } }
+@keyframes csSwapB { 0%, 53% { opacity: 0; } 58%, 92% { opacity: 1; } 97%, 100% { opacity: 0; } }
+
 @media (prefers-reduced-motion: reduce) {
   .cs-p1, .cs-p2, .cs-p3, .cs-tag-p1, .cs-tag-p2, .cs-tag-p3,
   .cs-ring-p1, .cs-ring-p2, .cs-ring-p3, .cs-ring-both,

@@ -174,6 +174,57 @@
       <section id="mutable">
         <h2>Mutable vs immutable</h2>
         <p>This single property — can the object change in place, or not — determines whether aliasing is a non-issue or a bug waiting to happen. It's a fixed property of the <em>type</em>, not something you choose per variable.</p>
+
+        <figure class="concept-art">
+          <div class="cs-scene">
+            <div class="cs-code">
+              <div class="cs-code-line"><span class="cs-var">a</span> = <span class="cs-num">3</span>; <span class="cs-var">b</span> = <span class="cs-var">a</span></div>
+              <div class="cs-code-line cs-q2"><span class="cs-var">b</span> = <span class="cs-num">5</span></div>
+              <div class="cs-code-line" style="margin-left:auto"><span class="cs-var">lst2</span> = <span class="cs-var">lst1</span></div>
+              <div class="cs-code-line cs-q2"><span class="cs-var">lst2</span>.append(4)</div>
+            </div>
+            <svg viewBox="0 0 640 220" width="100%" height="auto" role="img" aria-label="Rebinding b to a new object leaves a untouched, versus mutating a shared list which both names still see">
+              <text x="150" y="24" class="ca-sub" style="font-size:11px">int — immutable</text>
+              <line x1="320" y1="15" x2="320" y2="205" stroke="var(--border)" stroke-width="1"/>
+              <text x="480" y="24" class="ca-sub" style="font-size:11px">list — mutable</text>
+
+              <ellipse cx="100" cy="130" rx="65" ry="48" fill="#ffb15c"/>
+              <text x="100" y="136" class="ca-lbl" style="font-size:18px">3</text>
+              <g transform="translate(60,80)"><g>
+                <path d="M0 0 H50 V24 L25 36 L0 24 Z" fill="#f4d35e"/>
+                <text x="25" y="20" class="ca-lbl" style="font-size:12px">a</text>
+              </g></g>
+              <g transform="translate(105,80)"><g class="cs-q1">
+                <path d="M0 0 H50 V24 L25 36 L0 24 Z" fill="#f4d35e"/>
+                <text x="25" y="20" class="ca-lbl" style="font-size:12px">b</text>
+              </g></g>
+
+              <ellipse class="cs-ring cs-glow-q2" cx="225" cy="130" rx="72" ry="55" stroke="#7fd8c9" stroke-width="3"/>
+              <ellipse class="cs-q2" cx="225" cy="130" rx="65" ry="48" fill="#7fd8c9"/>
+              <text x="225" y="136" class="ca-lbl cs-q2" style="font-size:18px">5</text>
+              <g transform="translate(200,80)"><g class="cs-q2">
+                <path d="M0 0 H50 V24 L25 36 L0 24 Z" fill="#f4d35e"/>
+                <text x="25" y="20" class="ca-lbl" style="font-size:12px">b</text>
+              </g></g>
+              <text x="160" y="200" class="ca-sub">a stays on 3 — b moves to a brand new object</text>
+
+              <ellipse class="cs-ring cs-glow-q2" cx="480" cy="130" rx="95" ry="55" stroke="#c98bd6" stroke-width="3"/>
+              <ellipse cx="480" cy="130" rx="88" ry="48" fill="#c98bd6"/>
+              <text x="480" y="128" class="ca-lbl cs-swap-q1" style="font-size:15px">[1, 2, 3]</text>
+              <text x="480" y="128" class="ca-lbl cs-swap-q2" style="font-size:15px">[1, 2, 3, 4]</text>
+              <g transform="translate(420,80)"><g>
+                <path d="M0 0 H60 V24 L30 36 L0 24 Z" fill="#f4d35e"/>
+                <text x="30" y="20" class="ca-lbl" style="font-size:11px">lst1</text>
+              </g></g>
+              <g transform="translate(490,80)"><g>
+                <path d="M0 0 H60 V24 L30 36 L0 24 Z" fill="#f4d35e"/>
+                <text x="30" y="20" class="ca-lbl" style="font-size:11px">lst2</text>
+              </g></g>
+              <text x="480" y="200" class="ca-sub">both names stay put — the object they share changes</text>
+            </svg>
+          </div>
+          <figcaption>Same "two names, one object" setup — immutable rebinds one name away, mutable changes the shared object itself</figcaption>
+        </figure>
         <div class="table-wrap">
           <table class="compare">
             <thead><tr><th>Immutable</th><th>Mutable</th></tr></thead>
@@ -191,6 +242,43 @@
       <section id="is-vs-eq">
         <h2>is vs ==</h2>
         <p>Once "variable = name pointing at an object" clicks, this distinction stops being a rule to memorize:</p>
+
+        <figure class="concept-art">
+          <div class="cs-scene">
+            <div class="cs-code">
+              <div class="cs-code-line"><span class="cs-var">a</span> = [1, 2, 3]; <span class="cs-var">b</span> = [1, 2, 3]</div>
+              <div class="cs-code-line cs-q2"><span class="cs-var">c</span> = <span class="cs-var">a</span></div>
+            </div>
+            <svg viewBox="0 0 640 270" width="100%" height="auto" role="img" aria-label="a and b are two separate list objects that happen to hold equal values; c is then attached to the same object as a">
+              <ellipse class="cs-ring cs-glow-q2" cx="150" cy="115" rx="78" ry="55" stroke="#ffb15c" stroke-width="3"/>
+              <ellipse cx="150" cy="115" rx="70" ry="48" fill="#ffb15c"/>
+              <text x="150" y="121" class="ca-lbl" style="font-size:13px">[1, 2, 3]</text>
+              <g transform="translate(105,62)"><g>
+                <path d="M0 0 H50 V24 L25 36 L0 24 Z" fill="#f4d35e"/>
+                <text x="25" y="20" class="ca-lbl" style="font-size:12px">a</text>
+              </g></g>
+              <g transform="translate(160,62)"><g class="cs-q2">
+                <path d="M0 0 H50 V24 L25 36 L0 24 Z" fill="#f4d35e"/>
+                <text x="25" y="20" class="ca-lbl" style="font-size:12px">c</text>
+              </g></g>
+
+              <ellipse cx="400" cy="115" rx="70" ry="48" fill="#7fd8c9"/>
+              <text x="400" y="121" class="ca-lbl" style="font-size:13px">[1, 2, 3]</text>
+              <g transform="translate(375,62)"><g>
+                <path d="M0 0 H50 V24 L25 36 L0 24 Z" fill="#f4d35e"/>
+                <text x="25" y="20" class="ca-lbl" style="font-size:12px">b</text>
+              </g></g>
+
+              <rect x="30" y="180" width="240" height="36" rx="18" fill="none" stroke="#7fd870" stroke-width="1.5"/>
+              <text x="150" y="203" class="ca-sub" style="font-size:12px; fill:#7fd870">a == b &#8594; True — equal values</text>
+              <rect x="300" y="180" width="240" height="36" rx="18" fill="none" stroke="#e07a5f" stroke-width="1.5"/>
+              <text x="420" y="203" class="ca-sub" style="font-size:12px; fill:#e07a5f">a is b &#8594; False — different objects</text>
+              <rect class="cs-q2" x="145" y="228" width="160" height="36" rx="18" fill="none" stroke="#f4d35e" stroke-width="1.5"/>
+              <text x="225" y="251" class="ca-sub cs-q2" style="font-size:12px; fill:#f4d35e">c is a &#8594; True</text>
+            </svg>
+          </div>
+          <figcaption>a and b look identical but are two separate objects — c is a doesn't create anything, it just attaches c to a's exact object</figcaption>
+        </figure>
         <div class="table-wrap">
           <table class="compare">
             <thead><tr><th></th><th>Asks</th><th>Use it for</th></tr></thead>

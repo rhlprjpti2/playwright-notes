@@ -512,6 +512,70 @@ a:hover { text-decoration: underline; }
   .concept-art .ca-pointer-dot { opacity: 0; }
 }
 
+/* ---------- Code-synced scene ---------- */
+/* A self-narrating loop: real code lines above a diagram, each line and its
+   matching diagram element brightening together on a shared timeline, then
+   dimming as the next line takes over. The point is to make the sequence
+   readable without a caption — code and diagram are the same event, just
+   shown twice, in sync. Objects a reference touches more than once (e.g.
+   aliasing) get the *-both variant so they light up on every phase that
+   refers to them, reinforcing "still the same object." */
+.cs-scene { padding: 6px 10px 4px; }
+.cs-code {
+  display: flex; flex-wrap: wrap; gap: 18px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 4px 6px 14px;
+}
+.cs-code-line { color: var(--text-faint); transition: none; }
+.cs-var { color: var(--accent-3); font-weight: 600; }
+.cs-num { color: var(--accent); font-weight: 600; }
+
+/* 3-phase timeline (7.5s: 0-33% / 33-66% / 66-100%) */
+.cs-p1 { animation: csEmph1 7.5s ease-in-out infinite; }
+.cs-p2 { animation: csEmph2 7.5s ease-in-out infinite; }
+.cs-p3 { animation: csEmph3 7.5s ease-in-out infinite; }
+@keyframes csEmph1 { 0%, 3% { opacity: .35; } 7%, 28% { opacity: 1; } 33%, 100% { opacity: .35; } }
+@keyframes csEmph2 { 0%, 36% { opacity: .35; } 40%, 61% { opacity: 1; } 66%, 100% { opacity: .35; } }
+@keyframes csEmph3 { 0%, 69% { opacity: .35; } 73%, 94% { opacity: 1; } 100% { opacity: .35; } }
+
+.cs-tag-p1 { animation: csTag1 7.5s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom center; }
+.cs-tag-p2 { animation: csTag2 7.5s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom center; }
+.cs-tag-p3 { animation: csTag3 7.5s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom center; }
+@keyframes csTag1 { 0%, 3% { transform: scale(1); } 7% { transform: scale(1.14); } 28%, 100% { transform: scale(1); } }
+@keyframes csTag2 { 0%, 36% { transform: scale(1); } 40% { transform: scale(1.14); } 61%, 100% { transform: scale(1); } }
+@keyframes csTag3 { 0%, 69% { transform: scale(1); } 73% { transform: scale(1.14); } 94%, 100% { transform: scale(1); } }
+
+.cs-ring-p1 { animation: csRing1 7.5s ease-in-out infinite; }
+.cs-ring-p2 { animation: csRing2 7.5s ease-in-out infinite; }
+.cs-ring-p3 { animation: csRing3 7.5s ease-in-out infinite; }
+.cs-ring-both { animation: csRingBoth 7.5s ease-in-out infinite; }
+@keyframes csRing1 { 0%, 4% { opacity: 0; transform: scale(.88); } 9% { opacity: .7; transform: scale(1.06); } 24%, 100% { opacity: 0; transform: scale(.88); } }
+@keyframes csRing2 { 0%, 37% { opacity: 0; transform: scale(.88); } 42% { opacity: .7; transform: scale(1.06); } 57%, 100% { opacity: 0; transform: scale(.88); } }
+@keyframes csRing3 { 0%, 70% { opacity: 0; transform: scale(.88); } 75% { opacity: .7; transform: scale(1.06); } 90%, 100% { opacity: 0; transform: scale(.88); } }
+@keyframes csRingBoth {
+  0%, 4% { opacity: 0; transform: scale(.88); } 9% { opacity: .7; transform: scale(1.06); } 24%, 37% { opacity: 0; transform: scale(.88); }
+  42% { opacity: .7; transform: scale(1.06); } 57%, 100% { opacity: 0; transform: scale(.88); }
+}
+.cs-ring { fill: none; transform-box: fill-box; transform-origin: center; }
+
+/* 2-phase timeline (5s: 0-50% / 50-100%) — for direct comparisons like
+   mutable vs immutable or "is" vs "==" where there's exactly one flip. */
+.cs-q1 { animation: csEmphA 5s ease-in-out infinite; }
+.cs-q2 { animation: csEmphB 5s ease-in-out infinite; }
+@keyframes csEmphA { 0%, 4% { opacity: .35; } 9%, 42% { opacity: 1; } 50%, 100% { opacity: .35; } }
+@keyframes csEmphB { 0%, 54% { opacity: .35; } 59%, 92% { opacity: 1; } 100% { opacity: .35; } }
+.cs-glow-q1 { animation: csGlowA 5s ease-in-out infinite; }
+.cs-glow-q2 { animation: csGlowB 5s ease-in-out infinite; }
+@keyframes csGlowA { 0%, 6% { opacity: 0; } 12% { opacity: .8; } 42%, 100% { opacity: 0; } }
+@keyframes csGlowB { 0%, 56% { opacity: 0; } 62% { opacity: .8; } 92%, 100% { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-p1, .cs-p2, .cs-p3, .cs-tag-p1, .cs-tag-p2, .cs-tag-p3,
+  .cs-ring-p1, .cs-ring-p2, .cs-ring-p3, .cs-ring-both,
+  .cs-q1, .cs-q2, .cs-glow-q1, .cs-glow-q2 { animation: none; opacity: 1; }
+}
+
 .content h2 {
   font-size: 21px;
   margin: 0 0 14px;

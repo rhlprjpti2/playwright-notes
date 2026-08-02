@@ -76,35 +76,36 @@
           </div>
           <div class="illus-panel active" data-view="art">
             <figure class="concept-art">
-              <svg viewBox="0 0 640 250" width="100%" height="auto" role="img" aria-label="Two name tags, a and b, tied to the same floating object; a third name, c, tied to a separate object">
-                <ellipse class="ca-bob ca-bob2" cx="190" cy="150" rx="80" ry="60" fill="#ffb15c"/>
-                <ellipse class="ca-arrive-ring" cx="190" cy="150" rx="80" ry="60" stroke="#ffb15c" stroke-width="2.5"/>
-                <text x="190" y="156" class="ca-lbl">3</text>
-                <text x="190" y="228" class="ca-sub">int object</text>
-                <ellipse class="ca-bob ca-bob3" cx="470" cy="150" rx="80" ry="60" fill="#7fd8c9"/>
-                <ellipse class="ca-arrive-ring" cx="470" cy="150" rx="80" ry="60" stroke="#7fd8c9" stroke-width="2.5" style="animation-delay:-1.8s"/>
-                <text x="470" y="156" class="ca-lbl">5</text>
-                <text x="470" y="228" class="ca-sub">int object</text>
-                <path d="M150 84 C165 105 178 120 186 96" fill="none" stroke="#a08f6b" stroke-width="1.5" class="ca-flow"/>
-                <circle r="5" fill="#e0b429" class="ca-pointer-dot" style="offset-path: path('M150 84 C165 105 178 120 186 96')"/>
-                <g transform="translate(120,34)"><g class="ca-sway">
-                  <path d="M0 0 H60 V30 L30 44 L0 30 Z" fill="#f4d35e"/>
-                  <text x="30" y="24" class="ca-lbl">a</text>
-                </g></g>
-                <path d="M240 84 C228 105 212 120 194 96" fill="none" stroke="#a08f6b" stroke-width="1.5" class="ca-flow"/>
-                <circle r="5" fill="#e0b429" class="ca-pointer-dot" style="offset-path: path('M240 84 C228 105 212 120 194 96'); animation-delay: -0.9s"/>
-                <g transform="translate(210,34)"><g class="ca-sway">
-                  <path d="M0 0 H60 V30 L30 44 L0 30 Z" fill="#f4d35e"/>
-                  <text x="30" y="24" class="ca-lbl">b</text>
-                </g></g>
-                <path d="M470 84 L470 90" fill="none" stroke="#a08f6b" stroke-width="1.5" class="ca-flow"/>
-                <circle r="5" fill="#e0b429" class="ca-pointer-dot" style="offset-path: path('M470 84 L470 90'); animation-delay: -1.8s"/>
-                <g transform="translate(440,34)"><g class="ca-sway">
-                  <path d="M0 0 H60 V30 L30 44 L0 30 Z" fill="#f4d35e"/>
-                  <text x="30" y="24" class="ca-lbl">c</text>
-                </g></g>
-              </svg>
-              <figcaption>a and b point to the same object — c points to a different one</figcaption>
+              <div class="cs-scene">
+                <div class="cs-code">
+                  <div class="cs-code-line cs-p1"><span class="cs-var">a</span> = <span class="cs-num">3</span></div>
+                  <div class="cs-code-line cs-p2"><span class="cs-var">b</span> = <span class="cs-var">a</span></div>
+                  <div class="cs-code-line cs-p3"><span class="cs-var">c</span> = <span class="cs-num">5</span></div>
+                </div>
+                <svg viewBox="0 0 640 210" width="100%" height="auto" role="img" aria-label="a and b are both attached to the same object, 3, one after another; c is attached to a separate object, 5">
+                  <ellipse class="cs-ring cs-ring-both" cx="175" cy="125" rx="98" ry="70" stroke="#ffb15c" stroke-width="3"/>
+                  <ellipse cx="175" cy="125" rx="90" ry="62" fill="#ffb15c"/>
+                  <text x="175" y="131" class="ca-lbl" style="font-size:22px">3</text>
+                  <text x="175" y="200" class="ca-sub">int object</text>
+                  <ellipse class="cs-ring cs-ring-p3" cx="465" cy="125" rx="98" ry="70" stroke="#7fd8c9" stroke-width="3"/>
+                  <ellipse cx="465" cy="125" rx="90" ry="62" fill="#7fd8c9"/>
+                  <text x="465" y="131" class="ca-lbl" style="font-size:22px">5</text>
+                  <text x="465" y="200" class="ca-sub">int object</text>
+                  <g transform="translate(105,38)"><g class="cs-tag-p1">
+                    <path d="M0 0 H70 V34 L35 50 L0 34 Z" fill="#f4d35e"/>
+                    <text x="35" y="28" class="ca-lbl">a</text>
+                  </g></g>
+                  <g transform="translate(175,38)"><g class="cs-tag-p2">
+                    <path d="M0 0 H70 V34 L35 50 L0 34 Z" fill="#f4d35e"/>
+                    <text x="35" y="28" class="ca-lbl">b</text>
+                  </g></g>
+                  <g transform="translate(430,38)"><g class="cs-tag-p3">
+                    <path d="M0 0 H70 V34 L35 50 L0 34 Z" fill="#f4d35e"/>
+                    <text x="35" y="28" class="ca-lbl">c</text>
+                  </g></g>
+                </svg>
+              </div>
+              <figcaption>Watch the loop: a lands on 3, then b lands on the same 3 — c gets its own separate object</figcaption>
             </figure>
           </div>
           <div class="illus-panel" data-view="demo">

@@ -1648,20 +1648,23 @@ code, .qa-body, .sc-status, .ts-desc, .wf-desc, .fs-explain, .pg-explain {
     max-width: 100%;
   }
 
-  /* Thumb-friendly tap targets (were 28–32px). */
-  .toc a { padding: 9px 0 9px 14px; }
+  /* Thumb-friendly tap targets — audited at 375px against a ~40px floor. */
+  .toc a { padding: 11px 0 11px 14px; }
   .qhub-chip,
   .qa-mastery-btn,
   .toggle-btn,
-  .qhub-btn { padding: 9px 14px; }
-  .quiz-opt { padding: 13px 14px; }
+  .qhub-btn,
+  .qa-filter-btn { padding: 11px 15px; }
+  .quiz-opt { padding: 14px 15px; }
   .breadcrumb { padding: 4px 0; }
-  .breadcrumb a { display: inline-block; padding: 5px 0; }
+  .breadcrumb a { display: inline-block; padding: 8px 0; }
+  .theme-toggle { width: 40px; height: 40px; }
 
   /* Stepper controls wrap rather than squeeze on narrow screens. */
   .sim-controls, .sc-controls, .ts-controls, .sp-controls,
   .wf-controls, .layer-stack-controls, .diagram-controls { gap: 8px; }
   .sim-controls button, .sc-controls button, .ts-controls button,
   .sp-controls button, .wf-controls button, .layer-stack-controls button,
-  .diagram-controls button { padding: 9px 13px; }
+  .diagram-controls button, .btn-back, .btn-step, .btn-auto, .btn-reset,
+  .btn-run { padding: 11px 14px; }
 }

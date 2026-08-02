@@ -379,6 +379,139 @@ a:hover { text-decoration: underline; }
   transition: opacity .5s ease, transform .5s ease;
 }
 .content section.visible { opacity: 1; transform: translateY(0); }
+
+/* ---------- Illustration / interactive toggle ---------- */
+/* Pairs an artistic animated SVG with the existing JS demo (or stands alone
+   on pages with no widget yet) — a lighter, at-a-glance way into a concept
+   before optionally dropping into the step-through version. */
+.illus-tabs {
+  display: flex; gap: 8px; margin-bottom: 14px;
+}
+.illus-tab {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.illus-tab:hover { border-color: var(--accent); color: var(--text); }
+.illus-tab.active {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.illus-panel { display: none; }
+.illus-panel.active { display: block; }
+.concept-art {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-elevated);
+  padding: 8px 4px;
+  margin-bottom: 4px;
+}
+.concept-art svg { display: block; width: 100%; height: auto; }
+.concept-art figcaption {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--text-faint);
+  padding: 4px 12px 10px;
+}
+.concept-art .ca-lbl { font-size: 14px; font-weight: 600; text-anchor: middle; fill: var(--text); }
+.concept-art .ca-sub { font-size: 11.5px; text-anchor: middle; fill: var(--text-faint); }
+
+/* Floating objects — an eased, slightly asymmetric drift rather than a
+   metronomic bounce, so several staggered instances feel like independent
+   things bobbing in the same water rather than one animation copy-pasted. */
+.concept-art .ca-bob {
+  animation: caBob 4.2s cubic-bezier(.45,0,.55,1) infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.concept-art .ca-bob2 { animation-delay: -1.4s; animation-duration: 4.6s; }
+.concept-art .ca-bob3 { animation-delay: -2.8s; animation-duration: 3.9s; }
+.concept-art .ca-bob4 { animation-delay: -0.7s; animation-duration: 4.4s; }
+@keyframes caBob {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-9px) scale(1.015); }
+}
+
+/* Tags hang like they're tied on — pivot from the top edge (transform-origin)
+   with a pendulum-like ease and the faintest vertical give at the bottom of
+   the swing, rather than a linear left-right rock. */
+.concept-art .ca-sway {
+  animation: caSway 3.6s cubic-bezier(.37,0,.63,1) infinite;
+  transform-origin: top center;
+  transform-box: fill-box;
+}
+@keyframes caSway {
+  0%, 100% { transform: rotate(-3deg) translateY(0); }
+  50% { transform: rotate(3deg) translateY(2px); }
+}
+
+.concept-art .ca-pulse { animation: caPulse 2.6s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+@keyframes caPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+
+/* Static dashed reference line — kept as a always-visible baseline so the
+   relationship still reads even where the browser has no motion-path support
+   or the user has reduced motion enabled. */
+.concept-art .ca-flow { stroke-dasharray: 5 7; opacity: .5; }
+
+/* The actual "this name points there" motion: a small dot travels the exact
+   curve of its connector line via offset-path, fading in as it leaves the
+   tag and out as it lands — a real directional flow, not a decorative dash
+   scroll. Percentage-based offset-distance means the same timing works
+   regardless of how long any individual connector curve is. */
+.concept-art .ca-pointer-dot {
+  animation: caPointerMove 2.6s cubic-bezier(.55,0,.1,1) infinite;
+  offset-rotate: 0deg;
+}
+@keyframes caPointerMove {
+  0%   { offset-distance: 0%;   opacity: 0;   transform: scale(.4); }
+  10%  { opacity: 1;            transform: scale(1); }
+  82%  { opacity: 1;            transform: scale(1); }
+  100% { offset-distance: 100%; opacity: 0;   transform: scale(.55); }
+}
+
+/* Closed-loop variant — no fade in/out, constant linear speed, so a dot
+   circling a closed path (a for/while loop) reads as one continuous lap
+   rather than flickering off and re-appearing at the seam each cycle. */
+.concept-art .ca-pointer-loop {
+  animation: caPointerLoop 3s linear infinite;
+  offset-rotate: 0deg;
+}
+@keyframes caPointerLoop {
+  0% { offset-distance: 0%; }
+  100% { offset-distance: 100%; }
+}
+
+/* Arrival ripple on the target object, timed to bloom right as the pointer
+   dot lands (same 2.6s cycle, keyframed to the dot's own 82-100% window). */
+.concept-art .ca-arrive-ring {
+  animation: caArrive 2.6s cubic-bezier(.55,0,.1,1) infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+  fill: none;
+}
+@keyframes caArrive {
+  0%, 76% { opacity: 0; transform: scale(.6); }
+  88% { opacity: .5; transform: scale(1.15); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+.concept-art .ca-belt { animation: caBelt 1.8s linear infinite; }
+@keyframes caBelt { 0% { transform: translateX(0); } 100% { transform: translateX(-40px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .concept-art .ca-bob, .concept-art .ca-sway, .concept-art .ca-pulse,
+  .concept-art .ca-pointer-dot, .concept-art .ca-arrive-ring, .concept-art .ca-belt {
+    animation: none;
+  }
+  .concept-art .ca-pointer-dot { opacity: 0; }
+}
+
 .content h2 {
   font-size: 21px;
   margin: 0 0 14px;

@@ -55,6 +55,29 @@
 
     <div class="content">
 
+      <figure class="concept-art">
+        <svg viewBox="0 0 640 220" width="100%" height="auto" role="img" aria-label="A forking path for if elif else, and a continuously circling loop for for and while">
+          <circle cx="70" cy="40" r="8" fill="#a08f6b"/>
+          <path d="M70 48 C70 80 60 95 55 115" fill="none" stroke="#a08f6b" stroke-width="1.5" class="ca-flow"/>
+          <circle r="5" fill="#e0b429" class="ca-pointer-dot" style="offset-path: path('M70 48 C70 80 60 95 55 115')"/>
+          <path d="M70 48 C70 90 100 100 120 115" fill="none" stroke="#3a3226" stroke-width="1" stroke-dasharray="3 4" opacity=".35"/>
+          <path d="M70 48 C70 95 150 105 185 118" fill="none" stroke="#3a3226" stroke-width="1" stroke-dasharray="3 4" opacity=".35"/>
+          <ellipse class="ca-bob ca-bob2" cx="55" cy="145" rx="42" ry="28" fill="#7fd8c9"/>
+          <text x="55" y="150" class="ca-lbl" style="font-size:12px">if</text>
+          <ellipse cx="120" cy="145" rx="42" ry="28" fill="#c2b8a3" opacity=".5"/>
+          <text x="120" y="150" class="ca-lbl" style="font-size:12px; fill:#4a4230">elif</text>
+          <ellipse cx="185" cy="145" rx="42" ry="28" fill="#c2b8a3" opacity=".5"/>
+          <text x="185" y="150" class="ca-lbl" style="font-size:12px; fill:#4a4230">else</text>
+          <text x="120" y="195" class="ca-sub">one branch taken, top to bottom</text>
+          <ellipse cx="460" cy="105" rx="95" ry="65" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+          <circle r="6" fill="#e0b429" class="ca-pointer-loop" style="offset-path: path('M555 105 A95 65 0 1 1 554.9 105')"/>
+          <text x="460" y="110" class="ca-lbl" style="font-size:12.5px">for item</text>
+          <text x="460" y="128" class="ca-sub">in items:</text>
+          <text x="460" y="200" class="ca-sub">the same body runs once per lap</text>
+        </svg>
+        <figcaption>Branching picks one path once — a loop retraces the same path repeatedly</figcaption>
+      </figure>
+
       <section id="conditionals">
         <h2>if / elif / else</h2>
         <pre><code>if response.status_code == 200:

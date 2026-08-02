@@ -131,6 +131,47 @@ failed = [r.name for r in test_results if r.status == "failed"]</code></pre>
       <section id="aliasing-trap">
         <h2>The shared-reference trap</h2>
         <p>This is the same aliasing idea from <a href="python-memory-model.html">Variables & the Memory Model</a>, but in a form that catches people constantly: multiplying a list containing a mutable object doesn't create independent copies — it creates multiple names pointing at the <em>same</em> inner object.</p>
+        <div class="illus-toggle-wrap">
+          <div class="illus-tabs">
+            <button class="illus-tab active" data-view="art">&#127912; Illustration</button>
+            <button class="illus-tab" data-view="demo">&#9881; Step through</button>
+          </div>
+          <div class="illus-panel active" data-view="art">
+            <figure class="concept-art">
+              <svg viewBox="0 0 640 250" width="100%" height="auto" role="img" aria-label="Four name tags — row, matrix zero, matrix one, matrix two — all tied to the same single basket object">
+                <ellipse class="ca-bob ca-bob2" cx="320" cy="165" rx="130" ry="60" fill="#c98bd6"/>
+                <ellipse class="ca-arrive-ring" cx="320" cy="165" rx="130" ry="60" stroke="#c98bd6" stroke-width="2.5"/>
+                <text x="320" y="160" class="ca-lbl">[0, 0, 0]</text>
+                <text x="320" y="232" class="ca-sub">one shared list object</text>
+                <path d="M150 60 C200 90 260 120 300 130" fill="none" stroke="#8a5e91" stroke-width="1.5" class="ca-flow"/>
+                <circle r="5" fill="#d3a6da" class="ca-pointer-dot" style="offset-path: path('M150 60 C200 90 260 120 300 130')"/>
+                <g class="ca-sway" transform="translate(120,26)">
+                  <path d="M0 0 H60 V28 L30 42 L0 28 Z" fill="#f4d35e"/>
+                  <text x="30" y="22" class="ca-lbl" style="font-size:11px">row</text>
+                </g>
+                <path d="M280 55 C290 85 300 110 310 128" fill="none" stroke="#8a5e91" stroke-width="1.5" class="ca-flow"/>
+                <circle r="5" fill="#d3a6da" class="ca-pointer-dot" style="offset-path: path('M280 55 C290 85 300 110 310 128'); animation-delay: -0.65s"/>
+                <g class="ca-sway" transform="translate(240,20)">
+                  <path d="M0 0 H80 V28 L40 42 L0 28 Z" fill="#f4d35e"/>
+                  <text x="40" y="22" class="ca-lbl" style="font-size:11px">matrix[0]</text>
+                </g>
+                <path d="M400 55 C390 85 360 110 335 128" fill="none" stroke="#8a5e91" stroke-width="1.5" class="ca-flow"/>
+                <circle r="5" fill="#d3a6da" class="ca-pointer-dot" style="offset-path: path('M400 55 C390 85 360 110 335 128'); animation-delay: -1.3s"/>
+                <g class="ca-sway" transform="translate(360,20)">
+                  <path d="M0 0 H80 V28 L40 42 L0 28 Z" fill="#f4d35e"/>
+                  <text x="40" y="22" class="ca-lbl" style="font-size:11px">matrix[1]</text>
+                </g>
+                <path d="M520 60 C470 90 400 115 350 130" fill="none" stroke="#8a5e91" stroke-width="1.5" class="ca-flow"/>
+                <circle r="5" fill="#d3a6da" class="ca-pointer-dot" style="offset-path: path('M520 60 C470 90 400 115 350 130'); animation-delay: -1.95s"/>
+                <g class="ca-sway" transform="translate(480,26)">
+                  <path d="M0 0 H80 V28 L40 42 L0 28 Z" fill="#f4d35e"/>
+                  <text x="40" y="22" class="ca-lbl" style="font-size:11px">matrix[2]</text>
+                </g>
+              </svg>
+              <figcaption>Four names, one basket — mutate it through any one and all four "see" it</figcaption>
+            </figure>
+          </div>
+          <div class="illus-panel" data-view="demo">
         <div id="matrix-demo" class="memory-model"></div>
         <script>
           renderMemoryModel("matrix-demo", {
@@ -159,6 +200,8 @@ failed = [r.name for r in test_results if r.status == "failed"]</code></pre>
             ]
           });
         </script>
+          </div>
+        </div>
         <p>The fix: build each row independently so each gets its own list object.</p>
         <pre><code># Wrong — 3 references to 1 list
 matrix = [[0, 0, 0]] * 3

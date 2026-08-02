@@ -55,6 +55,29 @@
 
     <div class="content">
 
+      <figure class="concept-art">
+        <svg viewBox="0 0 640 240" width="100%" height="auto" role="img" aria-label="Three key-value pigeonholes for a dict, and a bag of unique marbles for a set">
+          <rect x="30" y="20" width="170" height="66" rx="10" fill="#ffb15c"/>
+          <text x="115" y="42" class="ca-lbl" style="font-size:11px">"status"</text>
+          <text x="115" y="66" class="ca-lbl" style="font-size:12.5px">"passed"</text>
+          <rect x="235" y="20" width="170" height="66" rx="10" fill="#7fd8c9"/>
+          <text x="320" y="42" class="ca-lbl" style="font-size:11px">"duration_ms"</text>
+          <text x="320" y="66" class="ca-lbl" style="font-size:12.5px">342</text>
+          <rect x="440" y="20" width="170" height="66" rx="10" fill="#c98bd6"/>
+          <text x="525" y="42" class="ca-lbl" style="font-size:11px">"retries"</text>
+          <text x="525" y="66" class="ca-lbl" style="font-size:12.5px">0</text>
+          <text x="320" y="112" class="ca-sub">dict — each key jumps straight to its bucket</text>
+          <ellipse cx="320" cy="185" rx="270" ry="42" fill="none" stroke="#9ba0ab" stroke-width="1.5" stroke-dasharray="4 5"/>
+          <circle class="ca-bob ca-bob2" cx="160" cy="185" r="16" fill="#ffb15c"/>
+          <circle class="ca-bob ca-bob3" cx="230" cy="185" r="16" fill="#7fd8c9"/>
+          <circle class="ca-bob ca-bob4" cx="300" cy="185" r="16" fill="#c98bd6"/>
+          <circle class="ca-bob ca-bob2" cx="380" cy="185" r="16" fill="#f4d35e"/>
+          <circle class="ca-bob ca-bob3" cx="460" cy="185" r="16" fill="#e07a5f"/>
+          <text x="320" y="235" class="ca-sub">set — every marble unique, no duplicates allowed</text>
+        </svg>
+        <figcaption>Both are hash tables underneath — that's why lookups are instant either way</figcaption>
+      </figure>
+
       <section id="basics">
         <h2>Creating & accessing</h2>
         <pre><code>response = {"status": "passed", "duration_ms": 342, "retries": 0}

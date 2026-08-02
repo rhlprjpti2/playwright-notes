@@ -1266,6 +1266,26 @@ function renderMemoryModel(containerId, config) {
   render();
 }
 
+/** Wires every .illus-tabs block to show/hide its sibling .illus-panel
+ *  elements — the artistic illustration vs. the existing interactive demo.
+ *  Markup contract: a .illus-tabs with buttons carrying data-view="X",
+ *  followed by sibling .illus-panel elements carrying data-view="X". */
+function initIllustrationToggles() {
+  document.querySelectorAll(".illus-tabs").forEach((tabs) => {
+    if (tabs.dataset.wired) return;
+    tabs.dataset.wired = "1";
+    const wrap = tabs.parentElement;
+    const buttons = tabs.querySelectorAll(".illus-tab");
+    const panels = wrap.querySelectorAll(":scope > .illus-panel");
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        buttons.forEach((b) => b.classList.toggle("active", b === btn));
+        panels.forEach((p) => p.classList.toggle("active", p.dataset.view === btn.dataset.view));
+      });
+    });
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initScrollProgress();
   initQuizzes();
@@ -1275,4 +1295,5 @@ document.addEventListener("DOMContentLoaded", () => {
   initFirstVisitHint();
   pwTrackVisit();
   initBookmarks();
+  initIllustrationToggles();
 });

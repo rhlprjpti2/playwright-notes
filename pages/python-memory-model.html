@@ -69,6 +69,45 @@
         <h2>Watch it happen</h2>
         <p class="lead">Step through five lines of code and watch what's actually happening: names moving between objects in the heap, not values changing in boxes.</p>
 
+        <div class="illus-toggle-wrap">
+          <div class="illus-tabs">
+            <button class="illus-tab active" data-view="art">&#127912; Illustration</button>
+            <button class="illus-tab" data-view="demo">&#9881; Step through</button>
+          </div>
+          <div class="illus-panel active" data-view="art">
+            <figure class="concept-art">
+              <svg viewBox="0 0 640 250" width="100%" height="auto" role="img" aria-label="Two name tags, a and b, tied to the same floating object; a third name, c, tied to a separate object">
+                <ellipse class="ca-bob ca-bob2" cx="190" cy="150" rx="80" ry="60" fill="#ffb15c"/>
+                <ellipse class="ca-arrive-ring" cx="190" cy="150" rx="80" ry="60" stroke="#ffb15c" stroke-width="2.5"/>
+                <text x="190" y="156" class="ca-lbl">3</text>
+                <text x="190" y="228" class="ca-sub">int object</text>
+                <ellipse class="ca-bob ca-bob3" cx="470" cy="150" rx="80" ry="60" fill="#7fd8c9"/>
+                <ellipse class="ca-arrive-ring" cx="470" cy="150" rx="80" ry="60" stroke="#7fd8c9" stroke-width="2.5" style="animation-delay:-1.8s"/>
+                <text x="470" y="156" class="ca-lbl">5</text>
+                <text x="470" y="228" class="ca-sub">int object</text>
+                <path d="M150 84 C165 105 178 120 186 96" fill="none" stroke="#a08f6b" stroke-width="1.5" class="ca-flow"/>
+                <circle r="5" fill="#e0b429" class="ca-pointer-dot" style="offset-path: path('M150 84 C165 105 178 120 186 96')"/>
+                <g class="ca-sway" transform="translate(120,34)">
+                  <path d="M0 0 H60 V30 L30 44 L0 30 Z" fill="#f4d35e"/>
+                  <text x="30" y="24" class="ca-lbl">a</text>
+                </g>
+                <path d="M240 84 C228 105 212 120 194 96" fill="none" stroke="#a08f6b" stroke-width="1.5" class="ca-flow"/>
+                <circle r="5" fill="#e0b429" class="ca-pointer-dot" style="offset-path: path('M240 84 C228 105 212 120 194 96'); animation-delay: -0.9s"/>
+                <g class="ca-sway" transform="translate(210,34)">
+                  <path d="M0 0 H60 V30 L30 44 L0 30 Z" fill="#f4d35e"/>
+                  <text x="30" y="24" class="ca-lbl">b</text>
+                </g>
+                <path d="M470 84 L470 90" fill="none" stroke="#a08f6b" stroke-width="1.5" class="ca-flow"/>
+                <circle r="5" fill="#e0b429" class="ca-pointer-dot" style="offset-path: path('M470 84 L470 90'); animation-delay: -1.8s"/>
+                <g class="ca-sway" transform="translate(440,34)">
+                  <path d="M0 0 H60 V30 L30 44 L0 30 Z" fill="#f4d35e"/>
+                  <text x="30" y="24" class="ca-lbl">c</text>
+                </g>
+              </svg>
+              <figcaption>a and b point to the same object — c points to a different one</figcaption>
+            </figure>
+          </div>
+          <div class="illus-panel" data-view="demo">
         <div class="memory-model" id="mem-demo"></div>
         <script>
           renderMemoryModel("mem-demo", {
@@ -113,6 +152,8 @@
             ]
           });
         </script>
+          </div>
+        </div>
 
         <div class="callout tip">
           <strong>The one-sentence rule</strong>

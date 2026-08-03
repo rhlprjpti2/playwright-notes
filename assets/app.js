@@ -496,7 +496,11 @@ function initNavDrawer() {
   // collapsed behind a chevron — Playwright Course alone has 5, and
   // showing all of them plus every other drawer section by default made
   // the drawer too tall to use comfortably. Python Learning isn't split
-  // into phases yet, so it renders as a single jump link with no chevron.
+  // into phases in the data model, but the drawer still needs the same
+  // expand affordance for it, so a track with no phases falls back to
+  // listing its own topics as the expandable children instead — same
+  // chevron pattern, just linking straight to each topic's page rather
+  // than scrolling to a phase heading.
   const trackEls = document.querySelectorAll(".hub-track");
   if (trackEls.length) {
     const esc = (s) => s.replace(/"/g, "&quot;");
@@ -504,17 +508,27 @@ function initNavDrawer() {
       const trackLabelEl = trackEl.querySelector(".hub-track-head .hub-track-label");
       const trackLabel = trackLabelEl ? trackLabelEl.textContent : "";
       const phaseLabels = [...trackEl.querySelectorAll(".hub-phase-head .hub-phase-label")].map((el) => el.textContent);
-      const hasPhases = phaseLabels.length > 0;
-      const phaseButtons = phaseLabels.map((label) =>
-        `<button type="button" class="nav-drawer-link drawer-phase-link drawer-jump" data-jump-label="${esc(label)}" data-jump-phase="true">${label}</button>`
-      ).join("");
+      let childrenHtml;
+      if (phaseLabels.length > 0) {
+        childrenHtml = phaseLabels.map((label) =>
+          `<button type="button" class="nav-drawer-link drawer-phase-link drawer-jump" data-jump-label="${esc(label)}" data-jump-phase="true">${label}</button>`
+        ).join("");
+      } else {
+        const topicCards = [...trackEl.querySelectorAll(".card")];
+        childrenHtml = topicCards.map((card) => {
+          const titleEl = card.querySelector(".card-title");
+          const title = titleEl ? titleEl.textContent : "";
+          return `<a class="nav-drawer-link drawer-phase-link" href="${card.getAttribute("href")}">${title}</a>`;
+        }).join("");
+      }
+      const hasChildren = childrenHtml.length > 0;
       return `
         <div class="drawer-track-group">
           <div class="drawer-track-row">
             <button type="button" class="nav-drawer-link drawer-jump" data-jump-label="${esc(trackLabel)}" data-jump-phase="false">${trackLabel}</button>
-            ${hasPhases ? '<button type="button" class="drawer-track-chevron" aria-expanded="false" aria-label="Expand sections"><span class="section-chevron">&#9662;</span></button>' : ""}
+            ${hasChildren ? '<button type="button" class="drawer-track-chevron" aria-expanded="false" aria-label="Expand sections"><span class="section-chevron">&#9662;</span></button>' : ""}
           </div>
-          ${hasPhases ? `<div class="drawer-track-children">${phaseButtons}</div>` : ""}
+          ${hasChildren ? `<div class="drawer-track-children">${childrenHtml}</div>` : ""}
         </div>
       `;
     }).join("");

@@ -420,70 +420,190 @@ function initBreadcrumb() {
   bc.innerHTML = html;
 }
 
-/* ---------- Mobile hamburger: collapses search + actions into a dropdown ---------- */
-/* Site-wide (every page shares the same .topbar-inner / .topbar-hamburger
-   structure) — desktop never sees the hamburger at all (display:none until
-   the 640px breakpoint), this only changes behavior on narrow screens. */
-function initTopbarMenu() {
-  const inner = document.querySelector(".topbar-inner");
+/* ---------- Mobile nav drawer ---------- */
+/* Site-wide (every page shares the same #topbar-hamburger / #nav-drawer
+   markup) — desktop never sees the hamburger at all (display:none until the
+   760px breakpoint), so this only changes behavior on narrow screens. The
+   hamburger opens ONE slide-out drawer that absorbs everything mobile had
+   scattered across the page: search, bookmarks, quick filters, and
+   track/phase navigation on the hub; the "on this page" section list on
+   topic pages. It's built by proxying clicks/input to the real controls
+   (search, bookmark button, quick-filters toggle) rather than duplicating
+   their state, so there is exactly one source of truth for each. */
+function initNavDrawer() {
   const hamburger = document.getElementById("topbar-hamburger");
-  if (!inner || !hamburger) return;
+  const drawer = document.getElementById("nav-drawer");
+  const overlay = document.getElementById("nav-drawer-overlay");
+  const closeBtn = document.getElementById("nav-drawer-close");
+  const body = document.getElementById("nav-drawer-body");
+  if (!hamburger || !drawer || !overlay || !body) return;
 
+  function open() {
+    drawer.classList.add("open");
+    overlay.classList.add("open");
+    hamburger.setAttribute("aria-expanded", "true");
+  }
   function close() {
-    inner.classList.remove("menu-open");
+    drawer.classList.remove("open");
+    overlay.classList.remove("open");
     hamburger.setAttribute("aria-expanded", "false");
   }
   hamburger.addEventListener("click", (e) => {
     e.stopPropagation();
-    const open = inner.classList.toggle("menu-open");
-    hamburger.setAttribute("aria-expanded", String(open));
+    drawer.classList.contains("open") ? close() : open();
   });
-  document.addEventListener("click", (e) => {
-    if (inner.classList.contains("menu-open") && !inner.contains(e.target)) close();
-  });
+  closeBtn.addEventListener("click", close);
+  overlay.addEventListener("click", close);
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") close();
+    if (e.key === "Escape" && drawer.classList.contains("open")) close();
   });
-}
 
-/* ---------- Mobile TOC: collapses the section list behind a toggle ---------- */
-/* Desktop keeps the TOC as an always-visible sticky sidebar — the toggle
-   only has a visual effect once the 760px breakpoint collapses it into the
-   content column (see .toc-toggle in style.css). */
-function initMobileToc() {
-  const toc = document.querySelector(".toc");
-  const label = toc ? toc.querySelector(":scope > div") : null;
-  if (!toc || !label) return;
+  const sections = [];
 
-  label.classList.add("toc-toggle");
-  label.tabIndex = 0;
-  label.setAttribute("role", "button");
-  label.setAttribute("aria-expanded", "false");
-  const chevron = document.createElement("span");
-  chevron.className = "section-chevron";
-  chevron.innerHTML = "&#9662;";
-  label.appendChild(chevron);
-
-  function toggle() {
-    const open = toc.classList.toggle("toc-open");
-    label.setAttribute("aria-expanded", String(open));
+  // Search — proxies into the real #search input so there's only one
+  // query state; the real input's own listener does the filtering.
+  const searchInput = document.getElementById("search");
+  if (searchInput) {
+    sections.push(`
+      <div class="nav-drawer-section">
+        <div class="nav-drawer-search-box">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="drawer-search" placeholder="Search topics, tags, terms…" autocomplete="off">
+        </div>
+      </div>
+    `);
   }
-  label.addEventListener("click", toggle);
-  label.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+
+  // Bookmarks + quick filters — proxy-click the real (now hidden) buttons
+  // so their existing toggle logic runs unchanged, then close the drawer
+  // and let the user see the result on the page underneath.
+  const bookmarkBtn = document.getElementById("bookmark-filter-btn");
+  const quickFiltersToggle = document.getElementById("quick-filters-toggle");
+  if (bookmarkBtn || quickFiltersToggle) {
+    sections.push(`
+      <div class="nav-drawer-section">
+        <div class="nav-drawer-label">Filter</div>
+        ${bookmarkBtn ? '<button type="button" class="nav-drawer-link" id="drawer-bookmarks">&#9733; Bookmarks only</button>' : ""}
+        ${quickFiltersToggle ? '<button type="button" class="nav-drawer-link" id="drawer-quick-filters">&#9662; Filter by tag</button>' : ""}
+      </div>
+    `);
+  }
+
+  // Section/track navigation ("Python Learning" / "Playwright Course" and
+  // their phases, e.g. "Course Intro") — read straight from the hub grid
+  // that initHub() already built, so this list can never drift out of sync
+  // with the real track/phase structure.
+  const jumpHeads = document.querySelectorAll(".hub-track-head, .hub-phase-head");
+  if (jumpHeads.length) {
+    const items = [...jumpHeads].map((head) => {
+      const isPhase = head.classList.contains("hub-phase-head");
+      const labelEl = head.querySelector(isPhase ? ".hub-phase-label" : ".hub-track-label");
+      const text = labelEl ? labelEl.textContent : "";
+      const cls = isPhase ? "nav-drawer-link drawer-phase-link drawer-jump" : "nav-drawer-link drawer-jump";
+      return `<button type="button" class="${cls}" data-jump-label="${text.replace(/"/g, "&quot;")}" data-jump-phase="${isPhase}">${text}</button>`;
+    }).join("");
+    sections.push(`
+      <div class="nav-drawer-section">
+        <div class="nav-drawer-label">Jump to</div>
+        ${items}
+      </div>
+    `);
+  }
+
+  // Topic-page TOC ("On this page") — the .toc sidebar is display:none on
+  // mobile (see style.css), its links live here instead while narrow.
+  const tocLinks = document.querySelectorAll(".toc a");
+  if (tocLinks.length) {
+    const items = [...tocLinks].map((a) =>
+      `<a class="nav-drawer-link" href="${a.getAttribute("href")}">${a.textContent}</a>`
+    ).join("");
+    sections.push(`
+      <div class="nav-drawer-section">
+        <div class="nav-drawer-label">On this page</div>
+        ${items}
+      </div>
+    `);
+  }
+
+  const questionsLink = document.querySelector(".topbar-link");
+  const hasIntro = document.querySelector(".hero, .topic-header");
+  sections.push(`
+    <div class="nav-drawer-section">
+      <div class="nav-drawer-label">More</div>
+      ${hasIntro ? '<button type="button" class="nav-drawer-link" id="drawer-intro">Intro</button>' : ""}
+      ${questionsLink ? `<a class="nav-drawer-link" href="${questionsLink.getAttribute("href")}">Interview Questions</a>` : ""}
+      <button type="button" class="nav-drawer-link" id="drawer-theme-toggle">&#9788; Toggle theme</button>
+    </div>
+  `);
+
+  body.innerHTML = sections.join("");
+
+  const drawerSearch = document.getElementById("drawer-search");
+  if (drawerSearch && searchInput) {
+    drawerSearch.addEventListener("input", () => {
+      searchInput.value = drawerSearch.value;
+      searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  }
+  const drawerBookmarks = document.getElementById("drawer-bookmarks");
+  if (drawerBookmarks && bookmarkBtn) {
+    drawerBookmarks.addEventListener("click", () => { bookmarkBtn.click(); close(); });
+  }
+  const drawerQuickFilters = document.getElementById("drawer-quick-filters");
+  if (drawerQuickFilters && quickFiltersToggle) {
+    drawerQuickFilters.addEventListener("click", () => {
+      quickFiltersToggle.click();
+      close();
+      const tagRow = document.getElementById("tag-row");
+      if (tagRow) setTimeout(() => tagRow.scrollIntoView({ behavior: "smooth", block: "center" }), 200);
+    });
+  }
+  // Re-queries by label text at click time (rather than keeping the
+  // original element reference) because initHub() rebuilds the whole grid
+  // on every search/filter change, which would otherwise leave these
+  // buttons pointing at detached nodes.
+  body.querySelectorAll(".drawer-jump").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const label = btn.dataset.jumpLabel;
+      const isPhase = btn.dataset.jumpPhase === "true";
+      const heads = document.querySelectorAll(isPhase ? ".hub-phase-head" : ".hub-track-head");
+      const head = [...heads].find((h) => {
+        const el = h.querySelector(isPhase ? ".hub-phase-label" : ".hub-track-label");
+        return el && el.textContent === label;
+      });
+      close();
+      if (!head) return;
+      const container = head.closest(isPhase ? ".hub-phase" : ".hub-track");
+      if (container && container.classList.contains("hub-collapsed")) {
+        container.classList.remove("hub-collapsed");
+        head.setAttribute("aria-expanded", "true");
+      }
+      setTimeout(() => head.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+    });
   });
-  // Picking a section closes the mobile dropdown so it doesn't stay open
-  // and cover the content that was just navigated to.
-  toc.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => {
-    toc.classList.remove("toc-open");
-    label.setAttribute("aria-expanded", "false");
-  }));
+  body.querySelectorAll('a.nav-drawer-link[href^="#"]').forEach((a) => {
+    a.addEventListener("click", close);
+  });
+  const drawerIntro = document.getElementById("drawer-intro");
+  if (drawerIntro) {
+    drawerIntro.addEventListener("click", () => {
+      close();
+      const target = document.querySelector(".hero, .topic-header");
+      if (target) setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+    });
+  }
+  const drawerTheme = document.getElementById("drawer-theme-toggle");
+  if (drawerTheme) {
+    drawerTheme.addEventListener("click", () => {
+      if (typeof toggleTheme === "function") toggleTheme();
+      close();
+    });
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   initHub();
   initTopicPage();
   initBreadcrumb();
-  initTopbarMenu();
-  initMobileToc();
+  initNavDrawer();
 });

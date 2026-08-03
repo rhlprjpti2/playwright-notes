@@ -154,6 +154,11 @@ a:hover { text-decoration: underline; }
   max-width: 640px;
   margin: 0 0 26px;
 }
+.hero-controls {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+}
+.hero-controls .search-box { flex: 1 1 320px; }
 .search-box {
   position: relative;
   max-width: 520px;
@@ -179,14 +184,19 @@ a:hover { text-decoration: underline; }
 }
 
 /* ---------- Stats strip ---------- */
+.hero-meta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 16px;
+  margin-top: 14px;
+}
 .stats {
-  display: flex; gap: 28px; margin: 22px 0 6px;
+  display: flex; gap: 28px;
   color: var(--text-dim); font-size: 13.5px;
 }
 .stats b { color: var(--text); font-size: 15px; }
+.hero-meta .progress-strip { margin: 0; flex: 1 1 320px; }
 
 /* ---------- Quick filters (collapsible tag row) ---------- */
-.quick-filters { margin: 18px 0 8px; }
+.tag-row#tag-row { margin-top: 4px; }
 .quick-filters-toggle {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 8px 14px;
@@ -2037,14 +2047,18 @@ footer.site-footer {
 .progress-strip b { color: var(--text); }
 .progress-bar-track { flex: 1; min-width: 140px; height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; }
 .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: 999px; transition: width .5s ease; }
+.card-badges {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: -2px;
+}
 .card-visited-badge {
-  position: absolute; top: 12px; right: 12px;
   width: 20px; height: 20px; border-radius: 50%;
   background: color-mix(in srgb, var(--success) 22%, var(--bg-card));
   border: 1px solid var(--success);
   color: var(--success);
   font-size: 11px;
   display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
 
 /* ---------- Bookmarks: filter toggle, card badge, in-page stars ---------- */
@@ -2073,7 +2087,6 @@ footer.site-footer {
 }
 
 .card-bookmark-badge {
-  position: absolute; top: 12px; left: 12px;
   width: 26px; height: 26px; border-radius: 50%;
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -2082,6 +2095,7 @@ footer.site-footer {
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   padding: 0;
+  flex-shrink: 0;
   transition: all .15s ease;
 }
 .card-bookmark-badge:hover { border-color: var(--accent-3); color: var(--accent-3); transform: scale(1.08); }

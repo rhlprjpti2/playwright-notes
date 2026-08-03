@@ -178,8 +178,10 @@ function initHub() {
         ? pwBookmarksForSlug(slug).filter(b => b.sectionId)
         : [];
       card.innerHTML = `
-        ${isVisited ? '<span class="card-visited-badge" title="Visited">&#10003;</span>' : ""}
-        <button type="button" class="card-bookmark-badge${isBookmarked ? " active" : ""}" title="${isBookmarked ? "Remove bookmark" : "Bookmark this topic"}" aria-pressed="${isBookmarked}">${isBookmarked ? "&#9733;" : "&#9734;"}</button>
+        <div class="card-badges">
+          <button type="button" class="card-bookmark-badge${isBookmarked ? " active" : ""}" title="${isBookmarked ? "Remove bookmark" : "Bookmark this topic"}" aria-pressed="${isBookmarked}">${isBookmarked ? "&#9733;" : "&#9734;"}</button>
+          ${isVisited ? '<span class="card-visited-badge" title="Visited">&#10003;</span>' : "<span></span>"}
+        </div>
         <div class="card-title">${t.title}</div>
         <div class="card-summary">${t.summary || ""}</div>
         ${bookmarkedSections.length ? `<div class="card-bookmarked-sections">${bookmarkedSections.map(b => `<a href="${t.file}#${b.sectionId}" class="card-bookmark-link">&#9733; ${b.sectionTitle}</a>`).join("")}</div>` : ""}

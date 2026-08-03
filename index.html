@@ -24,23 +24,26 @@
   <div class="hero">
     <h1>Playwright &amp; Python, interview-ready</h1>
     <p>Two tracks in one place: a Playwright test-automation course organized by topic from video transcripts, plus a standalone Python fundamentals track written from scratch for the language concepts every automation interview eventually tests. Cross-linked throughout — search or filter by tag below.</p>
-    <div class="search-box">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="search" type="text" placeholder="Search topics, tags, terms…" autocomplete="off">
-    </div>
-    <button type="button" class="bookmark-filter-btn" id="bookmark-filter-btn" aria-pressed="false">
-      <span class="bookmark-star">&#9733;</span> Bookmarks <span id="bookmark-filter-count">0</span>
-    </button>
-    <div class="stats">
-      <span id="stat-topics"></span>
-      <span id="stat-sources"></span>
-    </div>
-    <div class="progress-strip" id="progress-strip" style="display:none;"></div>
-    <div class="quick-filters">
+    <div class="hero-controls">
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="search" type="text" placeholder="Search topics, tags, terms…" autocomplete="off">
+      </div>
+      <button type="button" class="bookmark-filter-btn" id="bookmark-filter-btn" aria-pressed="false">
+        <span class="bookmark-star">&#9733;</span> Bookmarks <span id="bookmark-filter-count">0</span>
+      </button>
       <button type="button" class="quick-filters-toggle" id="quick-filters-toggle" aria-expanded="false">
         <span class="section-chevron">&#9662;</span> Quick filters <span class="quick-filters-count" id="quick-filters-count"></span><span class="quick-filters-active" id="quick-filters-active" style="display:none;"></span>
       </button>
-      <div class="tag-row" id="tag-row" style="display:none;"></div>
+    </div>
+    <div class="tag-row" id="tag-row" style="display:none;"></div>
+
+    <div class="hero-meta">
+      <div class="stats">
+        <span id="stat-topics"></span>
+        <span id="stat-sources"></span>
+      </div>
+      <div class="progress-strip" id="progress-strip" style="display:none;"></div>
     </div>
   </div>
 

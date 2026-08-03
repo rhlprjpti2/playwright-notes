@@ -529,6 +529,26 @@ window.TOPICS_INDEX = [
     lastUpdated: "2026-08-02",
     phase: "core",
     order: 4
+  },
+  {
+    slug: "playwright-api-testing",
+    title: "API Testing & Assertion Validation",
+    file: "pages/playwright-api-testing.html",
+    tags: ["playwright", "api-testing", "assertions"],
+    keyTerms: [
+      "APIRequestContext", "api_request_context", "page.request", "playwright.request.new_context",
+      "to_be_ok", "response.json", "response.status", "response.ok", "GET", "POST", "PUT", "PATCH",
+      "DELETE", "multipart", "extra_http_headers", "storage_state", "hybrid testing",
+      "route interception vs api testing", "dispose"
+    ],
+    summary: "Sending real HTTP requests with APIRequestContext — status vs body assertions, auth, hybrid API+UI patterns, and how this differs from route interception.",
+    related: ["playwright-browser-context-page", "playwright-alerts-dialogs", "pytest-fixtures", "framework-system-design"],
+    sources: [
+      { title: "Original content — written for interview prep, not sourced from a transcript", addedDate: "2026-08-04" }
+    ],
+    lastUpdated: "2026-08-04",
+    phase: "advanced",
+    order: 5
   }
 ];
 

@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Testing &amp; Assertion Validation · Tech Interview Hub</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../data/topics-index.js"></script>
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
+    <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
+<nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
+  <div class="nav-drawer-head">
+    <span>Menu</span>
+    <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="nav-drawer-body" id="nav-drawer-body"></div>
+</nav>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / API Testing &amp; Assertion Validation</div>
+    <h1>API Testing &amp; Assertion Validation</h1>
+    <p class="lede">Playwright isn't only a browser driver — <code>APIRequestContext</code> sends real HTTP requests with no browser involved at all. Same library, same <code>expect()</code>, a completely different (and much faster) kind of test. This page covers the whole range: firing a request, asserting the response, and the advanced patterns — auth, hybrid API+UI, and where this stops being "API testing" and becomes route mocking.</p>
+    <div class="card-tags">
+      <span>playwright</span>
+      <span>api-testing</span>
+      <span>assertions</span>
+    </div>
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Why API testing at all</a>
+      <a href="#getting-context">Getting a request context</a>
+      <a href="#making-requests">Making requests</a>
+      <a href="#status-assertions">Status assertions</a>
+      <a href="#body-assertions">Validating the response body</a>
+      <a href="#lifecycle">Full lifecycle: create, then verify</a>
+      <a href="#auth">Authenticated requests</a>
+      <a href="#uploads">File uploads</a>
+      <a href="#hybrid">Hybrid API + UI testing</a>
+      <a href="#vs-routing">API testing vs. route interception</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <figure class="concept-art">
+        <div class="cs-scene">
+          <div class="cs-code">
+            <div class="cs-code-line cs-p1">response = request_context.post("/users", data={"name": "Ada"})</div>
+            <div class="cs-code-line cs-p2">expect(response).to_be_ok()</div>
+            <div class="cs-code-line cs-p3">body = response.json()  <span class="cs-num"># check the data itself</span></div>
+          </div>
+          <svg viewBox="0 0 640 170" width="100%" height="auto" role="img" aria-label="A request is sent, the status is checked, then the JSON body is validated on its own — three separate steps">
+            <rect class="cs-p1" x="20" y="40" width="160" height="70" rx="10" fill="#ffb15c"/>
+            <text x="100" y="68" class="ca-lbl" style="font-size:12px">request sent</text>
+            <text x="100" y="88" class="ca-lbl" style="font-size:11px">no browser involved</text>
+            <path d="M180 75 L230 75" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+            <rect class="cs-p2" x="235" y="40" width="160" height="70" rx="10" fill="#7fd8c9"/>
+            <text x="315" y="68" class="ca-lbl" style="font-size:12px">status checked</text>
+            <text x="315" y="88" class="ca-lbl" style="font-size:11px">to_be_ok() → 2xx?</text>
+            <path d="M395 75 L445 75" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+            <ellipse class="cs-ring cs-ring-p3" cx="530" cy="75" rx="95" ry="45" stroke="#f4d35e" stroke-width="3"/>
+            <rect class="cs-p3" x="450" y="40" width="160" height="70" rx="10" fill="none" stroke="#f4d35e" stroke-width="3"/>
+            <text x="530" y="68" class="ca-lbl" style="font-size:12px">body checked</text>
+            <text x="530" y="88" class="ca-sub">a 200 with wrong data still passes step 2</text>
+          </svg>
+        </div>
+        <figcaption>Status and body are two separate checks — a 2xx response can still carry the wrong data</figcaption>
+      </figure>
+
+      <section id="concept">
+        <h2>Why API testing at all</h2>
+        <p>Every other page on this site drives a <strong>browser</strong>: launch Chromium, render the page, wait for elements, click, wait again. That's necessary when the thing under test <em>is</em> the UI — but a huge share of what an application does never touches a browser at all. <code>APIRequestContext</code> sends an HTTP request straight to the server and gets a response back, with no rendering, no waiting for elements, no browser process at all.</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th></th><th>UI test (<code>page</code>)</th><th>API test (<code>APIRequestContext</code>)</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">What it drives</td><td>A real rendered browser page</td><td>A direct HTTP request/response</td></tr>
+              <tr><td class="highlight">Speed</td><td>Seconds per test — render, locate, auto-wait</td><td>Milliseconds — no rendering at all</td></tr>
+              <tr><td class="highlight">What it can prove</td><td>The user-visible flow actually works</td><td>The backend contract is correct — status, headers, JSON shape</td></tr>
+              <tr><td class="highlight">Flakiness source</td><td>Timing, animations, layout shifts</td><td>Almost none — it's just a request</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>In practice the two aren't competitors — they're used <em>together</em>. A common pattern (covered in <a href="#hybrid">Hybrid API + UI testing</a> below) is using the API to set up state fast, then a UI test to verify only the specific flow that actually needs a browser.</p>
+      </section>
+
+      <section id="getting-context">
+        <h2>Getting a request context</h2>
+        <p>There are three ways to get an <code>APIRequestContext</code> in a Python Playwright test, and the difference between them is <strong>whether it shares a session with a browser page</strong>:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Source</th><th>Tied to a browser?</th><th>When to use it</th></tr></thead>
+            <tbody>
+              <tr><td><code>page.request</code></td><td class="highlight">Yes — same cookies/storage as <code>page</code></td><td>Calling an API using the exact session a UI test already logged into</td></tr>
+              <tr><td><code>playwright.request.new_context(...)</code></td><td>No — a standalone client</td><td>Pure API tests with no browser at all — fastest option, most control over headers/base_url</td></tr>
+              <tr><td><code>api_request_context</code> fixture</td><td>No — same as above</td><td>Shorthand for the standalone context in <code>pytest-playwright</code>; teardown is automatic</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <pre><code># Standalone context — created manually, must be disposed
+request_context = playwright.request.new_context(
+    base_url="https://api.example.com",
+    extra_http_headers={"Accept": "application/json"},
+)
+response = request_context.get("/users/1")
+request_context.dispose()   # closes the underlying connection pool
+
+# Same thing via the pytest-playwright fixture — no manual dispose needed
+def test_get_user(api_request_context):
+    response = api_request_context.get("/users/1")
+    assert response.ok</code></pre>
+        <div class="callout tip">
+          <strong>Reach for the fixture by default</strong>
+          <code>api_request_context</code> gives you the standalone client with teardown already handled by the plugin. Only build a context manually with <code>playwright.request.new_context()</code> when a single test genuinely needs more than one client — different base URLs, different auth, that kind of thing.
+        </div>
+      </section>
+
+      <section id="making-requests">
+        <h2>Making requests</h2>
+        <p>An <code>APIRequestContext</code> has one method per HTTP verb, plus a generic <code>.fetch()</code> for anything unusual:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Method</th><th>Typical use</th></tr></thead>
+            <tbody>
+              <tr><td><code>.get(url, params=...)</code></td><td>Read a resource. <code>params</code> becomes the query string.</td></tr>
+              <tr><td><code>.post(url, data=..., json=...)</code></td><td class="highlight">Create a resource. <code>json=</code> auto-serializes and sets <code>Content-Type: application/json</code> — usually what you want over <code>data=</code>.</td></tr>
+              <tr><td><code>.put(url, json=...)</code></td><td>Replace a resource entirely.</td></tr>
+              <tr><td><code>.patch(url, json=...)</code></td><td>Partially update a resource.</td></tr>
+              <tr><td><code>.delete(url)</code></td><td>Remove a resource.</td></tr>
+              <tr><td><code>.fetch(url, method="...")</code></td><td>Generic escape hatch — any verb, most explicit control over the request.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <pre><code>response = api_request_context.get(
+    "/search",
+    params={"q": "playwright", "limit": 10},
+)
+
+response = api_request_context.post(
+    "/users",
+    json={"name": "Ada Lovelace", "role": "admin"},
+)</code></pre>
+        <div class="callout warn">
+          <strong><code>data=</code> vs <code>json=</code></strong>
+          <code>data={"name": "Ada"}</code> sends a form-encoded body. <code>json={"name": "Ada"}</code> serializes to a JSON string and sets the content-type header for you. Passing a Python dict as <code>data=</code> when the API expects JSON is a common first mistake — the server sees form fields, not a JSON body.
+        </div>
+      </section>
+
+      <section id="status-assertions">
+        <h2>Status assertions</h2>
+        <p>Playwright's <code>expect()</code> works on API responses the same way it works on locators — <code>to_be_ok()</code> is the response-side assertion, and it passes for <strong>any</strong> status in the 200–299 range, not just exactly 200:</p>
+        <pre><code>from playwright.sync_api import expect
+
+response = api_request_context.get("/users/1")
+expect(response).to_be_ok()          # passes for 200, 201, 204...
+
+# equivalent, without expect()
+assert response.ok
+assert response.status == 200
+assert 200 <= response.status < 300</code></pre>
+        <p>Try both outcomes below — the assertion is exactly <code>expect(response).to_be_ok()</code>, only the response status changes:</p>
+        <div class="demo" id="status-toggle-demo"></div>
+        <script>
+          renderAssertToggle("status-toggle-demo", {
+            expression: "expect(response).to_be_ok()",
+            initialKey: "200",
+            options: [
+              { key: "200", label: "status 200", pass: true, detail: "response.status == 200 → inside 200–299 → to_be_ok() passes" },
+              { key: "201", label: "status 201", pass: true, detail: "response.status == 201 (Created) → still inside 200–299 → to_be_ok() passes" },
+              { key: "404", label: "status 404", pass: false, detail: 'Error: Response status 404 "Not Found" was not OK' },
+              { key: "500", label: "status 500", pass: false, detail: 'Error: Response status 500 "Internal Server Error" was not OK' }
+            ]
+          });
+        </script>
+      </section>
+
+      <section id="body-assertions">
+        <h2>Validating the response body</h2>
+        <p><code>to_be_ok()</code> only checks the status — a <strong>200 with the wrong data still passes it</strong>. Validating the actual payload is a separate, manual step using <code>response.json()</code>:</p>
+        <pre><code>response = api_request_context.get("/users/1")
+expect(response).to_be_ok()          # status is fine...
+
+body = response.json()
+assert body["name"] == "Ada Lovelace"   # ...but is the DATA right?
+assert body["role"] == "admin"
+assert "email" in body                   # shape check — key must exist</code></pre>
+        <p>Same request, same status — now the field being checked is what changes:</p>
+        <div class="demo" id="body-toggle-demo"></div>
+        <script>
+          renderAssertToggle("body-toggle-demo", {
+            expression: 'assert body["role"] == "admin"',
+            initialKey: "match",
+            options: [
+              { key: "match", label: 'body = {"role": "admin"}', pass: true, detail: '"admin" == "admin" → true' },
+              { key: "mismatch", label: 'body = {"role": "guest"}', pass: false, detail: "AssertionError: received 'guest', expected 'admin' — status was still 200" },
+              { key: "missing", label: 'body has no "role" key', pass: false, detail: "KeyError: 'role' — the field wasn't even returned, but the status is still 200" }
+            ]
+          });
+        </script>
+        <div class="callout warn">
+          <strong>The interview trap</strong>
+          "The API returned 200, so the test passed" is not the same statement as "the API returned the right data." A backend bug that silently returns the wrong record, a stale cache, an empty list where ten items were expected — all of those are still 200. Status assertions and body assertions are two separate checks, and skipping the second one is the single most common gap in API test suites.
+        </div>
+      </section>
+
+      <section id="lifecycle">
+        <h2>Full lifecycle: create, then verify</h2>
+        <p class="lead">The most convincing API test doesn't just check that a create call returned 201 — it uses the id from that response to fetch the resource back and confirms it actually persisted. Step through it:</p>
+
+        <div class="sim" id="api-lifecycle-sim"></div>
+        <script>
+          renderStepDebugger("api-lifecycle-sim", {
+            title: "test_create_and_verify_user · step debugger",
+            terminalPrompt: "$ pytest test_users_api.py -s",
+            legend: [
+              { label: "request sent", color: "#ffb15c" },
+              { label: "status checked", color: "var(--success)" },
+              { label: "data verified", color: "var(--accent-3)" }
+            ],
+            codeBlocks: [
+              {
+                caption: "test_users_api.py",
+                lines: [
+                  { id: "aln1", zone: "setup", html: '<span class="ln">1</span> <span class="tok-kw">def</span> test_create_and_verify_user(api_request_context):' },
+                  { id: "aln2", html: '<span class="ln">2</span>&nbsp;&nbsp;&nbsp;&nbsp;response = api_request_context.post(<span class="tok-str">"/users"</span>, json={<span class="tok-str">"name"</span>: <span class="tok-str">"Ada"</span>})' },
+                  { id: "aln3", html: '<span class="ln">3</span>&nbsp;&nbsp;&nbsp;&nbsp;expect(response).to_be_ok()' },
+                  { id: "aln4", html: '<span class="ln">4</span>&nbsp;&nbsp;&nbsp;&nbsp;user_id = response.json()[<span class="tok-str">"id"</span>]' },
+                  { id: "aln5", html: '<span class="ln">5</span>&nbsp;&nbsp;&nbsp;&nbsp;get_response = api_request_context.get(<span class="tok-kw">f</span><span class="tok-str">"/users/{user_id}"</span>)' },
+                  { id: "aln6", zone: "teardown", html: '<span class="ln">6</span>&nbsp;&nbsp;&nbsp;&nbsp;assert get_response.json()[<span class="tok-str">"name"</span>] == <span class="tok-str">"Ada"</span>' }
+                ]
+              }
+            ],
+            steps: [
+              { lineIds: ["aln1"], desc: "Test starts. api_request_context is the standalone client fixture — no browser anywhere in this test.", term: '<span class="tag-setup">▸ collecting api_request_context</span>' },
+              { lineIds: ["aln2"], desc: "POST fires with a JSON body. This is the only network call so far — nothing has been checked yet.", term: '<span class="tag-setup">▸ POST /users → 201</span>' },
+              { lineIds: ["aln3"], desc: "Status assertion. Confirms the server accepted the request — says nothing about what's actually stored.", term: '<span class="tag-test">✓ to_be_ok() — 201 is in range</span>' },
+              { lineIds: ["aln4"], desc: "Parse the body and pull the id the server generated — needed to check the resource for real in the next step.", term: '<span class="tag-setup">▸ user_id = 4821</span>' },
+              { lineIds: ["aln5"], desc: "A second, independent request — fetching the resource back rather than trusting the create response alone.", term: '<span class="tag-setup">▸ GET /users/4821 → 200</span>' },
+              { lineIds: ["aln6"], desc: "This is the assertion that actually proves persistence: the create call could return a perfect-looking 201 even if nothing was saved — only a follow-up read confirms it's real.", term: '<span class="tag-test">✓ get_response.json()["name"] == "Ada"</span>' }
+            ]
+          });
+        </script>
+
+        <div class="quiz">
+          <div class="quiz-q">The POST in line 2 returns <code>201</code> with a perfectly-shaped JSON body. Is that enough to prove the user was actually created?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">Yes — a 201 with the right shape means the resource exists</button>
+            <button class="quiz-opt" data-correct="true">No — some APIs echo back what they received (or a mocked/cached value) without actually persisting it; only a follow-up GET proves it was saved</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="auth">
+        <h2>Authenticated requests</h2>
+        <p>Most real APIs require a token. The usual shape: log in once, capture the token, then attach it to every subsequent request via headers on the context itself — rather than passing it into every single call:</p>
+        <pre><code>login_response = api_request_context.post("/auth/login", json={
+    "username": "test_user", "password": "..."
+})
+token = login_response.json()["access_token"]
+
+authed_context = playwright.request.new_context(
+    base_url="https://api.example.com",
+    extra_http_headers={"Authorization": f"Bearer {token}"},
+)
+response = authed_context.get("/me")
+expect(response).to_be_ok()</code></pre>
+        <p>Headers set via <code>extra_http_headers</code> on the context apply to every request made through it — no need to repeat <code>headers={"Authorization": ...}</code> on each call. A context can also be created directly from a saved session with <code>storage_state=</code>, reusing cookies captured from an earlier login instead of hitting the login endpoint every test.</p>
+      </section>
+
+      <section id="uploads">
+        <h2>File uploads</h2>
+        <p>Multipart form data — the shape a real file upload endpoint expects — is sent via the <code>multipart</code> parameter:</p>
+        <pre><code>response = api_request_context.post(
+    "/avatar",
+    multipart={
+        "file": {
+            "name": "profile.png",
+            "mimeType": "image/png",
+            "buffer": open("profile.png", "rb").read(),
+        },
+        "userId": "4821",   # plain fields can sit alongside the file
+    },
+)
+expect(response).to_be_ok()</code></pre>
+      </section>
+
+      <section id="hybrid">
+        <h2>Hybrid API + UI testing</h2>
+        <p>The two aren't an either/or choice. The most common production pattern uses the API to get the application into the right <em>state</em> quickly, then a UI test to verify only the part that genuinely needs a rendered browser:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Pattern</th><th>Why</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">Seed data via API, verify via UI</td><td>Creating 50 test orders by clicking through the UI 50 times is slow and flaky. POST them via the API in milliseconds, then load the UI once to verify the list renders correctly.</td></tr>
+              <tr><td class="highlight">Log in via API, reuse the session in the browser</td><td>Log in through <code>/auth/login</code>, capture the resulting cookies/token as <code>storage_state</code>, then open a browser context <em>already</em> authenticated — skips re-typing credentials through a login form in every test.</td></tr>
+              <tr><td class="highlight"><code>page.request</code> mid-UI-test</td><td>Because <code>page.request</code> shares the page's own session, a UI test can call an internal API directly to check a side effect (e.g. "did that click actually persist to the backend?") without a second, separate login.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <pre><code># Log in via API, hand the session to a browser context
+login_response = api_request_context.post("/auth/login", json={
+    "username": "test_user", "password": "..."
+})
+storage_state = api_request_context.storage_state()
+
+context = browser.new_context(storage_state=storage_state)
+page = context.new_page()
+page.goto("/dashboard")   # already logged in — no form to fill</code></pre>
+      </section>
+
+      <section id="vs-routing">
+        <h2>API testing vs. route interception</h2>
+        <p>These get confused because both involve "Playwright" and "HTTP requests," but they answer opposite questions:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th></th><th>API testing (<code>APIRequestContext</code>)</th><th>Route interception (<code>page.route()</code>)</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">What's being tested</td><td>The real backend — a genuine request leaves the machine</td><td>The frontend's handling of a response — the real backend is never hit</td></tr>
+              <tr><td class="highlight">Where the response comes from</td><td>The actual server</td><td>Wherever you tell it to — a hand-written fake response</td></tr>
+              <tr><td class="highlight">Typical use</td><td>Verifying a contract, seeding data, checking a side effect</td><td>Forcing an error state, a slow network, or an edge-case payload the real backend won't reliably produce on demand</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <pre><code># API testing — a REAL request, testing the real backend
+response = api_request_context.get("/orders")
+expect(response).to_be_ok()
+
+# Route interception — the browser never reaches the real backend at all
+page.route("**/orders", lambda route: route.fulfill(
+    status=500, json={"error": "Internal Server Error"}
+))
+page.goto("/orders")   # UI's error-state handling is what's under test here</code></pre>
+        <div class="callout supplement">
+          <strong>Same site, different mechanism</strong>
+          If this "register something before it happens" shape feels familiar, it's the same family as <a href="playwright-alerts-dialogs.html">dialog handlers</a> and <a href="playwright-child-windows.html">popup capture</a> — <code>page.route()</code> is also registered <em>before</em> the navigation that triggers it, not called reactively afterwards.
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What is <code>APIRequestContext</code> and how is it different from using <code>page</code>?</summary>
+          <div class="qa-body"><code>APIRequestContext</code> sends real HTTP requests directly, with no browser involved — no rendering, no waiting for elements, no page at all. <code>page</code> drives an actual browser and is for testing what a user sees and clicks. They can even coexist: <code>page.request</code> is an <code>APIRequestContext</code> that shares the same page's cookies and session.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> Does <code>expect(response).to_be_ok()</code> validate the response body?</summary>
+          <div class="qa-body">No — it only checks that <code>response.status</code> is in the 200–299 range. A 200 response with completely wrong or missing data still passes <code>to_be_ok()</code>. Validating the actual payload requires a separate step: parse it with <code>response.json()</code> and assert on the specific fields.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What's the difference between <code>data=</code> and <code>json=</code> on <code>.post()</code>?</summary>
+          <div class="qa-body"><code>json=</code> serializes the given value to a JSON string and sets <code>Content-Type: application/json</code> automatically — the usual choice for a JSON API. <code>data=</code> sends a form-encoded body instead. Passing a dict as <code>data=</code> to an endpoint expecting JSON is a common bug — the server receives form fields, not a JSON object, and often responds with a validation error that looks unrelated to the actual mistake.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why would you use <code>page.request</code> instead of a standalone <code>api_request_context</code>?</summary>
+          <div class="qa-body"><code>page.request</code> shares the browser context's cookies and storage state — so a call made through it hits the API as the exact same logged-in session the page is using. That's the right tool when a UI test needs to check a backend side effect of something it just did in the browser, without a second, separate authentication flow. A standalone context is the right tool when there's no browser session to share at all — pure API tests.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> A test asserts <code>response.status == 201</code> after a POST. Is that a complete test?</summary>
+          <div class="qa-body">Not on its own. It proves the server accepted the request and responded with the right status code — it doesn't prove the resource was actually persisted. Some backends can echo back a plausible-looking response without saving anything (a bug, a cache, a mock left on by accident). The stronger version follows up with a separate GET on the resource and asserts the data comes back correctly — proving persistence, not just a well-formed response.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> When would you choose API testing over route interception, or the other way around?</summary>
+          <div class="qa-body">API testing sends a real request and is for validating the actual backend contract — status codes, response shape, side effects like persistence. Route interception (<code>page.route()</code>) never reaches the real backend at all — it's for controlling what the <em>frontend</em> receives, which matters when testing how the UI reacts to conditions the real backend won't reliably reproduce on demand: a 500 error, a 10-second delay, a malformed payload. Conflating the two is a common mistake — a route-intercepted test proves nothing about whether the real API actually behaves that way.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Why combine API and UI testing rather than just using one?</summary>
+          <div class="qa-body">They prove different things at different costs. UI tests are the only way to prove the rendered experience actually works for a real user, but they're slow and comparatively flaky — expensive to use for every possible data setup. API calls are fast and stable and are the efficient way to get the application into a specific state (seed 50 orders, create a user with a specific role) without clicking through forms repeatedly. The common pattern is seeding and authenticating via the API, then spending the (slower, costlier) UI test budget only on the specific flow that genuinely needs a browser.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong><code>to_be_ok()</code> is a status check, not a body check</strong>
+          It's satisfied by any 2xx status. A backend returning the wrong record, an empty list, or a stale cache with a 200 status all pass it — the body still needs its own, separate assertion.
+        </div>
+        <div class="callout warn">
+          <strong>Manually created contexts must be disposed</strong>
+          A context from <code>playwright.request.new_context()</code> keeps a connection pool open until <code>.dispose()</code> is called. The <code>api_request_context</code> pytest fixture handles this automatically — leaving connections open across many manually-created contexts in a large suite is a real, if quiet, resource leak.
+        </div>
+        <div class="callout warn">
+          <strong><code>data=</code> vs <code>json=</code> mix-ups</strong>
+          Passing a Python dict as <code>data=</code> when the API expects a JSON body sends form-encoded data instead — the request still goes out and often still gets a response, just not the one the test expects, which can produce a confusing failure that looks unrelated to the actual cause.
+        </div>
+        <div class="callout warn">
+          <strong><code>page.request</code> inherits the page's session — intentionally</strong>
+          That's a feature for hybrid tests, but it's easy to forget: a call through <code>page.request</code> is authenticated as whatever the page is currently logged in as. If a test needs to hit the API as a <em>different</em> user, a standalone context with its own <code>storage_state</code> or headers is needed instead — reusing <code>page.request</code> there sends the wrong identity.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="playwright-browser-context-page.html">Browser, Context &amp; Page →</a>
+          <a href="playwright-alerts-dialogs.html">JavaScript Alerts &amp; Dialogs →</a>
+          <a href="pytest-fixtures.html">Pytest Fixtures &amp; Fundamentals →</a>
+          <a href="framework-system-design.html">Framework &amp; System Design →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: Original content — written for interview prep, not sourced from a transcript — added 2026-08-04</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

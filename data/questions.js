@@ -237,6 +237,62 @@ window.ALL_QUESTIONS = [
   "file": "pages/playwright-alerts-dialogs.html"
  },
  {
+  "q": "What is <code>APIRequestContext</code> and how is it different from using <code>page</code>?",
+  "a": "<code>APIRequestContext</code> sends real HTTP requests directly, with no browser involved — no rendering, no waiting for elements, no page at all. <code>page</code> drives an actual browser and is for testing what a user sees and clicks. They can even coexist: <code>page.request</code> is an <code>APIRequestContext</code> that shares the same page's cookies and session.",
+  "level": "junior",
+  "topic": "playwright-api-testing",
+  "topicLabel": "API Testing &amp; Assertions",
+  "file": "pages/playwright-api-testing.html"
+ },
+ {
+  "q": "Does <code>expect(response).to_be_ok()</code> validate the response body?",
+  "a": "No — it only checks that <code>response.status</code> is in the 200–299 range. A 200 response with completely wrong or missing data still passes <code>to_be_ok()</code>. Validating the actual payload requires a separate step: parse it with <code>response.json()</code> and assert on the specific fields.",
+  "level": "junior",
+  "topic": "playwright-api-testing",
+  "topicLabel": "API Testing &amp; Assertions",
+  "file": "pages/playwright-api-testing.html"
+ },
+ {
+  "q": "What's the difference between <code>data=</code> and <code>json=</code> on <code>.post()</code>?",
+  "a": "<code>json=</code> serializes the given value to a JSON string and sets <code>Content-Type: application/json</code> automatically — the usual choice for a JSON API. <code>data=</code> sends a form-encoded body instead. Passing a dict as <code>data=</code> to an endpoint expecting JSON is a common bug — the server receives form fields, not a JSON object, and often responds with a validation error that looks unrelated to the actual mistake.",
+  "level": "mid",
+  "topic": "playwright-api-testing",
+  "topicLabel": "API Testing &amp; Assertions",
+  "file": "pages/playwright-api-testing.html"
+ },
+ {
+  "q": "Why would you use <code>page.request</code> instead of a standalone <code>api_request_context</code>?",
+  "a": "<code>page.request</code> shares the browser context's cookies and storage state — so a call made through it hits the API as the exact same logged-in session the page is using. That's the right tool when a UI test needs to check a backend side effect of something it just did in the browser, without a second, separate authentication flow. A standalone context is the right tool when there's no browser session to share at all — pure API tests.",
+  "level": "mid",
+  "topic": "playwright-api-testing",
+  "topicLabel": "API Testing &amp; Assertions",
+  "file": "pages/playwright-api-testing.html"
+ },
+ {
+  "q": "A test asserts <code>response.status == 201</code> after a POST. Is that a complete test?",
+  "a": "Not on its own. It proves the server accepted the request and responded with the right status code — it doesn't prove the resource was actually persisted. Some backends can echo back a plausible-looking response without saving anything (a bug, a cache, a mock left on by accident). The stronger version follows up with a separate GET on the resource and asserts the data comes back correctly — proving persistence, not just a well-formed response.",
+  "level": "mid",
+  "topic": "playwright-api-testing",
+  "topicLabel": "API Testing &amp; Assertions",
+  "file": "pages/playwright-api-testing.html"
+ },
+ {
+  "q": "When would you choose API testing over route interception, or the other way around?",
+  "a": "API testing sends a real request and is for validating the actual backend contract — status codes, response shape, side effects like persistence. Route interception (<code>page.route()</code>) never reaches the real backend at all — it's for controlling what the <em>frontend</em> receives, which matters when testing how the UI reacts to conditions the real backend won't reliably reproduce on demand: a 500 error, a 10-second delay, a malformed payload. Conflating the two is a common mistake — a route-intercepted test proves nothing about whether the real API actually behaves that way.",
+  "level": "senior",
+  "topic": "playwright-api-testing",
+  "topicLabel": "API Testing &amp; Assertions",
+  "file": "pages/playwright-api-testing.html"
+ },
+ {
+  "q": "Why combine API and UI testing rather than just using one?",
+  "a": "They prove different things at different costs. UI tests are the only way to prove the rendered experience actually works for a real user, but they're slow and comparatively flaky — expensive to use for every possible data setup. API calls are fast and stable and are the efficient way to get the application into a specific state (seed 50 orders, create a user with a specific role) without clicking through forms repeatedly. The common pattern is seeding and authenticating via the API, then spending the (slower, costlier) UI test budget only on the specific flow that genuinely needs a browser.",
+  "level": "senior",
+  "topic": "playwright-api-testing",
+  "topicLabel": "API Testing &amp; Assertions",
+  "file": "pages/playwright-api-testing.html"
+ },
+ {
   "q": "What does Playwright's automatic actionability check actually check for?",
   "a": "Per this course: visible, stable (finished loading/animating), receives events (not obscured by another element), and enabled. Playwright verifies these before most actions, retrying automatically until they pass or a timeout is reached.",
   "level": "junior",

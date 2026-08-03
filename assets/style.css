@@ -251,6 +251,28 @@ a:hover { text-decoration: underline; }
 .nav-drawer-section hr {
   border: none; border-top: 1px solid var(--border); margin: 16px 8px;
 }
+/* iOS momentum scrolling — without this, drag-scrolling a fixed-position
+   panel like this drawer can feel stuck/unresponsive on Safari. */
+.nav-drawer { -webkit-overflow-scrolling: touch; }
+
+/* Each track (Python Learning, Playwright Course) in the Jump-to list.
+   Phases start collapsed — Playwright Course alone has 5 of them, and
+   showing every phase for every track by default made the drawer too
+   tall to use comfortably on short screens. */
+.drawer-track-row { display: flex; align-items: center; gap: 2px; }
+.drawer-track-row .nav-drawer-link { flex: 1 1 auto; font-weight: 600; }
+.drawer-track-chevron {
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-faint);
+}
+.drawer-track-chevron:hover { color: var(--text); }
+.drawer-track-chevron .section-chevron { transition: transform .2s ease; }
+.drawer-track-group.expanded .drawer-track-chevron .section-chevron { transform: rotate(-180deg); }
+.drawer-track-children { display: none; }
+.drawer-track-group.expanded .drawer-track-children { display: block; }
 .topbar-link {
   font-size: 13.5px;
   color: var(--text-dim);

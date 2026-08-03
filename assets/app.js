@@ -492,15 +492,31 @@ function initNavDrawer() {
   // Section/track navigation ("Python Learning" / "Playwright Course" and
   // their phases, e.g. "Course Intro") — read straight from the hub grid
   // that initHub() already built, so this list can never drift out of sync
-  // with the real track/phase structure.
-  const jumpHeads = document.querySelectorAll(".hub-track-head, .hub-phase-head");
-  if (jumpHeads.length) {
-    const items = [...jumpHeads].map((head) => {
-      const isPhase = head.classList.contains("hub-phase-head");
-      const labelEl = head.querySelector(isPhase ? ".hub-phase-label" : ".hub-track-label");
-      const text = labelEl ? labelEl.textContent : "";
-      const cls = isPhase ? "nav-drawer-link drawer-phase-link drawer-jump" : "nav-drawer-link drawer-jump";
-      return `<button type="button" class="${cls}" data-jump-label="${text.replace(/"/g, "&quot;")}" data-jump-phase="${isPhase}">${text}</button>`;
+  // with the real track/phase structure. Each track's phases start
+  // collapsed behind a chevron — Playwright Course alone has 5, and
+  // showing all of them plus every other drawer section by default made
+  // the drawer too tall to use comfortably. Python Learning isn't split
+  // into phases yet, so it renders as a single jump link with no chevron.
+  const trackEls = document.querySelectorAll(".hub-track");
+  if (trackEls.length) {
+    const esc = (s) => s.replace(/"/g, "&quot;");
+    const items = [...trackEls].map((trackEl) => {
+      const trackLabelEl = trackEl.querySelector(".hub-track-head .hub-track-label");
+      const trackLabel = trackLabelEl ? trackLabelEl.textContent : "";
+      const phaseLabels = [...trackEl.querySelectorAll(".hub-phase-head .hub-phase-label")].map((el) => el.textContent);
+      const hasPhases = phaseLabels.length > 0;
+      const phaseButtons = phaseLabels.map((label) =>
+        `<button type="button" class="nav-drawer-link drawer-phase-link drawer-jump" data-jump-label="${esc(label)}" data-jump-phase="true">${label}</button>`
+      ).join("");
+      return `
+        <div class="drawer-track-group">
+          <div class="drawer-track-row">
+            <button type="button" class="nav-drawer-link drawer-jump" data-jump-label="${esc(trackLabel)}" data-jump-phase="false">${trackLabel}</button>
+            ${hasPhases ? '<button type="button" class="drawer-track-chevron" aria-expanded="false" aria-label="Expand sections"><span class="section-chevron">&#9662;</span></button>' : ""}
+          </div>
+          ${hasPhases ? `<div class="drawer-track-children">${phaseButtons}</div>` : ""}
+        </div>
+      `;
     }).join("");
     sections.push(`
       <div class="nav-drawer-section">
@@ -558,6 +574,14 @@ function initNavDrawer() {
       if (tagRow) setTimeout(() => tagRow.scrollIntoView({ behavior: "smooth", block: "center" }), 200);
     });
   }
+  body.querySelectorAll(".drawer-track-chevron").forEach((chevron) => {
+    chevron.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const group = chevron.closest(".drawer-track-group");
+      const expanded = group.classList.toggle("expanded");
+      chevron.setAttribute("aria-expanded", String(expanded));
+    });
+  });
   // Re-queries by label text at click time (rather than keeping the
   // original element reference) because initHub() rebuilds the whole grid
   // on every search/filter change, which would otherwise leave these

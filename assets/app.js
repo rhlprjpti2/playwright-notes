@@ -375,12 +375,15 @@ function initBreadcrumb() {
   const phase = phaseOrder.find(p => p.key === entry.phase);
   const track = trackOrder.find(t => t.phases.includes(entry.phase));
 
-  const parts = ['<a href="../index.html">All topics</a>'];
-  if (track) parts.push(`<span class="breadcrumb-seg">${track.label}</span>`);
-  if (phase && (!track || track.phases.length > 1)) parts.push(`<span class="breadcrumb-seg">${phase.label}</span>`);
-  parts.push(`<span class="breadcrumb-current">${entry.title}</span>`);
+  // Each middle crumb bundles its separator with its label into one unit —
+  // on narrow screens the whole pair hides together (see .breadcrumb-crumb
+  // in style.css), so there's never an orphaned "/" left with nothing after it.
+  let html = '<a href="../index.html">All topics</a>';
+  if (track) html += ` <span class="breadcrumb-crumb"><span class="breadcrumb-sep">/</span> <span class="breadcrumb-seg">${track.label}</span></span>`;
+  if (phase && (!track || track.phases.length > 1)) html += ` <span class="breadcrumb-crumb"><span class="breadcrumb-sep">/</span> <span class="breadcrumb-seg">${phase.label}</span></span>`;
+  html += ` <span class="breadcrumb-sep">/</span> <span class="breadcrumb-current">${entry.title}</span>`;
 
-  bc.innerHTML = parts.join(' <span class="breadcrumb-sep">/</span> ');
+  bc.innerHTML = html;
 }
 
 document.addEventListener("DOMContentLoaded", () => {

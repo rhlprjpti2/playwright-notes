@@ -205,6 +205,7 @@ a:hover { text-decoration: underline; }
   background: var(--bg-card);
   color: var(--text-dim);
   font-size: 13px;
+  line-height: 1;
   cursor: pointer;
   transition: all .15s ease;
 }
@@ -382,8 +383,11 @@ a:hover { text-decoration: underline; }
 .breadcrumb-seg { color: var(--text-faint); }
 .breadcrumb-current { color: var(--text-dim); }
 @media (max-width: 480px) {
-  .breadcrumb-seg { display: none; }
-  .breadcrumb-seg:last-of-type { display: inline; }
+  /* Each .breadcrumb-crumb bundles a separator with its label as one unit,
+     so hiding it on narrow screens can't leave an orphaned "/" behind —
+     collapses "All topics / Track / Phase / Title" down to "All topics /
+     Title", which is what actually fits on a phone width. */
+  .breadcrumb-crumb { display: none; }
 }
 .topic-header h1 { font-size: clamp(26px, 3.6vw, 34px); margin: 0 0 10px; letter-spacing: -0.02em; }
 .topic-header .lede { color: var(--text-dim); max-width: 720px; }
@@ -2064,13 +2068,13 @@ footer.site-footer {
 /* ---------- Bookmarks: filter toggle, card badge, in-page stars ---------- */
 .bookmark-filter-btn {
   display: inline-flex; align-items: center; gap: 6px;
-  margin: 14px 0 0;
   padding: 8px 14px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--bg-card);
   color: var(--text-dim);
   font-size: 13px;
+  line-height: 1;
   cursor: pointer;
   transition: all .15s ease;
 }

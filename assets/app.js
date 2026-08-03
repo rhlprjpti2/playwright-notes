@@ -24,19 +24,33 @@ function categoryColorFor(tags) {
   return "var(--accent-2)";
 }
 
+/* Slug lookup shared by makeCard and the per-group learned-progress counts —
+   the one place that knows how to turn a topic's file path into its slug. */
+function slugFor(t) {
+  return (t.file || "").replace(/^pages\//, "").replace(/\.html$/, "");
+}
+
 /* Builds a clickable, keyboard-accessible collapse header used for both
    .hub-track-head and .hub-phase-head — toggles a "hub-collapsed" class on
-   the section it belongs to and keeps aria-expanded in sync for a11y. */
-function makeCollapseHead(className, label, count, targetSection) {
+   the section it belongs to and keeps aria-expanded in sync for a11y.
+   learnedCount, when > 0, switches the count badge to "N/total learned"
+   so progress reads per-track and per-phase, not just as one site-wide
+   number — matters once Python and Playwright are being learned at
+   different paces. */
+function makeCollapseHead(className, label, count, targetSection, learnedCount) {
   const head = document.createElement("div");
   head.className = className;
   head.tabIndex = 0;
   head.setAttribute("role", "button");
   head.setAttribute("aria-expanded", "true");
+  const labelClass = className === "hub-track-head" ? "hub-track-label" : "hub-phase-label";
+  const countClass = className === "hub-track-head" ? "hub-track-count" : "hub-phase-count";
+  const hasProgress = learnedCount > 0;
+  const countText = hasProgress ? `${learnedCount}/${count} learned` : `${count}`;
   head.innerHTML = `
     <span class="hub-collapse-chevron">&#9662;</span>
-    <span class="${className === "hub-track-head" ? "hub-track-label" : "hub-phase-label"}">${label}</span>
-    <span class="${className === "hub-track-head" ? "hub-track-count" : "hub-phase-count"}">${count}</span>
+    <span class="${labelClass}">${label}</span>
+    <span class="${countClass}${hasProgress ? " has-progress" : ""}">${countText}</span>
   `;
   function toggle() {
     const collapsed = targetSection.classList.toggle("hub-collapsed");
@@ -136,10 +150,7 @@ function initHub() {
       return matchesTag && matchesQuery;
     });
     if (showBookmarksOnly && typeof pwSlugHasBookmark === "function") {
-      filtered = filtered.filter(t => {
-        const slug = (t.file || "").replace(/^pages\//, "").replace(/\.html$/, "");
-        return pwSlugHasBookmark(slug);
-      });
+      filtered = filtered.filter(t => pwSlugHasBookmark(slugFor(t)));
     }
 
     Array.from(tagRow.children).forEach(pill => {
@@ -174,7 +185,7 @@ function initHub() {
       card.href = t.file;
       card.className = "card";
       card.style.animationDelay = `${i * 30}ms`;
-      const slug = (t.file || "").replace(/^pages\//, "").replace(/\.html$/, "");
+      const slug = slugFor(t);
       const isVisited = visitedSlugs.includes(slug);
       card.style.borderTop = `3px solid ${categoryColorFor(t.tags)}`;
       const isBookmarked = typeof pwSlugHasBookmark === "function" && pwSlugHasBookmark(slug);
@@ -239,9 +250,12 @@ function initHub() {
       if (trackTopics.length === 0) return;
       const phasesInTrack = phaseOrder.filter(p => track.phases.includes(p.key));
 
+      const trackLearned = typeof pwIsLearned === "function"
+        ? trackTopics.filter(t => pwIsLearned(slugFor(t))).length
+        : 0;
       const trackSection = document.createElement("div");
       trackSection.className = "hub-track";
-      const trackHead = makeCollapseHead("hub-track-head", track.label, trackTopics.length, trackSection);
+      const trackHead = makeCollapseHead("hub-track-head", track.label, trackTopics.length, trackSection, trackLearned);
       trackSection.appendChild(trackHead);
       const trackBody = document.createElement("div");
       trackBody.className = "hub-track-body";
@@ -255,9 +269,12 @@ function initHub() {
         phasesInTrack.forEach((phase) => {
           const inPhase = filtered.filter(t => t.phase === phase.key);
           if (inPhase.length === 0) return;
+          const phaseLearned = typeof pwIsLearned === "function"
+            ? inPhase.filter(t => pwIsLearned(slugFor(t))).length
+            : 0;
           const section = document.createElement("div");
           section.className = "hub-phase hub-phase-nested";
-          const phaseHead = makeCollapseHead("hub-phase-head", phase.label, inPhase.length, section);
+          const phaseHead = makeCollapseHead("hub-phase-head", phase.label, inPhase.length, section, phaseLearned);
           section.appendChild(phaseHead);
           const sectionGrid = document.createElement("div");
           sectionGrid.className = "grid";

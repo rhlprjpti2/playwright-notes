@@ -277,6 +277,11 @@ a:hover { text-decoration: underline; }
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: 999px; padding: 2px 8px;
 }
+.hub-phase-count.has-progress, .hub-track-count.has-progress {
+  color: var(--accent-2);
+  border-color: var(--accent-2);
+  background: color-mix(in srgb, var(--accent-2) 14%, var(--bg-card));
+}
 
 /* Top-level grouping: track (Python Learning / Playwright Course) is the parent,
    phases render as indented children inside it (only when a track has more

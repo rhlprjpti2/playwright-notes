@@ -106,11 +106,42 @@ a:hover { text-decoration: underline; }
 }
 .topbar-inner {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   padding: 14px 24px;
   max-width: 1180px;
   margin: 0 auto;
+}
+.topbar-search {
+  position: relative;
+  flex: 1 1 180px;
+  max-width: 420px;
+  margin: 0 20px;
+}
+.topbar-search input {
+  width: 100%;
+  padding: 6px 12px 6px 30px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.topbar-search input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.topbar-search svg {
+  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+  color: var(--text-faint);
+  width: 12px; height: 12px;
+  pointer-events: none;
+}
+@media (max-width: 640px) {
+  .topbar-search { order: 3; flex-basis: 100%; max-width: none; margin: 10px 0 0; }
 }
 .brand {
   display: flex;
@@ -153,7 +184,7 @@ a:hover { text-decoration: underline; }
 
 /* ---------- Hero / search ---------- */
 .hero {
-  padding: 56px 0 28px;
+  padding: 32px 0 16px;
 }
 .hero h1 {
   font-size: clamp(28px, 4vw, 40px);
@@ -169,7 +200,6 @@ a:hover { text-decoration: underline; }
   display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
   margin-bottom: 10px;
 }
-.hero-controls .search-box { flex: 1 1 320px; }
 .search-box {
   position: relative;
   max-width: 520px;
@@ -269,7 +299,7 @@ a:hover { text-decoration: underline; }
    multi-column card layout. */
 .grid.grid-grouped {
   display: block;
-  padding: 8px 0 60px;
+  padding: 0 0 40px;
 }
 .grid.grid-grouped .grid {
   padding: 0;
@@ -299,8 +329,9 @@ a:hover { text-decoration: underline; }
    than one phase — see .hub-phase-nested below). Both track and phase heads
    are click/keyboard toggles (see makeCollapseHead in app.js) that fold the
    cards underneath — handy on mobile for jumping past sections already read. */
-.hub-track { margin-bottom: 44px; }
+.hub-track { margin-bottom: 44px; transition: margin-bottom .15s ease; }
 .hub-track:last-child { margin-bottom: 0; }
+.hub-track.hub-collapsed { margin-bottom: 14px; }
 .hub-track-head {
   display: flex; align-items: baseline; gap: 12px;
   padding-bottom: 12px; margin-bottom: 22px;
@@ -394,16 +425,18 @@ a:hover { text-decoration: underline; }
   padding: 40px 0 20px;
   border-bottom: 1px solid var(--border);
 }
-.breadcrumb { font-size: 13px; color: var(--text-faint); margin-bottom: 14px; }
+.breadcrumb { font-size: 13px; color: var(--text-faint); margin-bottom: 14px; line-height: 1.7; }
 .breadcrumb-sep { color: var(--text-faint); opacity: .6; margin: 0 1px; }
 .breadcrumb-seg { color: var(--text-faint); }
 .breadcrumb-current { color: var(--text-dim); }
+/* .breadcrumb-crumb bundles a separator with its label as one unit — on
+   narrow screens the whole thing wraps to its own line as a unit rather
+   than breaking mid-crumb, which is what keeps "All topics / Playwright
+   Course / Playwright Core / Title" readable at phone width instead of
+   needing to be stripped down to just "All topics / Title". */
+.breadcrumb-crumb { display: inline-block; }
 @media (max-width: 480px) {
-  /* Each .breadcrumb-crumb bundles a separator with its label as one unit,
-     so hiding it on narrow screens can't leave an orphaned "/" behind —
-     collapses "All topics / Track / Phase / Title" down to "All topics /
-     Title", which is what actually fits on a phone width. */
-  .breadcrumb-crumb { display: none; }
+  .breadcrumb { font-size: 12.5px; }
 }
 .topic-header h1 { font-size: clamp(26px, 3.6vw, 34px); margin: 0 0 10px; letter-spacing: -0.02em; }
 .topic-header .lede { color: var(--text-dim); max-width: 720px; }

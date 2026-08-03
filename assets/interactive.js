@@ -50,6 +50,7 @@ const PW_QUIZ_KEY = "pw-notes-quiz-state";
 const PW_QA_MASTERY_KEY = "pw-notes-qa-mastery";
 const PW_VISITED_KEY = "pw-notes-visited";
 const PW_BOOKMARK_KEY = "pw-notes-bookmarks";
+const PW_LEARNED_KEY = "pw-notes-learned";
 
 function pwTrackVisit() {
   const slug = location.pathname.split("/").pop().replace(/\.html$/, "");
@@ -100,7 +101,7 @@ function pwBookmarksForSlug(slug) {
  *  chevron, bookmark star) so the stored title stays clean plain text. */
 function pwHeadingText(heading) {
   const clone = heading.cloneNode(true);
-  clone.querySelectorAll(".section-chevron, .bookmark-section-btn, .bookmark-page-btn").forEach((n) => n.remove());
+  clone.querySelectorAll(".section-chevron, .bookmark-section-btn, .bookmark-page-btn, .learned-toggle-btn").forEach((n) => n.remove());
   return clone.textContent.replace(/\s+/g, " ").trim();
 }
 
@@ -161,6 +162,62 @@ function initBookmarks() {
     paintSection();
     heading.appendChild(star);
   });
+}
+
+/* ---------- Learned: a deliberate "I actually understood this" marker ---------- */
+/* Distinct from visited (auto-tracked just by opening the page — a weak
+   signal) and from bookmarks (means "revisit me," not "done with me").
+   This is the one the reader sets on purpose, and can unset to redo. */
+
+function pwIsLearned(slug) {
+  return !!pwLoad(PW_LEARNED_KEY)[slug];
+}
+
+function pwToggleLearned(slug, pageTitle) {
+  const learned = pwLoad(PW_LEARNED_KEY);
+  const wasOn = !!learned[slug];
+  if (wasOn) {
+    delete learned[slug];
+  } else {
+    learned[slug] = { pageTitle: pageTitle || slug, ts: Date.now() };
+  }
+  pwSave(PW_LEARNED_KEY, learned);
+  document.dispatchEvent(new CustomEvent("pw-learned-change"));
+  return !wasOn;
+}
+
+/** Adds a "Mark as learned" toggle next to the topic's H1 (right after the
+ *  bookmark button, if present) — click again to undo and redo the topic
+ *  later. Purely a self-report; nothing here checks actual comprehension. */
+function initLearnedToggle() {
+  const slug = location.pathname.split("/").pop().replace(/\.html$/, "");
+  if (!slug || slug === "index") return;
+
+  const header = document.querySelector(".topic-header");
+  const h1 = header ? header.querySelector("h1") : null;
+  if (!header || !h1 || header.querySelector(".learned-toggle-btn")) return;
+
+  const pageTitle = pwHeadingText(h1);
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "learned-toggle-btn";
+  function paint() {
+    const on = pwIsLearned(slug);
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-pressed", String(on));
+    btn.innerHTML = on
+      ? "&#10003; Learned <span class=\"learned-undo-hint\">— click to undo</span>"
+      : "&#9711; Mark as learned";
+  }
+  btn.addEventListener("click", () => {
+    pwToggleLearned(slug, pageTitle);
+    paint();
+  });
+  paint();
+
+  const bookmarkBtn = header.querySelector(".bookmark-page-btn");
+  if (bookmarkBtn) bookmarkBtn.insertAdjacentElement("afterend", btn);
+  else h1.insertAdjacentElement("afterend", btn);
 }
 
 /** Strips difficulty/topic badges out of a Q&A summary so the remaining question
@@ -593,9 +650,11 @@ function initFirstVisitHint() {
   localStorage.setItem(HINT_KEY, "1");
 }
 
-/** Reads visited/quiz/mastery state and renders a small progress line — used on
- *  index.html and course-roadmap.html. Returns null if there's nothing to show yet. */
+/** Reads learned/visited/quiz/mastery state and renders a small progress
+ *  line — used on index.html and course-roadmap.html. Returns null if
+ *  there's nothing to show yet. */
 function pwProgressSummary(totalTopics) {
+  const learned = Object.keys(pwLoad(PW_LEARNED_KEY)).length;
   const visited = Object.keys(pwLoad(PW_VISITED_KEY)).length;
   const quizState = pwLoad(PW_QUIZ_KEY);
   const quizCorrect = Object.values(quizState).filter((q) => q.correct).length;
@@ -603,8 +662,8 @@ function pwProgressSummary(totalTopics) {
   const mastery = pwLoad(PW_QA_MASTERY_KEY);
   const known = Object.values(mastery).filter((v) => v === "known").length;
   const shaky = Object.values(mastery).filter((v) => v === "shaky").length;
-  if (visited === 0 && quizTotal === 0 && known === 0 && shaky === 0) return null;
-  return { visited, totalTopics, quizCorrect, quizTotal, known, shaky };
+  if (learned === 0 && visited === 0 && quizTotal === 0 && known === 0 && shaky === 0) return null;
+  return { learned, visited, totalTopics, quizCorrect, quizTotal, known, shaky };
 }
 
 /**
@@ -1295,5 +1354,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initFirstVisitHint();
   pwTrackVisit();
   initBookmarks();
+  initLearnedToggle();
   initIllustrationToggles();
 });

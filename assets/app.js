@@ -80,21 +80,25 @@ function initHub() {
   statSources.innerHTML = `<b>${totalSources}</b> video${totalSources === 1 ? "" : "s"} processed`;
 
   const visitedSlugs = typeof pwLoad === "function" ? Object.keys(pwLoad("pw-notes-visited")) : [];
-  if (typeof pwProgressSummary === "function") {
+  const learnedSlugs = typeof pwLoad === "function" ? Object.keys(pwLoad("pw-notes-learned")) : [];
+  function renderProgressStrip() {
+    if (typeof pwProgressSummary !== "function") return;
     const summary = pwProgressSummary(topics.length);
     const strip = document.getElementById("progress-strip");
-    if (summary && strip) {
-      const pct = topics.length ? Math.round((summary.visited / topics.length) * 100) : 0;
-      strip.style.display = "flex";
-      strip.innerHTML = `
-        <span><b>${summary.visited}</b> of ${topics.length} topics visited</span>
-        <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-        ${summary.quizTotal ? `<span><b>${summary.quizCorrect}</b>/${summary.quizTotal} quiz answers correct</span>` : ""}
-        ${summary.known ? `<span><b>${summary.known}</b> questions known</span>` : ""}
-        ${summary.shaky ? `<span><b>${summary.shaky}</b> still shaky</span>` : ""}
-      `;
-    }
+    if (!summary || !strip) { if (strip) strip.style.display = "none"; return; }
+    const pct = topics.length ? Math.round((summary.learned / topics.length) * 100) : 0;
+    strip.style.display = "flex";
+    strip.innerHTML = `
+      <span><b>${summary.learned}</b> of ${topics.length} topics learned</span>
+      <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+      ${summary.visited ? `<span><b>${summary.visited}</b> visited</span>` : ""}
+      ${summary.quizTotal ? `<span><b>${summary.quizCorrect}</b>/${summary.quizTotal} quiz answers correct</span>` : ""}
+      ${summary.known ? `<span><b>${summary.known}</b> questions known</span>` : ""}
+      ${summary.shaky ? `<span><b>${summary.shaky}</b> still shaky</span>` : ""}
+    `;
   }
+  renderProgressStrip();
+  document.addEventListener("pw-learned-change", renderProgressStrip);
 
   allTags.forEach(tag => {
     const pill = document.createElement("span");
@@ -174,13 +178,17 @@ function initHub() {
       const isVisited = visitedSlugs.includes(slug);
       card.style.borderTop = `3px solid ${categoryColorFor(t.tags)}`;
       const isBookmarked = typeof pwSlugHasBookmark === "function" && pwSlugHasBookmark(slug);
+      const isLearned = typeof pwIsLearned === "function" && pwIsLearned(slug);
       const bookmarkedSections = typeof pwBookmarksForSlug === "function"
         ? pwBookmarksForSlug(slug).filter(b => b.sectionId)
         : [];
       card.innerHTML = `
         <div class="card-badges">
           <button type="button" class="card-bookmark-badge${isBookmarked ? " active" : ""}" title="${isBookmarked ? "Remove bookmark" : "Bookmark this topic"}" aria-pressed="${isBookmarked}">${isBookmarked ? "&#9733;" : "&#9734;"}</button>
-          ${isVisited ? '<span class="card-visited-badge" title="Visited">&#10003;</span>' : "<span></span>"}
+          <div class="card-badges-right">
+            <button type="button" class="card-learned-badge${isLearned ? " active" : ""}" title="${isLearned ? "Learned — click to undo" : "Mark as learned"}" aria-pressed="${isLearned}">${isLearned ? "&#10003;" : "&#9711;"}</button>
+            ${isVisited ? '<span class="card-visited-badge" title="Visited">&#10003;</span>' : ""}
+          </div>
         </div>
         <div class="card-title">${t.title}</div>
         <div class="card-summary">${t.summary || ""}</div>
@@ -196,6 +204,15 @@ function initHub() {
         e.stopPropagation();
         if (typeof pwToggleBookmark === "function") {
           pwToggleBookmark({ slug, sectionId: null, pageTitle: t.title, sectionTitle: null });
+        }
+        render();
+      });
+      const learnedBtn = card.querySelector(".card-learned-badge");
+      learnedBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof pwToggleLearned === "function") {
+          pwToggleLearned(slug, t.title);
         }
         render();
       });

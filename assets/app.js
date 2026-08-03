@@ -420,8 +420,70 @@ function initBreadcrumb() {
   bc.innerHTML = html;
 }
 
+/* ---------- Mobile hamburger: collapses search + actions into a dropdown ---------- */
+/* Site-wide (every page shares the same .topbar-inner / .topbar-hamburger
+   structure) — desktop never sees the hamburger at all (display:none until
+   the 640px breakpoint), this only changes behavior on narrow screens. */
+function initTopbarMenu() {
+  const inner = document.querySelector(".topbar-inner");
+  const hamburger = document.getElementById("topbar-hamburger");
+  if (!inner || !hamburger) return;
+
+  function close() {
+    inner.classList.remove("menu-open");
+    hamburger.setAttribute("aria-expanded", "false");
+  }
+  hamburger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const open = inner.classList.toggle("menu-open");
+    hamburger.setAttribute("aria-expanded", String(open));
+  });
+  document.addEventListener("click", (e) => {
+    if (inner.classList.contains("menu-open") && !inner.contains(e.target)) close();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") close();
+  });
+}
+
+/* ---------- Mobile TOC: collapses the section list behind a toggle ---------- */
+/* Desktop keeps the TOC as an always-visible sticky sidebar — the toggle
+   only has a visual effect once the 760px breakpoint collapses it into the
+   content column (see .toc-toggle in style.css). */
+function initMobileToc() {
+  const toc = document.querySelector(".toc");
+  const label = toc ? toc.querySelector(":scope > div") : null;
+  if (!toc || !label) return;
+
+  label.classList.add("toc-toggle");
+  label.tabIndex = 0;
+  label.setAttribute("role", "button");
+  label.setAttribute("aria-expanded", "false");
+  const chevron = document.createElement("span");
+  chevron.className = "section-chevron";
+  chevron.innerHTML = "&#9662;";
+  label.appendChild(chevron);
+
+  function toggle() {
+    const open = toc.classList.toggle("toc-open");
+    label.setAttribute("aria-expanded", String(open));
+  }
+  label.addEventListener("click", toggle);
+  label.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+  });
+  // Picking a section closes the mobile dropdown so it doesn't stay open
+  // and cover the content that was just navigated to.
+  toc.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => {
+    toc.classList.remove("toc-open");
+    label.setAttribute("aria-expanded", "false");
+  }));
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initHub();
   initTopicPage();
   initBreadcrumb();
+  initTopbarMenu();
+  initMobileToc();
 });

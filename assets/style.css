@@ -2450,7 +2450,12 @@ code, .qa-body, .sc-status, .ts-desc, .wf-desc, .fs-explain, .pg-explain {
   padding: 54px 14px 32px;
   -webkit-overflow-scrolling: touch;
 }
-.illustration-fullscreen-overlay.open { display: block; }
+.illustration-fullscreen-overlay.open {
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* short diagrams center in the viewport height instead of
+                               sitting stranded at the top with dead space below them */
+}
 .illustration-fullscreen-close {
   position: fixed; top: 12px; right: 12px; z-index: 201;
   width: 40px; height: 40px;
@@ -2459,7 +2464,7 @@ code, .qa-body, .sc-status, .ts-desc, .wf-desc, .fs-explain, .pg-explain {
   color: var(--text-dim); font-size: 22px; line-height: 1; cursor: pointer;
 }
 .illustration-fullscreen-close:hover { color: var(--text); border-color: var(--accent); }
-.illustration-fullscreen-body { max-width: 960px; margin: 0 auto; }
+.illustration-fullscreen-body { max-width: 960px; width: 100%; margin: 0 auto; flex-shrink: 0; }
 .illustration-fullscreen-body .illustration-expand-btn { display: none; }
 .illustration-fullscreen-active { margin-bottom: 0 !important; }
 .illustration-fullscreen-hint {
@@ -2471,4 +2476,18 @@ body.fullscreen-lock { overflow: hidden; }
 
 @media (max-width: 600px) and (orientation: portrait) {
   .illustration-fullscreen-hint { display: block; }
+}
+
+/* Mobile gets the space back that the desktop-oriented padding/card
+   chrome was eating — thinner overlay padding, and the illustration's
+   own border/background card styling stripped so the diagram itself
+   runs closer to the true screen edges instead of floating as a card
+   inside a card. concept-art also scales up beyond its normal 100%-
+   width fit, since most of these scenes are wide-and-short and were
+   otherwise leaving real vertical space on the table. */
+@media (max-width: 640px) {
+  .illustration-fullscreen-overlay { padding: 48px 4px 14px; }
+  .illustration-fullscreen-body .illustration-fullscreen-active.concept-art {
+    border: none; background: none; padding: 0;
+  }
 }

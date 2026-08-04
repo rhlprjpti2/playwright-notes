@@ -55,6 +55,7 @@
       <div>On this page</div>
       <a href="#concept">Concept</a>
       <a href="#group-by-mechanics">GROUP BY, row by row</a>
+      <a href="#aggregate-functions">AVG, MIN, MAX</a>
       <a href="#count-star-vs-column">COUNT(*) vs COUNT(column)</a>
       <a href="#having-vs-where">HAVING vs WHERE, revisited</a>
       <a href="#multi-column-group">Grouping by more than one column</a>
@@ -121,6 +122,24 @@
         <div class="callout tip">
           <strong>One output row per distinct value, always</strong>
           It doesn't matter whether a bucket has 1 row or 100 — GROUP BY always collapses it to exactly one row in the result. This is the entire reason ungrouped columns need an aggregate function: <code>SELECT customer_id, amount FROM orders GROUP BY customer_id</code> is invalid in strict SQL mode, because <code>amount</code> could be any one of several different values within a bucket, and the database has no rule for picking which.
+        </div>
+      </section>
+
+      <section id="aggregate-functions">
+        <h2>AVG, MIN, MAX</h2>
+        <p>Same bucketing mechanics as the COUNT/SUM stepper above — each aggregate function just computes something different across the rows in a bucket:</p>
+        <pre><code>SELECT customer_id,
+       COUNT(*)     AS order_count,
+       SUM(amount)  AS total_spent,
+       AVG(amount)  AS avg_order_value,
+       MIN(amount)  AS smallest_order,
+       MAX(amount)  AS largest_order
+FROM orders
+GROUP BY customer_id;</code></pre>
+        <p>For customer 1's two orders ($40, $60) from the stepper above: <code>COUNT(*)</code> = 2, <code>SUM</code> = 100, <code>AVG</code> = 50, <code>MIN</code> = 40, <code>MAX</code> = 60. All six aggregate functions can run in the same <code>SELECT</code> simultaneously — each one just does its own pass over the same grouped rows.</p>
+        <div class="callout tip">
+          <strong>AVG on integer columns can silently truncate</strong>
+          In some databases, <code>AVG()</code> over an integer column returns an integer, truncating the decimal — three orders of $10, $10, $11 average to 10.33, but a truncating AVG reports 10. Casting to a decimal/float type before averaging (<code>AVG(amount::numeric)</code> in Postgres, <code>AVG(CAST(amount AS DECIMAL))</code> more portably) avoids losing that precision.
         </div>
       </section>
 

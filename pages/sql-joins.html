@@ -57,6 +57,7 @@
       <a href="#inner-left">INNER JOIN vs LEFT JOIN</a>
       <a href="#right-full-cross">RIGHT, FULL OUTER, CROSS</a>
       <a href="#self-join">SELF JOIN</a>
+      <a href="#chaining-joins">Chaining multiple joins</a>
       <a href="#where-vs-on">The WHERE-clause trap on outer joins</a>
       <a href="#interview-qa">Interview Q&amp;A</a>
       <a href="#gotchas">Gotchas</a>
@@ -196,6 +197,20 @@
 FROM employees e
 LEFT JOIN employees m ON e.manager_id = m.id;</code></pre>
         <p>The <code>LEFT JOIN</code> here matters for the same reason as above — an employee with no manager (<code>manager_id IS NULL</code>, e.g. the CEO) would be silently dropped by an <code>INNER JOIN</code>, since <code>NULL</code> never matches anything in an <code>ON</code> condition either.</p>
+      </section>
+
+      <section id="chaining-joins">
+        <h2>Chaining multiple joins</h2>
+        <p>Nothing special happens beyond two tables — each additional <code>JOIN</code> just operates on the result of everything joined so far, left to right. Three tables (<code>customers</code> → <code>orders</code> → <code>order_items</code>) to get each customer's individual line items:</p>
+        <pre><code>SELECT c.name, o.id AS order_id, oi.product, oi.quantity
+FROM customers c
+JOIN orders o ON o.customer_id = c.id
+JOIN order_items oi ON oi.order_id = o.id;</code></pre>
+        <p>Read it as two separate, sequential joins: first <code>customers</code> is joined to <code>orders</code> (producing an intermediate result — customers with their orders), and <em>that combined result</em> is then joined to <code>order_items</code>. The join type doesn't have to match across the chain either — a common real pattern is <code>INNER JOIN</code> for a relationship that must exist (an order's items) alongside a <code>LEFT JOIN</code> for one that might not (an optional discount code):</p>
+        <pre><code>SELECT c.name, o.id AS order_id, d.code AS discount_code
+FROM customers c
+JOIN orders o ON o.customer_id = c.id
+LEFT JOIN discounts d ON d.order_id = o.id;   -- most orders have no discount — LEFT keeps them anyway</code></pre>
       </section>
 
       <section id="where-vs-on">

@@ -627,7 +627,8 @@ window.TOPICS_INDEX_SQL = [
     keyTerms: [
       "INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL OUTER JOIN", "CROSS JOIN", "SELF JOIN",
       "cartesian product", "ON vs WHERE", "NULL-filled columns", "foreign key", "table alias",
-      "customers with no orders", "accidental cross join"
+      "customers with no orders", "accidental cross join", "chaining joins", "multi-table join",
+      "three table join"
     ],
     summary: "INNER vs LEFT vs FULL OUTER vs CROSS vs SELF joins via actual row matching, plus the classic WHERE-on-outer-join trap that silently turns a LEFT JOIN into an INNER JOIN.",
     related: ["sql-fundamentals", "sql-dml", "playwright-web-tables"],

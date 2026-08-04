@@ -54,6 +54,7 @@
     <nav class="toc">
       <div>On this page</div>
       <a href="#concept">Concept</a>
+      <a href="#non-correlated">Non-correlated subqueries</a>
       <a href="#correlated">Correlated subqueries, row by row</a>
       <a href="#exists-vs-in">EXISTS vs IN</a>
       <a href="#union">UNION vs UNION ALL</a>
@@ -69,6 +70,17 @@
       <section id="concept">
         <h2>Concept</h2>
         <p>A subquery is a query nested inside another — in <code>WHERE</code>, in <code>SELECT</code>, in <code>FROM</code>. The distinction that actually matters in an interview isn't where it's nested, it's whether it references anything from the outer query: <strong>non-correlated</strong> subqueries stand alone and run once; <strong>correlated</strong> subqueries reference an outer-query column and conceptually re-run once per outer row.</p>
+      </section>
+
+      <section id="non-correlated">
+        <h2>Non-correlated subqueries</h2>
+        <p>Fully self-contained — nothing inside it references anything from the outer query, so it can run completely on its own first, and the outer query just uses whatever it returned:</p>
+        <pre><code>-- The inner query runs exactly ONCE, independent of the outer query,
+-- producing one fixed number the outer query then compares every row against
+SELECT name, salary
+FROM employees
+WHERE salary > (SELECT AVG(salary) FROM employees);   -- one company-wide average, computed once</code></pre>
+        <p>Run the inner query by itself in a separate tab and it returns a perfectly normal single value — that's the tell for non-correlated: it doesn't need the outer query to mean anything at all. Compare that to the correlated example below, where the inner query references <code>e1.department</code> and can't run standalone.</p>
       </section>
 
       <section id="correlated">

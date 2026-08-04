@@ -42,6 +42,8 @@ TOPIC_LABELS = {
     "sql-aggregation": "SQL: Aggregation",
     "sql-subqueries": "SQL: Subqueries",
     "sql-window-functions": "SQL: Window Functions",
+    "sql-views-procedures": "SQL: Views & Procedures",
+    "sql-database-design": "SQL: Database Design",
     "python-memory-model": "Python: Memory Model",
     "python-data-types": "Python: Data Types",
     "python-strings": "Python: Strings",

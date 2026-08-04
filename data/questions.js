@@ -1349,6 +1349,38 @@ window.ALL_QUESTIONS = [
   "file": "pages/sql-aggregation.html"
  },
  {
+  "q": "What problem does normalization actually solve?",
+  "a": "Update anomalies caused by redundant data — if the same fact (a customer's email, say) is repeated across many rows, updating it requires finding and changing every copy; missing one leaves inconsistent data with no way to tell which copy is correct. Normalization stores each fact in exactly one place.",
+  "level": "junior",
+  "topic": "sql-database-design",
+  "topicLabel": "SQL: Database Design",
+  "file": "pages/sql-database-design.html"
+ },
+ {
+  "q": "What's the difference between a primary key and a unique constraint?",
+  "a": "A table can have only one primary key, and it can never be NULL. A table can have multiple UNIQUE constraints, and — depending on the database — a UNIQUE column can typically allow NULL (often more than one, since NULL isn't considered equal to another NULL for uniqueness purposes).",
+  "level": "junior",
+  "topic": "sql-database-design",
+  "topicLabel": "SQL: Database Design",
+  "file": "pages/sql-database-design.html"
+ },
+ {
+  "q": "Why not just add an index to every column to be safe?",
+  "a": "Every index has to be updated on every write to that table — more indexes means slower INSERT/UPDATE/DELETE, plus additional storage. Indexes should be added deliberately, targeting columns that are actually filtered, joined, or sorted on frequently enough that the read speedup outweighs the write cost.",
+  "level": "mid",
+  "topic": "sql-database-design",
+  "topicLabel": "SQL: Database Design",
+  "file": "pages/sql-database-design.html"
+ },
+ {
+  "q": "When would you intentionally denormalize a schema?",
+  "a": "When read performance matters more than eliminating redundancy — e.g. storing a pre-computed total on an orders row instead of recalculating SUM(order_items) on every read, accepting the risk of that total drifting out of sync in exchange for not re-aggregating on every query. This is a deliberate, documented trade-off, not a sign the schema was designed incorrectly.",
+  "level": "senior",
+  "topic": "sql-database-design",
+  "topicLabel": "SQL: Database Design",
+  "file": "pages/sql-database-design.html"
+ },
+ {
   "q": "What happens if you run UPDATE or DELETE without a WHERE clause?",
   "a": "It applies to every row in the table — there's no confirmation, no error, no partial safeguard. UPDATE without WHERE overwrites every row's specified columns; DELETE without WHERE removes every row (though the table itself still exists, unlike TRUNCATE or DROP).",
   "level": "junior",
@@ -1515,6 +1547,38 @@ window.ALL_QUESTIONS = [
   "topic": "sql-subqueries",
   "topicLabel": "SQL: Subqueries",
   "file": "pages/sql-subqueries.html"
+ },
+ {
+  "q": "What's the difference between a view and a materialized view?",
+  "a": "A regular view stores no data — it's a saved query that re-runs against live tables every time it's queried, so it's always current. A materialized view stores its result physically, like a table, making it fast to query but stale until REFRESH MATERIALIZED VIEW is explicitly run.",
+  "level": "junior",
+  "topic": "sql-views-procedures",
+  "topicLabel": "SQL: Views & Procedures",
+  "file": "pages/sql-views-procedures.html"
+ },
+ {
+  "q": "What's the difference between a stored procedure and a function?",
+  "a": "A function returns a value and can be used inline inside a query, like SELECT order_tier(amount). A stored procedure is called on its own (CALL procedure_name(...)), can perform writes and multi-step procedural logic, and generally can't be embedded inside another query's expression the way a function can.",
+  "level": "junior",
+  "topic": "sql-views-procedures",
+  "topicLabel": "SQL: Views & Procedures",
+  "file": "pages/sql-views-procedures.html"
+ },
+ {
+  "q": "What is a trigger, and what's a real risk of relying on them heavily?",
+  "a": "A trigger is logic that fires automatically on an INSERT/UPDATE/DELETE event, without the caller needing to invoke anything. The risk is invisibility — reading the statement that caused it gives no indication a trigger ran at all, which can make debugging unexpected side effects (extra rows written, an update silently blocked) considerably harder, especially for someone unfamiliar with the schema's triggers.",
+  "level": "mid",
+  "topic": "sql-views-procedures",
+  "topicLabel": "SQL: Views & Procedures",
+  "file": "pages/sql-views-procedures.html"
+ },
+ {
+  "q": "When would you choose a materialized view over just running the aggregation query directly each time?",
+  "a": "When the underlying query is expensive (a large aggregation, several joins) and queried often, but doesn't need to reflect every single write in real time — a dashboard refreshed hourly is a good fit; a live balance check is not. The trade-off is explicitly accepting staleness between refreshes in exchange for consistently fast reads.",
+  "level": "senior",
+  "topic": "sql-views-procedures",
+  "topicLabel": "SQL: Views & Procedures",
+  "file": "pages/sql-views-procedures.html"
  },
  {
   "q": "What's the fundamental difference between a window function and GROUP BY?",

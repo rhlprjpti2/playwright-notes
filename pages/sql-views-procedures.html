@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Views, Procedures, Functions & Triggers · Tech Interview Hub</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../data/topics-index.js"></script>
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
+    <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
+<nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
+  <div class="nav-drawer-head">
+    <span>Menu</span>
+    <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="nav-drawer-body" id="nav-drawer-body"></div>
+</nav>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Views, Procedures, Functions &amp; Triggers</div>
+    <h1>Views, Procedures, Functions &amp; Triggers</h1>
+    <p class="lede">The database-object family beyond plain queries — and specifically why an SDET should care: these are the tools for building reusable test-data setup helpers and validation logic that live in the database itself, not just application code.</p>
+    <div class="card-tags">
+      <span>sql</span>
+      <span>views</span>
+      <span>procedures</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone SQL track — authored directly for Lead SDET interview prep, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#regular-views">Regular views</a>
+      <a href="#materialized-views">Materialized views</a>
+      <a href="#stored-procedures">Stored procedures</a>
+      <a href="#functions">User-defined functions</a>
+      <a href="#triggers">Triggers</a>
+      <a href="#why-sdet-cares">Why an SDET actually uses these</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p>Four different ways to package SQL logic so it doesn't have to be rewritten every time: a <strong>view</strong> packages a query, a <strong>stored procedure</strong> packages a sequence of statements (including writes), a <strong>function</strong> packages a reusable computation that returns a value, and a <strong>trigger</strong> packages logic that runs automatically in reaction to a DML event.</p>
+      </section>
+
+      <section id="regular-views">
+        <h2>Regular views</h2>
+        <p>A saved query, nothing more — a view has no data of its own. Every time it's queried, the database re-runs the underlying <code>SELECT</code> against the live tables.</p>
+        <pre><code>CREATE VIEW shipped_orders AS
+SELECT id, customer_id, amount
+FROM orders
+WHERE status = 'shipped';
+
+SELECT * FROM shipped_orders;   -- reads exactly like querying a table</code></pre>
+        <p>Because it's just a stored query, a view is always up to date — there's no staleness to worry about, since it never actually stores a result.</p>
+      </section>
+
+      <section id="materialized-views">
+        <h2>Materialized views</h2>
+        <p>The opposite trade-off: a materialized view <strong>does</strong> store its result physically, like a real table — which makes it fast to query (no re-running the underlying logic every time) at the cost of going stale the moment the source data changes, until it's explicitly refreshed.</p>
+        <pre><code>CREATE MATERIALIZED VIEW monthly_revenue AS
+SELECT DATE_TRUNC('month', created_at) AS month, SUM(amount) AS total
+FROM orders
+GROUP BY 1;
+
+REFRESH MATERIALIZED VIEW monthly_revenue;   -- re-runs the query, overwrites the stored snapshot</code></pre>
+        <p>Watch the difference directly — a new order is inserted, then both view types are queried immediately afterward:</p>
+        <div class="demo" id="view-staleness-demo"></div>
+        <script>
+          renderAssertToggle("view-staleness-demo", {
+            expression: "A new order was just inserted. Query the view right now:",
+            initialKey: "regular",
+            options: [
+              { key: "regular", label: "SELECT * FROM shipped_orders (regular view)", pass: true, detail: "Shows the new order immediately — it's just re-running the underlying SELECT against the live table." },
+              { key: "matNoRefresh", label: "SELECT * FROM monthly_revenue (materialized, no refresh)", pass: false, detail: "Still shows last month's stored totals — the new order isn't reflected until REFRESH MATERIALIZED VIEW runs." },
+              { key: "matAfterRefresh", label: "SELECT * FROM monthly_revenue (after REFRESH)", pass: true, detail: "Now shows the updated total — REFRESH re-ran the query and overwrote the stored snapshot." }
+            ]
+          });
+        </script>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th></th><th>Regular view</th><th>Materialized view</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">Stores data?</td><td>No — re-runs the query every time</td><td>Yes — a physical snapshot of the result</td></tr>
+              <tr><td class="highlight">Freshness</td><td>Always current</td><td>Stale until manually or scheduled REFRESH</td></tr>
+              <tr><td class="highlight">Query speed</td><td>Same as the underlying query — no speedup</td><td>Fast — reading a stored result, not recomputing</td></tr>
+              <tr><td class="highlight">Best for</td><td>Simplifying a commonly-reused query</td><td>Expensive aggregations queried often but not needing real-time freshness</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="stored-procedures">
+        <h2>Stored procedures</h2>
+        <p>A named, callable sequence of SQL statements — unlike a view, a procedure can perform writes and contain actual procedural logic (conditionals, loops), not just a single query:</p>
+        <pre><code>CREATE PROCEDURE archive_old_orders(cutoff_date DATE)
+LANGUAGE SQL
+AS $$
+  INSERT INTO orders_archive
+  SELECT * FROM orders WHERE created_at < cutoff_date;
+
+  DELETE FROM orders WHERE created_at < cutoff_date;
+$$;
+
+CALL archive_old_orders('2025-01-01');</code></pre>
+        <p>Both statements run as one unit when the procedure is called — the caller doesn't repeat this multi-step logic inline every time archiving needs to happen.</p>
+      </section>
+
+      <section id="functions">
+        <h2>User-defined functions</h2>
+        <p>Similar idea to a procedure, but a function specifically <strong>returns a value</strong> and can be used directly inside a query — a procedure generally can't be:</p>
+        <pre><code>CREATE FUNCTION order_tier(amount NUMERIC) RETURNS TEXT
+LANGUAGE SQL
+AS $$
+  SELECT CASE
+    WHEN amount >= 1000 THEN 'high'
+    WHEN amount >= 100  THEN 'medium'
+    ELSE 'low'
+  END;
+$$;
+
+SELECT id, amount, order_tier(amount) FROM orders;   -- used inline, like a built-in function</code></pre>
+        <p>This is the same logic as the <a href="sql-fundamentals.html#case-when">CASE WHEN</a> example from Fundamentals — wrapped in a function so every query needing this classification calls one name instead of repeating the CASE expression everywhere.</p>
+      </section>
+
+      <section id="triggers">
+        <h2>Triggers</h2>
+        <p>Logic that fires automatically in response to a DML event — <code>INSERT</code>, <code>UPDATE</code>, or <code>DELETE</code> — without the application needing to remember to call anything:</p>
+        <pre><code>CREATE TRIGGER log_salary_change
+AFTER UPDATE OF salary ON employees
+FOR EACH ROW
+EXECUTE FUNCTION record_salary_history();
+
+-- Now ANY update to salary — from any application, any script, any person —
+-- automatically writes an audit row, with zero cooperation required from the caller</code></pre>
+        <p>The defining property of a trigger, for better and worse, is that it's invisible from the statement that caused it — <code>UPDATE employees SET salary = 90000 WHERE id = 5</code> looks like an ordinary update, but a trigger can make it also insert an audit row, block the update entirely, or modify other tables, none of which is visible by reading that one line of code.</p>
+      </section>
+
+      <section id="why-sdet-cares">
+        <h2>Why an SDET actually uses these</h2>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Object</th><th>Test-related use</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">View</td><td>A stable, simplified "test data view" — e.g. active_test_users — that hides the real schema's complexity from test setup code.</td></tr>
+              <tr><td class="highlight">Stored procedure</td><td>A reusable <code>seed_test_account(...)</code> or <code>reset_test_data()</code> procedure, callable identically from any test framework or language, instead of duplicating multi-step setup SQL in every test suite.</td></tr>
+              <tr><td class="highlight">Function</td><td>Shared validation logic (e.g. a function that computes an expected derived value) usable both by the application and directly in a test's assertion query.</td></tr>
+              <tr><td class="highlight">Trigger</td><td>Understanding these matters even without writing them — a trigger can be the actual, hidden reason a test's direct INSERT doesn't produce the side effects the application's normal code path does, or vice versa.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the difference between a view and a materialized view?</summary>
+          <div class="qa-body">A regular view stores no data — it's a saved query that re-runs against live tables every time it's queried, so it's always current. A materialized view stores its result physically, like a table, making it fast to query but stale until REFRESH MATERIALIZED VIEW is explicitly run.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the difference between a stored procedure and a function?</summary>
+          <div class="qa-body">A function returns a value and can be used inline inside a query, like SELECT order_tier(amount). A stored procedure is called on its own (CALL procedure_name(...)), can perform writes and multi-step procedural logic, and generally can't be embedded inside another query's expression the way a function can.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What is a trigger, and what's a real risk of relying on them heavily?</summary>
+          <div class="qa-body">A trigger is logic that fires automatically on an INSERT/UPDATE/DELETE event, without the caller needing to invoke anything. The risk is invisibility — reading the statement that caused it gives no indication a trigger ran at all, which can make debugging unexpected side effects (extra rows written, an update silently blocked) considerably harder, especially for someone unfamiliar with the schema's triggers.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> When would you choose a materialized view over just running the aggregation query directly each time?</summary>
+          <div class="qa-body">When the underlying query is expensive (a large aggregation, several joins) and queried often, but doesn't need to reflect every single write in real time — a dashboard refreshed hourly is a good fit; a live balance check is not. The trade-off is explicitly accepting staleness between refreshes in exchange for consistently fast reads.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>A materialized view can look "broken" without a refresh schedule</strong>
+          If nothing ever calls REFRESH (manually or via a scheduled job), the view silently drifts further and further out of date — not an error, just quietly wrong.
+        </div>
+        <div class="callout warn">
+          <strong>Triggers hide side effects from the caller</strong>
+          A test that inserts directly into a table can accidentally skip logic a trigger normally provides — or, less obviously, trip a trigger the test author didn't know existed.
+        </div>
+        <div class="callout warn">
+          <strong>Overusing views doesn't reduce actual query cost</strong>
+          A regular view is not a performance optimization — querying it costs exactly what querying its underlying SELECT costs. The performance win, when there is one, comes specifically from materialized views.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="sql-fundamentals.html">SQL Fundamentals &amp; Command Categories →</a>
+          <a href="sql-dml.html">DML Deep Dive →</a>
+          <a href="pytest-fixtures.html">Pytest Fixtures &amp; Fundamentals →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: Original content — written for interview prep, not sourced from a transcript — added 2026-08-05</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

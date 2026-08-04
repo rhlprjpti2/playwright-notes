@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Database Design & Constraints · Tech Interview Hub</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../data/topics-index.js"></script>
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
+    <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
+<nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
+  <div class="nav-drawer-head">
+    <span>Menu</span>
+    <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="nav-drawer-body" id="nav-drawer-body"></div>
+</nav>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Database Design &amp; Constraints</div>
+    <h1>Database Design &amp; Constraints</h1>
+    <p class="lede">Normalization from 1NF to 3NF via an actual messy table getting progressively split apart, the constraint types that enforce data integrity at the database level rather than trusting application code, and why an index speeds up reads at the direct cost of writes.</p>
+    <div class="card-tags">
+      <span>sql</span>
+      <span>database-design</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone SQL track — authored directly for Lead SDET interview prep, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#normalization">Normalization: 1NF, 2NF, 3NF</a>
+      <a href="#keys">Primary keys and foreign keys</a>
+      <a href="#constraints">UNIQUE, CHECK, NOT NULL, DEFAULT</a>
+      <a href="#indexes">Indexes — and their cost</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p>Two competing concerns: normalization organizes data to eliminate redundancy and prevent update anomalies (this page's first topic), while constraints and indexes are the mechanisms that enforce correctness and speed up access once the schema is designed. Real systems intentionally trade some normalization away for query performance — this page covers the rules, not a mandate to follow them absolutely.</p>
+      </section>
+
+      <section id="normalization">
+        <h2>Normalization: 1NF, 2NF, 3NF</h2>
+        <p>Start with a genuinely messy, unnormalized table — everything crammed into one place:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>order_id</th><th>customer_name</th><th>customer_email</th><th>products</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Ada Lovelace</td><td>ada@example.com</td><td>Widget, Gadget, Gizmo</td></tr>
+              <tr><td>2</td><td>Ada Lovelace</td><td>ada@example.com</td><td>Widget</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>1NF — eliminate repeating groups.</strong> The comma-packed <code>products</code> column violates 1NF outright: a cell must hold one atomic value, not a list. Split each product into its own row:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>order_id</th><th>customer_name</th><th>customer_email</th><th>product</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Ada Lovelace</td><td>ada@example.com</td><td>Widget</td></tr>
+              <tr><td>1</td><td>Ada Lovelace</td><td>ada@example.com</td><td>Gadget</td></tr>
+              <tr><td>1</td><td>Ada Lovelace</td><td>ada@example.com</td><td>Gizmo</td></tr>
+              <tr><td>2</td><td>Ada Lovelace</td><td>ada@example.com</td><td>Widget</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>2NF — eliminate partial dependencies.</strong> Now in 1NF, but with a composite key (<code>order_id</code> + <code>product</code>), <code>customer_name</code> and <code>customer_email</code> only depend on <code>order_id</code> — not on the full key. Split them into their own table:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th colspan="2">orders</th><th colspan="2">order_items</th></tr></thead>
+            <tbody>
+              <tr><td>order_id</td><td>customer_name / email</td><td>order_id</td><td>product</td></tr>
+              <tr><td>1</td><td>Ada Lovelace / ada@example.com</td><td>1</td><td>Widget, Gadget, Gizmo (3 rows)</td></tr>
+              <tr><td>2</td><td>Ada Lovelace / ada@example.com</td><td>2</td><td>Widget</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>3NF — eliminate transitive dependencies.</strong> <code>customer_email</code> depends on <code>customer_name</code> (or a <code>customer_id</code>), not directly on <code>order_id</code> — it's one more step removed. Split customers into their own table too:</p>
+        <pre><code>customers(id, name, email)
+orders(id, customer_id REFERENCES customers(id))
+order_items(order_id REFERENCES orders(id), product)</code></pre>
+        <p>Now Ada's email is stored in exactly one row, one place, ever — updating it means changing one row instead of hunting down every order that happens to repeat it.</p>
+        <div class="callout tip">
+          <strong>The actual problem normalization solves</strong>
+          In the original unnormalized table, updating Ada's email means finding and updating <em>every single order row</em> — miss one, and the same "customer" now has two different emails on file with no indication which is correct. That's an update anomaly, and it's the concrete, practical reason normalization exists — not an academic exercise for its own sake.
+        </div>
+        <div class="quiz">
+          <div class="quiz-q">A table stores employee_id, department_id, department_manager_name — with department_manager_name depending only on department_id, not on employee_id directly. What normal form does this violate?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">1NF — there's a repeating group somewhere</button>
+            <button class="quiz-opt" data-correct="true">3NF — department_manager_name depends transitively on department_id, not directly on the table's actual key (employee_id)</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="keys">
+        <h2>Primary keys and foreign keys</h2>
+        <pre><code>CREATE TABLE customers (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL
+);
+
+CREATE TABLE orders (
+  id SERIAL PRIMARY KEY,
+  customer_id INTEGER REFERENCES customers(id),   -- foreign key
+  amount DECIMAL(10,2) NOT NULL
+);</code></pre>
+        <p>A primary key uniquely identifies a row within its own table and can never be NULL. A foreign key is a column referencing another table's primary key, enforcing that <code>orders.customer_id</code> can only ever hold a value that genuinely exists in <code>customers.id</code> — or <code>NULL</code>, if the column allows it, representing "no customer" rather than a broken reference.</p>
+      </section>
+
+      <section id="constraints">
+        <h2>UNIQUE, CHECK, NOT NULL, DEFAULT</h2>
+        <pre><code>CREATE TABLE accounts (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(50) UNIQUE NOT NULL,        -- no two rows can share a value
+  balance DECIMAL(10,2) NOT NULL DEFAULT 0,     -- auto-filled if omitted on INSERT
+  status VARCHAR(20) CHECK (status IN ('active', 'suspended', 'closed'))
+);</code></pre>
+        <p>These enforce correctness at the database layer — an <code>INSERT</code> or <code>UPDATE</code> that would violate any of them fails outright, regardless of which application, script, or person issued it. That's the key advantage over enforcing the same rules only in application code: a constraint can't be bypassed by a direct database connection, a different service, or a bug in validation logic upstream.</p>
+      </section>
+
+      <section id="indexes">
+        <h2>Indexes — and their cost</h2>
+        <p>An index lets the database jump straight to matching rows instead of scanning every one — same underlying idea as the hash-bucket lookup covered on the <a href="python-dicts-sets.html">Dicts &amp; Sets</a> page, applied to a table column instead of a Python set.</p>
+        <div class="sim" id="index-scan-stepper"></div>
+        <script>
+          renderQueryStepper("index-scan-stepper", {
+            tables: [
+              { id: "users9", label: "users (no index on email)", headers: ["id", "email"], rows: [[1, "grace@x.com"], [2, "katherine@x.com"], [3, "ada@x.com"], [4, "alan@x.com"]] }
+            ],
+            resultHeaders: ["id", "email"],
+            introCode: "SELECT * FROM users WHERE email = 'ada@x.com';  -- no index: must check every row",
+            introText: "Without an index, the database has no way to know where the matching row is — it checks each one in turn.",
+            steps: [
+              { code: "checking row 1: grace@x.com == ada@x.com?", rowStates: { users9: { 0: "exclude" } }, resultRows: [], desc: "No match — but the database had to actually read this row to find out." },
+              { code: "checking row 2: katherine@x.com == ada@x.com?", rowStates: { users9: { 0: "exclude", 1: "exclude" } }, resultRows: [], desc: "Still scanning — this is what \"full table scan\" means literally." },
+              { code: "checking row 3: ada@x.com == ada@x.com?", rowStates: { users9: { 0: "exclude", 1: "exclude", 2: "match" } }, resultRows: [[3, "ada@x.com"]], resultRowStates: { 0: "new" }, desc: "Match found — on a table with a million rows instead of 4, this could mean reading up to a million rows to find one." }
+            ]
+          });
+        </script>
+        <pre><code>CREATE INDEX idx_users_email ON users(email);
+-- Now the same query jumps directly to the matching row — no scan</code></pre>
+        <div class="callout warn">
+          <strong>Indexes aren't free — they cost on every write</strong>
+          Every <code>INSERT</code>, <code>UPDATE</code>, or <code>DELETE</code> has to update every index on that table, not just the table's own data. A table with 8 indexes pays that cost 8 times per write. Indexing every column "just in case" is a real anti-pattern — indexes should target columns actually used in <code>WHERE</code>, <code>JOIN</code>, or <code>ORDER BY</code> clauses on queries that run often enough to matter.
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What problem does normalization actually solve?</summary>
+          <div class="qa-body">Update anomalies caused by redundant data — if the same fact (a customer's email, say) is repeated across many rows, updating it requires finding and changing every copy; missing one leaves inconsistent data with no way to tell which copy is correct. Normalization stores each fact in exactly one place.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the difference between a primary key and a unique constraint?</summary>
+          <div class="qa-body">A table can have only one primary key, and it can never be NULL. A table can have multiple UNIQUE constraints, and — depending on the database — a UNIQUE column can typically allow NULL (often more than one, since NULL isn't considered equal to another NULL for uniqueness purposes).</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why not just add an index to every column to be safe?</summary>
+          <div class="qa-body">Every index has to be updated on every write to that table — more indexes means slower INSERT/UPDATE/DELETE, plus additional storage. Indexes should be added deliberately, targeting columns that are actually filtered, joined, or sorted on frequently enough that the read speedup outweighs the write cost.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> When would you intentionally denormalize a schema?</summary>
+          <div class="qa-body">When read performance matters more than eliminating redundancy — e.g. storing a pre-computed total on an orders row instead of recalculating SUM(order_items) on every read, accepting the risk of that total drifting out of sync in exchange for not re-aggregating on every query. This is a deliberate, documented trade-off, not a sign the schema was designed incorrectly.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Over-indexing silently slows down writes</strong>
+          A schema with an index on every column looks safe but pays a real, compounding cost on every INSERT/UPDATE/DELETE.
+        </div>
+        <div class="callout warn">
+          <strong>A foreign key without an index on the referencing column is a common performance miss</strong>
+          The referenced column (usually a primary key) is indexed automatically, but the referencing column (e.g. orders.customer_id) often isn't unless added explicitly — joins on it then fall back to a full scan.
+        </div>
+        <div class="callout warn">
+          <strong>Constraints enforced only in application code can be bypassed</strong>
+          A direct database connection, a migration script, or a different service entirely can write data that skips application-level validation. Database constraints are enforced no matter what wrote the data.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="sql-fundamentals.html">SQL Fundamentals &amp; Command Categories →</a>
+          <a href="sql-joins.html">Joins &amp; Relationships →</a>
+          <a href="python-dicts-sets.html">Dicts &amp; Sets →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: Original content — written for interview prep, not sourced from a transcript — added 2026-08-05</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

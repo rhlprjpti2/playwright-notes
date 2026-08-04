@@ -693,6 +693,43 @@ window.TOPICS_INDEX_SQL = [
     lastUpdated: "2026-08-05",
     phase: "sql-core",
     order: 6
+  },
+  {
+    slug: "sql-views-procedures",
+    title: "Views, Procedures, Functions & Triggers",
+    file: "pages/sql-views-procedures.html",
+    tags: ["sql", "views", "procedures"],
+    keyTerms: [
+      "view", "materialized view", "REFRESH MATERIALIZED VIEW", "stored procedure", "CALL",
+      "user-defined function", "trigger", "AFTER UPDATE", "test data helper", "seed test data"
+    ],
+    summary: "Regular views (always live) vs materialized views (stale until REFRESH), stored procedures vs functions, triggers, and specifically why an SDET builds test helpers with these.",
+    related: ["sql-fundamentals", "sql-dml", "pytest-fixtures"],
+    sources: [
+      { title: "Original content — written for interview prep, not sourced from a transcript", addedDate: "2026-08-05" }
+    ],
+    lastUpdated: "2026-08-05",
+    phase: "sql-advanced",
+    order: 1
+  },
+  {
+    slug: "sql-database-design",
+    title: "Database Design & Constraints",
+    file: "pages/sql-database-design.html",
+    tags: ["sql", "database-design"],
+    keyTerms: [
+      "normalization", "1NF", "2NF", "3NF", "update anomaly", "primary key", "foreign key",
+      "UNIQUE constraint", "CHECK constraint", "NOT NULL", "DEFAULT", "index", "full table scan",
+      "index cost on writes", "denormalization"
+    ],
+    summary: "Normalization from 1NF to 3NF via a real messy table getting split apart, key/constraint types, and why an index speeds up reads at a direct cost to every write.",
+    related: ["sql-fundamentals", "sql-joins", "python-dicts-sets"],
+    sources: [
+      { title: "Original content — written for interview prep, not sourced from a transcript", addedDate: "2026-08-05" }
+    ],
+    lastUpdated: "2026-08-05",
+    phase: "sql-advanced",
+    order: 2
   }
 ];
 

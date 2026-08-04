@@ -69,31 +69,27 @@
       <figure class="concept-art">
         <div class="cs-scene">
           <div class="cs-code">
-            <div class="cs-code-line">if status == 200: result = "passed"</div>
-            <div class="cs-code-line">for item in items: process(item)</div>
+            <div class="cs-code-line cs-p1">if status_code == 200:  <span class="cs-num"># False</span></div>
+            <div class="cs-code-line cs-p2">elif status_code == 404:  <span class="cs-num"># True — runs, stops here</span></div>
+            <div class="cs-code-line cs-p3">else: ...  <span class="cs-num"># never reached</span></div>
           </div>
-          <svg viewBox="0 0 640 220" width="100%" height="auto" role="img" aria-label="A forking path for if elif else, and a continuously circling loop for for and while">
-            <circle cx="70" cy="40" r="8" fill="#a08f6b"/>
-            <path d="M70 48 C70 80 60 95 55 115" fill="none" stroke="#a08f6b" stroke-width="1.5" class="ca-flow"/>
-            <circle r="5" fill="#e0b429" class="ca-pointer-dot" style="offset-path: path('M70 48 C70 80 60 95 55 115')"/>
-            <path d="M70 48 C70 90 100 100 120 115" fill="none" stroke="#3a3226" stroke-width="1" stroke-dasharray="3 4" opacity=".35"/>
-            <path d="M70 48 C70 95 150 105 185 118" fill="none" stroke="#3a3226" stroke-width="1" stroke-dasharray="3 4" opacity=".35"/>
-            <ellipse class="cs-ring ca-arrive-ring" cx="55" cy="145" rx="50" ry="34" stroke="#7fd8c9" stroke-width="3"/>
-            <ellipse cx="55" cy="145" rx="42" ry="28" fill="#7fd8c9"/>
-            <text x="55" y="150" class="ca-lbl" style="font-size:12px">if</text>
-            <ellipse cx="120" cy="145" rx="42" ry="28" fill="#c2b8a3" opacity=".5"/>
-            <text x="120" y="150" class="ca-lbl" style="font-size:12px; fill:#4a4230">elif</text>
-            <ellipse cx="185" cy="145" rx="42" ry="28" fill="#c2b8a3" opacity=".5"/>
-            <text x="185" y="150" class="ca-lbl" style="font-size:12px; fill:#4a4230">else</text>
-            <text x="120" y="195" class="ca-sub">status == 200 matched — one branch taken, top to bottom</text>
-            <ellipse cx="460" cy="105" rx="95" ry="65" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
-            <circle r="6" fill="#e0b429" class="ca-pointer-loop" style="offset-path: path('M555 105 A95 65 0 1 1 554.9 105')"/>
-            <text x="460" y="110" class="ca-lbl" style="font-size:12.5px">for item</text>
-            <text x="460" y="128" class="ca-sub">in items:</text>
-            <text x="460" y="200" class="ca-sub">process(item) runs once per lap, same body every time</text>
+          <svg viewBox="0 0 640 170" width="100%" height="auto" role="img" aria-label="Each condition is checked top to bottom; the first True branch runs and everything after it, including else, is skipped entirely">
+            <rect class="cs-p1" x="20" y="40" width="150" height="70" rx="10" fill="none" stroke="#8a5e91" stroke-width="3"/>
+            <text x="95" y="68" class="ca-lbl" style="font-size:12px">if checked</text>
+            <text x="95" y="88" class="ca-sub">200 == 404? No</text>
+            <path d="M175 75 L220 75" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+            <ellipse class="cs-ring cs-ring-p2" cx="310" cy="75" rx="100" ry="45" stroke="#ffb15c" stroke-width="3"/>
+            <rect class="cs-p2" x="225" y="40" width="170" height="70" rx="10" fill="#ffb15c"/>
+            <text x="310" y="62" class="ca-lbl" style="font-size:12px">elif checked</text>
+            <text x="310" y="82" class="ca-lbl" style="font-size:11px">404 == 404? Yes — runs</text>
+            <path d="M400 75 L440 75" fill="none" stroke="#3a3226" stroke-width="1" stroke-dasharray="3 4" opacity=".35"/>
+            <rect class="cs-p3" x="445" y="40" width="170" height="70" rx="10" fill="none" stroke="#c2b8a3" stroke-width="1.5" stroke-dasharray="4 4" opacity=".6"/>
+            <text x="530" y="68" class="ca-sub">else</text>
+            <text x="530" y="88" class="ca-sub">skipped — already matched</text>
+            <text x="320" y="145" class="ca-sub">only the first True branch runs — everything after it is skipped, not just the unmatched ones</text>
           </svg>
         </div>
-        <figcaption>Branching picks one path once — a loop retraces the same path repeatedly</figcaption>
+        <figcaption>Top to bottom, first match wins — elif and else after it never even get checked</figcaption>
       </figure>
 
       <section id="conditionals">
@@ -163,6 +159,38 @@ while attempts < 3 and not element.is_visible():
 else:
     print("Confirmed: product correctly absent from cart")</code></pre>
         <p>Without <code>else</code>, the same logic needs a separate flag variable set inside the loop and checked afterward — <code>for/else</code> collapses that into the loop itself. It reads oddly the first time ("else... on a for loop?"), which is exactly why it's a favorite "do you actually know Python" interview question.</p>
+
+        <figure class="concept-art">
+          <div class="cs-scene">
+            <div class="cs-code">
+              <div class="cs-code-line cs-q1">for item in cart_items: ...        <span class="cs-num"># no break — loop finishes</span></div>
+              <div class="cs-code-line cs-q2">for item in cart_items: ... break  <span class="cs-num"># break hit partway through</span></div>
+            </div>
+            <svg viewBox="0 0 640 200" width="100%" height="auto" role="img" aria-label="When the loop runs to completion without hitting break, the else block runs; when break fires partway through, else is skipped entirely">
+              <g class="cs-q1">
+                <rect x="30" y="30" width="55" height="40" rx="8" fill="#c2b8a3" opacity=".6"/>
+                <rect x="100" y="30" width="55" height="40" rx="8" fill="#c2b8a3" opacity=".6"/>
+                <rect x="170" y="30" width="55" height="40" rx="8" fill="#c2b8a3" opacity=".6"/>
+                <text x="140" y="90" class="ca-sub" style="font-size:11px">every item checked, no break</text>
+                <path d="M230 50 L270 50" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+                <ellipse class="cs-ring" cx="360" cy="50" rx="90" ry="38" stroke="#7fd8c9" stroke-width="3"/>
+                <rect x="275" y="30" width="170" height="40" rx="8" fill="#7fd8c9"/>
+                <text x="360" y="55" class="ca-lbl" style="font-size:12px">else runs</text>
+              </g>
+              <g class="cs-q2">
+                <rect x="30" y="120" width="55" height="40" rx="8" fill="#c2b8a3" opacity=".6"/>
+                <rect x="100" y="120" width="55" height="40" rx="8" fill="#ffb15c"/>
+                <text x="127" y="145" class="ca-lbl" style="font-size:10.5px">break</text>
+                <text x="90" y="180" class="ca-sub" style="font-size:11px">loop exits early — remaining items never checked</text>
+                <path d="M170 140 L270 140" fill="none" stroke="#3a3226" stroke-width="1" stroke-dasharray="3 4" opacity=".35"/>
+                <rect x="275" y="120" width="170" height="40" rx="8" fill="none" stroke="#c2b8a3" stroke-width="1.5" stroke-dasharray="4 4" opacity=".6"/>
+                <text x="360" y="145" class="ca-sub">else skipped</text>
+              </g>
+            </svg>
+          </div>
+          <figcaption>break is what else is watching for — not whether the loop ran, but whether it ran to completion</figcaption>
+        </figure>
+
         <div class="quiz">
           <div class="quiz-q">When does a <code>for...else</code> block's <code>else</code> clause run?</div>
           <div class="quiz-opts">

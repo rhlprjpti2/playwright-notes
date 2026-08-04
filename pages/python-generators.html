@@ -122,6 +122,33 @@ next(gen)   # 2  — resumes right after yield, runs i += 1, loops, yields again
 next(gen)   # 3
 next(gen)   # raises StopIteration — the while condition is now False</code></pre>
         <p>Calling <code>count_up_to(3)</code> does <strong>not</strong> run any of the function's code yet — it immediately returns a generator object. The body only starts executing on the first <code>next()</code> call, and only runs as far as the next <code>yield</code> before pausing again. This lazy, on-demand execution is the entire mechanism behind the memory savings above.</p>
+
+        <figure class="concept-art">
+          <div class="cs-scene">
+            <div class="cs-code">
+              <div class="cs-code-line cs-p1">gen = count_up_to(3)  <span class="cs-num"># body hasn't run at all</span></div>
+              <div class="cs-code-line cs-p2">next(gen)  <span class="cs-num"># runs to yield, pauses, returns 1</span></div>
+              <div class="cs-code-line cs-p3">next(gen)  <span class="cs-num"># resumes right there, not from the top</span></div>
+            </div>
+            <svg viewBox="0 0 640 170" width="100%" height="auto" role="img" aria-label="Calling the generator function creates the object with nothing run yet; the first next() runs to the yield and pauses; the second next() resumes from that exact paused point rather than starting over">
+              <rect class="cs-p1" x="20" y="40" width="150" height="70" rx="10" fill="none" stroke="#8a5e91" stroke-width="3"/>
+              <text x="95" y="68" class="ca-lbl" style="font-size:12px">gen created</text>
+              <text x="95" y="88" class="ca-sub">nothing has run</text>
+              <path d="M175 75 L220 75" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+              <rect class="cs-p2" x="225" y="40" width="170" height="70" rx="10" fill="#ffb15c"/>
+              <text x="310" y="68" class="ca-lbl" style="font-size:12px">runs to yield i</text>
+              <text x="310" y="88" class="ca-lbl" style="font-size:11px">pauses, hands back 1</text>
+              <path d="M400 75 L450 75" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+              <ellipse class="cs-ring cs-ring-p3" cx="535" cy="75" rx="100" ry="45" stroke="#7fd8c9" stroke-width="3"/>
+              <rect class="cs-p3" x="455" y="40" width="170" height="70" rx="10" fill="#7fd8c9"/>
+              <text x="540" y="62" class="ca-lbl" style="font-size:12px">resumes at i += 1</text>
+              <text x="540" y="82" class="ca-lbl" style="font-size:11px">loops, yields 2</text>
+              <text x="320" y="150" class="ca-sub">the second call picks up exactly where the first one paused — never restarts from the top</text>
+            </svg>
+          </div>
+          <figcaption>Not "runs the whole function again" — each next() resumes the same paused execution, one step further</figcaption>
+        </figure>
+
         <div class="quiz">
           <div class="quiz-q">What happens the moment you call a generator function, like <code>count_up_to(3)</code>?</div>
           <div class="quiz-opts">

@@ -639,9 +639,85 @@ function initNavDrawer() {
   }
 }
 
+/* ---------- Fullscreen illustration viewer ---------- */
+/* Every diagram/simulator container type used across the topic pages —
+   add new ones here as they're introduced. Containers are matched by
+   class, not by a shared wrapper markup, since each renderer function
+   (renderStepDebugger, renderMemoryModel, etc.) owns its own markup. */
+const ILLUSTRATION_SELECTORS = [
+  ".concept-art", ".diagram", ".sim", ".demo",
+  ".string-pipeline", ".window-flow", ".scope-compare",
+  ".table-scan", ".memory-model"
+];
+
+function initFullscreenIllustrations() {
+  const targets = document.querySelectorAll(ILLUSTRATION_SELECTORS.join(","));
+  if (!targets.length) return;
+
+  const overlay = document.createElement("div");
+  overlay.className = "illustration-fullscreen-overlay";
+  overlay.innerHTML = `
+    <button type="button" class="illustration-fullscreen-close" aria-label="Close fullscreen view">&times;</button>
+    <div class="illustration-fullscreen-hint">Turning your device sideways gives wide diagrams more room</div>
+    <div class="illustration-fullscreen-body"></div>
+  `;
+  document.body.appendChild(overlay);
+  const body = overlay.querySelector(".illustration-fullscreen-body");
+  const closeBtn = overlay.querySelector(".illustration-fullscreen-close");
+
+  // The moved element's original spot is held by a comment node so
+  // close() can put it back in exactly the right place in the page —
+  // the element itself is relocated, not cloned, so anything interactive
+  // inside it (step-debugger buttons, assert toggles) keeps the event
+  // listeners it already had rather than losing them to a clone.
+  let activeEl = null;
+  let placeholder = null;
+
+  function close() {
+    if (!activeEl || !placeholder) return;
+    placeholder.replaceWith(activeEl);
+    activeEl.classList.remove("illustration-fullscreen-active");
+    activeEl = null;
+    placeholder = null;
+    overlay.classList.remove("open");
+    document.body.classList.remove("fullscreen-lock");
+  }
+
+  function open(el) {
+    if (activeEl) close();
+    placeholder = document.createComment("illustration-placeholder");
+    el.replaceWith(placeholder);
+    body.appendChild(el);
+    el.classList.add("illustration-fullscreen-active");
+    activeEl = el;
+    overlay.classList.add("open");
+    overlay.scrollTop = 0;
+    document.body.classList.add("fullscreen-lock");
+  }
+
+  closeBtn.addEventListener("click", close);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && overlay.classList.contains("open")) close();
+  });
+
+  targets.forEach((el) => {
+    if (!el.children.length) return; // empty/failed-to-render container — nothing to expand
+    if (getComputedStyle(el).position === "static") el.classList.add("illustration-anchor");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "illustration-expand-btn";
+    btn.setAttribute("aria-label", "View fullscreen");
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/></svg>';
+    btn.addEventListener("click", (e) => { e.stopPropagation(); open(el); });
+    el.appendChild(btn);
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initHub();
   initTopicPage();
   initBreadcrumb();
   initNavDrawer();
+  initFullscreenIllustrations();
 });

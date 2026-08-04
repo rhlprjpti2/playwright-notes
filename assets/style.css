@@ -2420,3 +2420,55 @@ code, .qa-body, .sc-status, .ts-desc, .wf-desc, .fs-explain, .pg-explain {
   .diagram-controls button, .btn-back, .btn-step, .btn-auto, .btn-reset,
   .btn-run { padding: 11px 14px; }
 }
+
+/* ---------- Fullscreen illustration viewer ---------- */
+/* Every illustration/simulator gets a one-tap fullscreen view — squeezed
+   into the content column, they're at their worst on mobile, where that
+   column is only a few hundred px wide. The overlay is opaque (not a
+   dim backdrop) since it fully replaces the page rather than floating
+   over it, and the illustration's own DOM node is moved in (not cloned)
+   so anything interactive inside it — step-debugger buttons, assert
+   toggles — keeps working with its already-attached listeners. */
+.illustration-anchor { position: relative; }
+.illustration-expand-btn {
+  position: absolute; top: 8px; right: 8px; z-index: 5;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--bg-card) 88%, transparent);
+  border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text-dim); cursor: pointer;
+  transition: color .15s ease, border-color .15s ease;
+}
+.illustration-expand-btn:hover { color: var(--accent); border-color: var(--accent); }
+.illustration-expand-btn svg { width: 15px; height: 15px; }
+
+.illustration-fullscreen-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--bg);
+  overflow: auto;
+  padding: 54px 14px 32px;
+  -webkit-overflow-scrolling: touch;
+}
+.illustration-fullscreen-overlay.open { display: block; }
+.illustration-fullscreen-close {
+  position: fixed; top: 12px; right: 12px; z-index: 201;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+  color: var(--text-dim); font-size: 22px; line-height: 1; cursor: pointer;
+}
+.illustration-fullscreen-close:hover { color: var(--text); border-color: var(--accent); }
+.illustration-fullscreen-body { max-width: 960px; margin: 0 auto; }
+.illustration-fullscreen-body .illustration-expand-btn { display: none; }
+.illustration-fullscreen-active { margin-bottom: 0 !important; }
+.illustration-fullscreen-hint {
+  display: none;
+  text-align: center; font-size: 12px; color: var(--text-faint);
+  margin: 0 0 14px;
+}
+body.fullscreen-lock { overflow: hidden; }
+
+@media (max-width: 600px) and (orientation: portrait) {
+  .illustration-fullscreen-hint { display: block; }
+}

@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DML Deep Dive · Tech Interview Hub</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../data/topics-index.js"></script>
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
+    <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
+<nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
+  <div class="nav-drawer-head">
+    <span>Menu</span>
+    <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="nav-drawer-body" id="nav-drawer-body"></div>
+</nav>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / DML Deep Dive</div>
+    <h1>DML Deep Dive</h1>
+    <p class="lede">SELECT lives in <a href="sql-fundamentals.html">Fundamentals</a> — this is the write side: INSERT, UPDATE, DELETE, and the single most expensive mistake in this entire track: forgetting a WHERE clause.</p>
+    <div class="card-tags">
+      <span>sql</span>
+      <span>dml</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone SQL track — authored directly for Lead SDET interview prep, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#insert">INSERT</a>
+      <a href="#update">UPDATE — and the WHERE clause disaster</a>
+      <a href="#delete-truncate-drop">DELETE vs TRUNCATE vs DROP</a>
+      <a href="#upsert">Upsert / MERGE</a>
+      <a href="#bulk">Bulk operations</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p>DML changes row <em>data</em>, not schema structure — that's DDL's job. <code>SELECT</code> is technically part of DML too (it's the read operation), but it gets its own full treatment in <a href="sql-fundamentals.html">Fundamentals</a>; this page is specifically the write side: <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>. Unlike DDL, DML statements participate in transactions normally — they can be rolled back, right up until <code>COMMIT</code>.</p>
+      </section>
+
+      <section id="insert">
+        <h2>INSERT</h2>
+        <pre><code>INSERT INTO employees (first_name, last_name, department)
+VALUES ('Ada', 'Lovelace', 'Engineering');
+
+-- Multi-row insert — one round trip instead of N
+INSERT INTO employees (first_name, last_name, department) VALUES
+  ('Grace', 'Hopper', 'Engineering'),
+  ('Katherine', 'Johnson', 'Engineering');
+
+-- INSERT...SELECT — copy rows from one table into another, no app code involved
+INSERT INTO engineering_archive (first_name, last_name)
+SELECT first_name, last_name FROM employees WHERE department = 'Engineering';</code></pre>
+        <div class="callout warn">
+          <strong>Column order matters when the column list is omitted</strong>
+          <code>INSERT INTO employees VALUES ('Ada', 'Lovelace', 'Engineering')</code> (no explicit column list) relies entirely on matching the table's physical column order — a column added or reordered later silently breaks it, or worse, silently inserts values into the wrong columns without any error at all. Always specify the column list explicitly.
+        </div>
+      </section>
+
+      <section id="update">
+        <h2>UPDATE — and the WHERE clause disaster</h2>
+        <p><code>UPDATE</code> without a <code>WHERE</code> clause doesn't fail, doesn't warn, and doesn't ask for confirmation — it updates <strong>every row in the table</strong>. This is the most consequential typo in this entire track, and a legitimate "tell me about a production incident" interview story for a reason.</p>
+
+        <figure class="concept-art">
+          <div class="cs-scene">
+            <div class="cs-code">
+              <div class="cs-code-line cs-q1">UPDATE employees SET salary = 50000 WHERE id = 5;</div>
+              <div class="cs-code-line cs-q2">UPDATE employees SET salary = 50000;  <span class="cs-num"># WHERE forgotten</span></div>
+            </div>
+            <svg viewBox="0 0 640 210" width="100%" height="auto" role="img" aria-label="With a WHERE clause, only the matching row changes; without one, every single row in the table is overwritten">
+              <g class="cs-q1">
+                <rect x="40" y="20" width="560" height="30" rx="6" fill="#c2b8a3" opacity=".4"/>
+                <text x="60" y="40" class="ca-lbl" style="font-size:11px; text-anchor:start;">id 3 — unchanged</text>
+                <rect x="40" y="58" width="560" height="30" rx="6" fill="#7fd8c9"/>
+                <text x="60" y="78" class="ca-lbl" style="font-size:11px; text-anchor:start;">id 5 — matched WHERE, salary updated</text>
+                <rect x="40" y="96" width="560" height="30" rx="6" fill="#c2b8a3" opacity=".4"/>
+                <text x="60" y="116" class="ca-lbl" style="font-size:11px; text-anchor:start;">id 8 — unchanged</text>
+                <text x="320" y="150" class="ca-sub">1 row matched WHERE — everything else in the table is untouched</text>
+              </g>
+              <g class="cs-q2">
+                <rect x="40" y="20" width="560" height="30" rx="6" fill="#e8735f"/>
+                <text x="60" y="40" class="ca-lbl" style="font-size:11px; text-anchor:start;">id 3 — salary overwritten too</text>
+                <rect x="40" y="58" width="560" height="30" rx="6" fill="#e8735f"/>
+                <text x="60" y="78" class="ca-lbl" style="font-size:11px; text-anchor:start;">id 5 — salary overwritten</text>
+                <rect x="40" y="96" width="560" height="30" rx="6" fill="#e8735f"/>
+                <text x="60" y="116" class="ca-lbl" style="font-size:11px; text-anchor:start;">id 8 — salary overwritten too</text>
+                <text x="320" y="150" class="ca-sub">no WHERE means no filter at all — every row in the table matches</text>
+              </g>
+            </svg>
+          </div>
+          <figcaption>WHERE isn't optional syntax here — it's the only thing standing between "one row" and "the whole table"</figcaption>
+        </figure>
+
+        <pre><code>-- UPDATE with a JOIN — syntax differs by database
+-- PostgreSQL / SQL Server style:
+UPDATE orders
+SET status = 'archived'
+FROM customers
+WHERE orders.customer_id = customers.id AND customers.active = false;
+
+-- MySQL style:
+UPDATE orders
+JOIN customers ON orders.customer_id = customers.id
+SET orders.status = 'archived'
+WHERE customers.active = false;</code></pre>
+
+        <div class="quiz">
+          <div class="quiz-q">A teammate runs <code>UPDATE users SET is_active = false;</code> intending to deactivate one specific user. What actually happens?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">Nothing — SQL requires a WHERE clause on UPDATE, so this throws an error</button>
+            <button class="quiz-opt" data-correct="true">Every single row in the users table gets is_active set to false — there's no confirmation prompt or safety check</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="callout tip">
+          <strong>The habit that actually prevents this</strong>
+          Write and run the <code>SELECT</code> with the same <code>WHERE</code> clause first — <code>SELECT * FROM employees WHERE id = 5</code> — confirm it returns exactly the intended row(s), and only then change <code>SELECT *</code> to <code>UPDATE ... SET ...</code> keeping the identical <code>WHERE</code>. Many database tools and DBA cultures treat this as mandatory for anything touching production data.
+        </div>
+      </section>
+
+      <section id="delete-truncate-drop">
+        <h2>DELETE vs TRUNCATE vs DROP</h2>
+        <p>All three remove data, at three completely different levels — and this exact comparison is a recurring interview question in its own right:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th></th><th>DELETE</th><th>TRUNCATE</th><th>DROP</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">Category</td><td>DML</td><td>DDL</td><td>DDL</td></tr>
+              <tr><td class="highlight">Removes</td><td>Rows matching WHERE (or all rows)</td><td>All rows</td><td>The entire table, including its structure</td></tr>
+              <tr><td class="highlight">WHERE clause</td><td>Yes — can target specific rows</td><td>No — all-or-nothing</td><td>N/A</td></tr>
+              <tr><td class="highlight">Rollback-able</td><td>Yes, inside a transaction</td><td>No (most engines)</td><td>No</td></tr>
+              <tr><td class="highlight">Fires row-level triggers</td><td>Yes</td><td>No</td><td>No</td></tr>
+              <tr><td class="highlight">Resets auto-increment</td><td>No</td><td>Yes (typically)</td><td>N/A — table is gone</td></tr>
+              <tr><td class="highlight">Speed</td><td>Slower — row by row</td><td>Fast — deallocates pages</td><td>Fast — removes the object</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="upsert">
+        <h2>Upsert / MERGE</h2>
+        <p>"Insert this row, unless it already exists — then update it instead." A common enough pattern that every major database has a dedicated syntax for it, though the exact keyword differs:</p>
+        <pre><code>-- PostgreSQL / SQLite
+INSERT INTO settings (user_id, theme) VALUES (42, 'dark')
+ON CONFLICT (user_id) DO UPDATE SET theme = EXCLUDED.theme;
+
+-- MySQL
+INSERT INTO settings (user_id, theme) VALUES (42, 'dark')
+ON DUPLICATE KEY UPDATE theme = VALUES(theme);
+
+-- SQL Server / standard SQL
+MERGE INTO settings AS target
+USING (SELECT 42 AS user_id, 'dark' AS theme) AS source
+ON target.user_id = source.user_id
+WHEN MATCHED THEN UPDATE SET theme = source.theme
+WHEN NOT MATCHED THEN INSERT (user_id, theme) VALUES (source.user_id, source.theme);</code></pre>
+        <p>All three require a unique constraint or primary key on the conflict column — that's what the database uses to decide whether a row "already exists."</p>
+      </section>
+
+      <section id="bulk">
+        <h2>Bulk operations</h2>
+        <p>A thousand single-row <code>INSERT</code> statements, each its own round trip, is dramatically slower than one multi-row <code>INSERT</code> or a database-native bulk-load command (<code>COPY</code> in PostgreSQL, <code>LOAD DATA INFILE</code> in MySQL). For test data seeding specifically, this is the difference between a setup step that takes milliseconds and one that takes minutes — worth knowing as more than trivia if the role touches test infrastructure at all.</p>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What happens if you run UPDATE or DELETE without a WHERE clause?</summary>
+          <div class="qa-body">It applies to every row in the table — there's no confirmation, no error, no partial safeguard. UPDATE without WHERE overwrites every row's specified columns; DELETE without WHERE removes every row (though the table itself still exists, unlike TRUNCATE or DROP).</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the difference between DELETE, TRUNCATE, and DROP?</summary>
+          <div class="qa-body">DELETE (DML) removes rows matching a WHERE clause, can be rolled back, and fires triggers. TRUNCATE (DDL) removes all rows at once by deallocating pages rather than deleting row by row — faster, but no WHERE clause, no rollback in most engines, and no triggers. DROP (DDL) removes the entire table, including its structure — there's no table left to insert into afterward.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why is it risky to run INSERT INTO table VALUES (...) without listing column names?</summary>
+          <div class="qa-body">It relies on the table's current physical column order matching the value order exactly. A later schema change — a new column added, an existing one reordered — silently breaks this: values can land in the wrong columns with no error raised, rather than failing loudly. Explicitly listing columns makes the statement immune to that class of schema drift.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What's an upsert, and why do INSERT and UPDATE alone not solve the same problem?</summary>
+          <div class="qa-body">An upsert inserts a row if it doesn't exist yet, or updates it if it does — in one atomic statement. Doing this manually (SELECT to check existence, then INSERT or UPDATE based on the result) has a race condition: another connection could insert the same row between the SELECT and the write, causing a duplicate-key error or a lost update. ON CONFLICT / ON DUPLICATE KEY UPDATE / MERGE handle this atomically at the database level instead.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> A test suite deletes rows between tests using DELETE FROM table (no WHERE) for cleanup. What's a better approach, and why?</summary>
+          <div class="qa-body">Wrapping each test in a transaction and rolling back at the end, rather than deleting rows outright, is usually better — it's faster (no actual row-by-row deletion), automatically restores exactly the pre-test state, and avoids DELETE's dependency on foreign-key ordering across tables. TRUNCATE is a middle ground when a full rollback-per-test pattern isn't feasible, but it still can't run inside a rolled-back transaction in most engines and will reset auto-increment counters, which can itself break tests that hardcode expected IDs.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Missing WHERE is the single most expensive typo in SQL</strong>
+          No error, no confirmation — always run the equivalent SELECT with the same WHERE clause first to verify the target rows before switching it to UPDATE or DELETE.
+        </div>
+        <div class="callout warn">
+          <strong>Implicit column order in INSERT</strong>
+          Always list columns explicitly — an omitted column list breaks silently, not loudly, when the schema changes later.
+        </div>
+        <div class="callout warn">
+          <strong>TRUNCATE looks like DELETE but behaves like DDL</strong>
+          No WHERE, no rollback in most engines, no row-level triggers, resets auto-increment. Treat it as a structural operation, not a targeted data change.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="sql-fundamentals.html">SQL Fundamentals &amp; Command Categories →</a>
+          <a href="sql-joins.html">Joins &amp; Relationships →</a>
+          <a href="pytest-fixtures.html">Pytest Fixtures &amp; Fundamentals →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: Original content — written for interview prep, not sourced from a transcript — added 2026-08-04</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

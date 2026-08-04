@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Joins & Relationships · Tech Interview Hub</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../data/topics-index.js"></script>
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
+    <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
+<nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
+  <div class="nav-drawer-head">
+    <span>Menu</span>
+    <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="nav-drawer-body" id="nav-drawer-body"></div>
+</nav>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Joins &amp; Relationships</div>
+    <h1>Joins &amp; Relationships</h1>
+    <p class="lede">The single most-tested SQL topic in any interview loop. Not the Venn-diagram version — actual row matching, because the Venn-diagram explanation quietly falls apart the moment duplicate keys enter the picture, which is exactly where interview follow-up questions go.</p>
+    <div class="card-tags">
+      <span>sql</span>
+      <span>joins</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone SQL track — authored directly for Lead SDET interview prep, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#inner-left">INNER JOIN vs LEFT JOIN</a>
+      <a href="#right-full-cross">RIGHT, FULL OUTER, CROSS</a>
+      <a href="#self-join">SELF JOIN</a>
+      <a href="#where-vs-on">The WHERE-clause trap on outer joins</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p>A join combines rows from two (or more) tables based on a related column — almost always a foreign key pointing at another table's primary key. Every join type answers the same underlying question differently: <strong>what happens to a row on one side that has no match on the other side?</strong> That single question is what actually separates INNER from LEFT from FULL OUTER — everything else about them is identical.</p>
+      </section>
+
+      <section id="inner-left">
+        <h2>INNER JOIN vs LEFT JOIN</h2>
+        <p>The pairing that comes up in almost every SQL interview, using two small tables: <code>customers</code> (Ada, Grace, Katherine) and <code>orders</code> (one order each for Ada and Katherine — Grace has never ordered anything).</p>
+
+        <figure class="concept-art">
+          <div class="cs-scene">
+            <div class="cs-code">
+              <div class="cs-code-line cs-q1">SELECT * FROM customers c INNER JOIN orders o ON c.id = o.customer_id;</div>
+              <div class="cs-code-line cs-q2">SELECT * FROM customers c LEFT JOIN orders o ON c.id = o.customer_id;</div>
+            </div>
+            <svg viewBox="0 0 640 220" width="100%" height="auto" role="img" aria-label="INNER JOIN keeps only customers with a matching order, dropping Grace entirely. LEFT JOIN keeps every customer regardless of match, filling Grace's order columns with NULL">
+              <text x="90" y="18" class="ca-sub" style="font-size:11px">customers</text>
+              <rect x="20" y="25" width="140" height="28" rx="6" fill="var(--bg-card)" stroke="var(--border)"/>
+              <text x="90" y="43" class="ca-lbl" style="font-size:11px">Ada</text>
+              <rect x="20" y="58" width="140" height="28" rx="6" fill="var(--bg-card)" stroke="var(--border)"/>
+              <text x="90" y="76" class="ca-lbl" style="font-size:11px">Grace</text>
+              <rect x="20" y="91" width="140" height="28" rx="6" fill="var(--bg-card)" stroke="var(--border)"/>
+              <text x="90" y="109" class="ca-lbl" style="font-size:11px">Katherine</text>
+
+              <text x="480" y="18" class="ca-sub" style="font-size:11px">result</text>
+
+              <g class="cs-q1">
+                <path d="M160 39 C220 39 220 39 300 45" fill="none" stroke="#7fd8c9" stroke-width="1.5"/>
+                <path d="M160 105 C220 105 220 60 300 60" fill="none" stroke="#7fd8c9" stroke-width="1.5"/>
+                <rect x="305" y="30" width="270" height="28" rx="6" fill="#7fd8c9"/>
+                <text x="440" y="48" class="ca-lbl" style="font-size:11px">Ada — order #1001</text>
+                <rect x="305" y="63" width="270" height="28" rx="6" fill="#7fd8c9"/>
+                <text x="440" y="81" class="ca-lbl" style="font-size:11px">Katherine — order #1002</text>
+                <text x="440" y="130" class="ca-sub">Grace has no match — dropped entirely, only 2 rows in the result</text>
+              </g>
+
+              <g class="cs-q2">
+                <path d="M160 39 C220 39 220 39 300 45" fill="none" stroke="#7fd8c9" stroke-width="1.5"/>
+                <path d="M160 72 C220 72 220 78 300 78" fill="none" stroke="#e0b429" stroke-width="1.5" stroke-dasharray="3 4"/>
+                <path d="M160 105 C220 105 220 60 300 60" fill="none" stroke="#7fd8c9" stroke-width="1.5"/>
+                <rect x="305" y="30" width="270" height="28" rx="6" fill="#7fd8c9"/>
+                <text x="440" y="48" class="ca-lbl" style="font-size:11px">Ada — order #1001</text>
+                <rect x="305" y="63" width="270" height="28" rx="6" fill="none" stroke="#e0b429" stroke-width="1.5" stroke-dasharray="3 4"/>
+                <text x="440" y="81" class="ca-lbl" style="font-size:11px">Grace — order columns are NULL</text>
+                <rect x="305" y="96" width="270" height="28" rx="6" fill="#7fd8c9"/>
+                <text x="440" y="114" class="ca-lbl" style="font-size:11px">Katherine — order #1002</text>
+                <text x="440" y="150" class="ca-sub">every customer is kept — unmatched order columns become NULL, not dropped</text>
+              </g>
+            </svg>
+          </div>
+          <figcaption>Same tables, same ON condition — the only difference is what happens to the unmatched row</figcaption>
+        </figure>
+
+        <div class="quiz">
+          <div class="quiz-q">Using a LEFT JOIN from customers to orders, how would you find every customer who has never placed an order?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">WHERE orders.id = 0</button>
+            <button class="quiz-opt" data-correct="true">WHERE orders.id IS NULL — customers with no match get NULL in every order column, so this filters down to exactly the unmatched rows</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="right-full-cross">
+        <h2>RIGHT, FULL OUTER, CROSS</h2>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Join type</th><th>Keeps</th></tr></thead>
+            <tbody>
+              <tr><td><code>RIGHT JOIN</code></td><td>Every row from the right table, NULL-filling unmatched left columns — the mirror image of LEFT JOIN. Rare in practice; most people rewrite it as a LEFT JOIN with the tables swapped, since it reads more naturally left to right.</td></tr>
+              <tr><td class="highlight"><code>FULL OUTER JOIN</code></td><td>Every row from both tables — matched rows combined, unmatched rows from either side NULL-filled on the other side. Not supported directly in MySQL (emulated with a LEFT JOIN UNION RIGHT JOIN).</td></tr>
+              <tr><td><code>CROSS JOIN</code></td><td>Every row from the first table paired with every row from the second — no <code>ON</code> condition at all. N rows × M rows. Rarely intentional; usually the accidental result of a missing join condition.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout warn">
+          <strong>An accidental CROSS JOIN is a classic production incident</strong>
+          Forgetting the <code>ON</code>/<code>WHERE</code> condition entirely (or joining on the wrong columns, such that every row matches every row) silently produces a cartesian product — a query expected to return a few thousand rows can return billions and lock up the database.
+        </div>
+      </section>
+
+      <section id="self-join">
+        <h2>SELF JOIN</h2>
+        <p>Not a distinct join type — an ordinary join where a table is joined to <em>itself</em>, using two aliases to tell the two "copies" apart. The classic example: an <code>employees</code> table where <code>manager_id</code> points back at another row's <code>id</code> in the same table.</p>
+        <pre><code>SELECT e.first_name AS employee, m.first_name AS manager
+FROM employees e
+LEFT JOIN employees m ON e.manager_id = m.id;</code></pre>
+        <p>The <code>LEFT JOIN</code> here matters for the same reason as above — an employee with no manager (<code>manager_id IS NULL</code>, e.g. the CEO) would be silently dropped by an <code>INNER JOIN</code>, since <code>NULL</code> never matches anything in an <code>ON</code> condition either.</p>
+      </section>
+
+      <section id="where-vs-on">
+        <h2>The WHERE-clause trap on outer joins</h2>
+        <p>A filter placed in <code>WHERE</code> instead of the join's <code>ON</code> clause quietly turns a <code>LEFT JOIN</code> back into an <code>INNER JOIN</code> — one of the most common real bugs involving joins, and a favorite "spot the mistake" interview question.</p>
+        <pre><code>-- Looks like "all customers, with their shipped orders if any" — it is NOT
+SELECT * FROM customers c
+LEFT JOIN orders o ON c.id = o.customer_id
+WHERE o.status = 'shipped';          -- BUG: silently drops every customer with no orders
+
+-- Correct — the filter belongs in the join condition, not WHERE
+SELECT * FROM customers c
+LEFT JOIN orders o ON c.id = o.customer_id AND o.status = 'shipped';</code></pre>
+        <p>Recall the <a href="sql-fundamentals.html#execution-order">logical execution order</a> from Fundamentals: <code>WHERE</code> runs after the join has already produced its result set, including the NULL-filled rows for unmatched customers. <code>o.status = 'shipped'</code> can never be true when <code>o.status</code> is <code>NULL</code> (three-valued logic again), so every one of those NULL-filled rows gets filtered out — silently converting the LEFT JOIN's whole point into an INNER JOIN.</p>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the difference between INNER JOIN and LEFT JOIN?</summary>
+          <div class="qa-body">INNER JOIN keeps only rows that have a match on both sides — a row with no match is dropped entirely. LEFT JOIN keeps every row from the left table regardless of whether it has a match, filling the right side's columns with NULL when there's no match.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> How do you find all customers who have never placed an order?</summary>
+          <div class="qa-body">LEFT JOIN customers to orders, then filter WHERE orders.<i>some_column</i> IS NULL. Customers with no matching order have every order column as NULL after the join, so filtering for NULL isolates exactly the unmatched customers.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> A LEFT JOIN with a WHERE clause on the right table's column is returning fewer rows than expected. Why?</summary>
+          <div class="qa-body">If the WHERE condition filters on a right-table column (e.g. WHERE orders.status = 'shipped'), it also filters out every row where that column is NULL — which includes all the unmatched left-side rows the LEFT JOIN was specifically trying to preserve. This silently turns the LEFT JOIN into the equivalent of an INNER JOIN. The fix is moving that condition into the join's ON clause instead of WHERE.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What is a self join, and why does the query need table aliases?</summary>
+          <div class="qa-body">A self join joins a table to itself — typically to relate rows within the same table, like an employee to their manager who is also a row in the employees table. Aliases (e.g. e and m) are required because the query references the same table twice and SQL needs a way to disambiguate which "copy" a given column reference belongs to.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> What causes an accidental CROSS JOIN, and why is it dangerous?</summary>
+          <div class="qa-body">Missing or incorrect join conditions — an ON clause that's omitted, or one where every row happens to match every row — produce a cartesian product: every row from one table paired with every row from the other, N × M results. On tables of any real size this can produce an enormous, database-locking result set from what looked like an ordinary query, making it a genuine production-incident cause rather than just a theoretical concern.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>WHERE on the outer side of a LEFT/RIGHT JOIN</strong>
+          Silently degrades it to an INNER JOIN. Filters specific to the "nullable" side belong in the ON clause.
+        </div>
+        <div class="callout warn">
+          <strong>Missing join condition = accidental CROSS JOIN</strong>
+          Always double check the ON clause exists and references the actual relationship — not just columns that happen to compile.
+        </div>
+        <div class="callout warn">
+          <strong>NULL never matches in an ON clause, including against itself</strong>
+          A self join on a nullable foreign key (like manager_id) needs LEFT JOIN, not INNER JOIN, or every row with a NULL in that column disappears from the result.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="sql-fundamentals.html">SQL Fundamentals &amp; Command Categories →</a>
+          <a href="sql-dml.html">DML Deep Dive →</a>
+          <a href="playwright-web-tables.html">Dynamic Web Tables →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: Original content — written for interview prep, not sourced from a transcript — added 2026-08-04</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

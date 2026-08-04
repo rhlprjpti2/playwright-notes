@@ -36,16 +36,20 @@ window.PHASE_ORDER = [
   { key: "fundamentals", label: "Setup & Fundamentals" },
   { key: "core", label: "Playwright Core" },
   { key: "advanced", label: "Playwright Advanced" },
-  { key: "practical", label: "Practical & Strategy" }
+  { key: "practical", label: "Practical & Strategy" },
+  { key: "sql-core", label: "SQL Core Querying" },
+  { key: "sql-advanced", label: "SQL Under the Hood" },
+  { key: "sql-practical", label: "SQL for SDETs" }
 ];
 
-// Top-level hub grouping: two tracks, each containing one or more phases from
+// Top-level hub grouping: each track contains one or more phases from
 // PHASE_ORDER above. The hub renders a track as a single un-nested section when
-// it only has one phase (Python Learning today), and as a labeled parent with
-// phase sub-groups as children when it has several (the Playwright course).
+// it only has one phase (Python Learning), and as a labeled parent with phase
+// sub-groups as children when it has several (Playwright Course, SQL).
 window.TRACK_ORDER = [
   { key: "python", label: "Python Learning", phases: ["python-track"] },
-  { key: "playwright", label: "Playwright Course", phases: ["intro", "fundamentals", "core", "advanced", "practical"] }
+  { key: "playwright", label: "Playwright Course", phases: ["intro", "fundamentals", "core", "advanced", "practical"] },
+  { key: "sql", label: "SQL", phases: ["sql-core", "sql-advanced", "sql-practical"] }
 ];
 
 // ---------- Python Learning (standalone track, original content) ----------
@@ -574,4 +578,66 @@ window.TOPICS_INDEX = [
   }
 ];
 
-window.TOPICS_INDEX = window.TOPICS_INDEX.concat(window.TOPICS_INDEX_PYTHON);
+// ---------- SQL (standalone track, original content) ----------
+window.TOPICS_INDEX_SQL = [
+  {
+    slug: "sql-fundamentals",
+    title: "SQL Fundamentals & Command Categories",
+    file: "pages/sql-fundamentals.html",
+    tags: ["sql", "fundamentals"],
+    keyTerms: [
+      "DDL", "DML", "DCL", "TCL", "SELECT", "WHERE", "ORDER BY", "DISTINCT", "LIMIT", "OFFSET",
+      "logical query execution order", "execution order", "NULL", "IS NULL", "COALESCE", "NULLIF",
+      "three-valued logic", "CASE WHEN", "VARCHAR", "CHAR", "DECIMAL", "FLOAT", "TIMESTAMP",
+      "NOT IN vs NOT EXISTS"
+    ],
+    summary: "The DDL/DML/DCL/TCL categorization question, and the logical query execution order model that explains most \"why doesn't this work\" SQL surprises.",
+    related: ["sql-dml", "sql-joins", "pytest-fixtures"],
+    sources: [
+      { title: "Original content — written for interview prep, not sourced from a transcript", addedDate: "2026-08-04" }
+    ],
+    lastUpdated: "2026-08-04",
+    phase: "sql-core",
+    order: 1
+  },
+  {
+    slug: "sql-dml",
+    title: "DML Deep Dive",
+    file: "pages/sql-dml.html",
+    tags: ["sql", "dml"],
+    keyTerms: [
+      "INSERT", "UPDATE", "DELETE", "TRUNCATE", "DROP", "INSERT SELECT", "multi-row insert",
+      "UPDATE without WHERE", "UPDATE JOIN", "upsert", "ON CONFLICT", "ON DUPLICATE KEY UPDATE",
+      "MERGE", "bulk insert", "COPY", "LOAD DATA INFILE", "column order"
+    ],
+    summary: "INSERT, UPDATE, DELETE vs TRUNCATE vs DROP, upsert patterns, and the single most expensive typo in SQL — UPDATE or DELETE without a WHERE clause.",
+    related: ["sql-fundamentals", "sql-joins", "pytest-fixtures"],
+    sources: [
+      { title: "Original content — written for interview prep, not sourced from a transcript", addedDate: "2026-08-04" }
+    ],
+    lastUpdated: "2026-08-04",
+    phase: "sql-core",
+    order: 2
+  },
+  {
+    slug: "sql-joins",
+    title: "Joins & Relationships",
+    file: "pages/sql-joins.html",
+    tags: ["sql", "joins"],
+    keyTerms: [
+      "INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL OUTER JOIN", "CROSS JOIN", "SELF JOIN",
+      "cartesian product", "ON vs WHERE", "NULL-filled columns", "foreign key", "table alias",
+      "customers with no orders", "accidental cross join"
+    ],
+    summary: "INNER vs LEFT vs FULL OUTER vs CROSS vs SELF joins via actual row matching, plus the classic WHERE-on-outer-join trap that silently turns a LEFT JOIN into an INNER JOIN.",
+    related: ["sql-fundamentals", "sql-dml", "playwright-web-tables"],
+    sources: [
+      { title: "Original content — written for interview prep, not sourced from a transcript", addedDate: "2026-08-04" }
+    ],
+    lastUpdated: "2026-08-04",
+    phase: "sql-core",
+    order: 3
+  }
+];
+
+window.TOPICS_INDEX = window.TOPICS_INDEX.concat(window.TOPICS_INDEX_PYTHON).concat(window.TOPICS_INDEX_SQL);

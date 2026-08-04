@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL Fundamentals & Command Categories · Tech Interview Hub</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../data/topics-index.js"></script>
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
+    <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
+<nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
+  <div class="nav-drawer-head">
+    <span>Menu</span>
+    <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="nav-drawer-body" id="nav-drawer-body"></div>
+</nav>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / SQL Fundamentals &amp; Command Categories</div>
+    <h1>SQL Fundamentals &amp; Command Categories</h1>
+    <p class="lede">Not a SQL manual — this is the subset that actually comes up in a Lead SDET loop: the DDL/DML/DCL/TCL categorization question almost everyone gets asked, and the one mental model (logical query execution order) that explains half the "why doesn't this work" moments in every SQL interview after this one.</p>
+    <div class="card-tags">
+      <span>sql</span>
+      <span>fundamentals</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone SQL track — authored directly for Lead SDET interview prep, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#command-categories">DDL vs DML vs DCL vs TCL</a>
+      <a href="#execution-order">Logical query execution order</a>
+      <a href="#select-basics">SELECT, WHERE, ORDER BY</a>
+      <a href="#distinct-limit">DISTINCT, LIMIT/OFFSET</a>
+      <a href="#null-handling">NULL handling</a>
+      <a href="#case-when">CASE WHEN</a>
+      <a href="#data-types">Data types, briefly</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p>SQL is a <strong>declarative</strong> language — a query says <em>what</em> result is wanted, not the step-by-step procedure to produce it. That's the whole reason a query optimizer can exist at all: the same <code>SELECT</code> can be satisfied by wildly different execution strategies (a full table scan vs. an index lookup) and the query itself never has to say which one to use. Everything else on this page follows from that one fact.</p>
+      </section>
+
+      <section id="command-categories">
+        <h2>DDL vs DML vs DCL vs TCL</h2>
+        <p>A near-guaranteed opener in any SQL-adjacent interview: "what's the difference between DDL and DML?" It's really just four buckets, grouped by <em>what kind of thing changes</em>:</p>
+
+        <figure class="concept-art">
+          <svg viewBox="0 0 640 260" width="100%" height="auto" role="img" aria-label="Four command categories branching from SQL: DDL changes schema structure, DML changes row data, DCL changes permissions, TCL controls transaction boundaries">
+            <rect x="14" y="110" width="90" height="40" rx="10" fill="var(--bg-card)" stroke="var(--border)" stroke-width="1.5"/>
+            <text x="59" y="135" class="ca-lbl" style="font-size:12px">SQL</text>
+
+            <path d="M104 118 C150 100 150 40 195 30" fill="none" stroke="#3f7d71" stroke-width="1.5" class="ca-flow"/>
+            <path d="M104 126 C150 118 150 100 195 92" fill="none" stroke="#8a5e91" stroke-width="1.5" class="ca-flow"/>
+            <path d="M104 134 C150 142 150 168 195 176" fill="none" stroke="#a06b3a" stroke-width="1.5" class="ca-flow"/>
+            <path d="M104 142 C150 158 150 220 195 230" fill="none" stroke="#3a6ea5" stroke-width="1.5" class="ca-flow"/>
+
+            <rect x="200" y="10" width="90" height="40" rx="10" fill="#7fd8c9"/>
+            <text x="245" y="35" class="ca-lbl" style="font-size:12px">DDL</text>
+            <text x="380" y="30" class="ca-sub" style="font-size:11px">structure: CREATE, ALTER, DROP, TRUNCATE</text>
+
+            <rect x="200" y="72" width="90" height="40" rx="10" fill="#c98bd6"/>
+            <text x="245" y="97" class="ca-lbl" style="font-size:12px">DML</text>
+            <text x="380" y="92" class="ca-sub" style="font-size:11px">row data: SELECT, INSERT, UPDATE, DELETE</text>
+
+            <rect x="200" y="156" width="90" height="40" rx="10" fill="#ffb15c"/>
+            <text x="245" y="181" class="ca-lbl" style="font-size:12px">DCL</text>
+            <text x="380" y="176" class="ca-sub" style="font-size:11px">permissions: GRANT, REVOKE</text>
+
+            <rect x="200" y="210" width="90" height="40" rx="10" fill="#7ea8d8"/>
+            <text x="245" y="235" class="ca-lbl" style="font-size:12px">TCL</text>
+            <text x="380" y="230" class="ca-sub" style="font-size:11px">transaction boundaries: COMMIT, ROLLBACK, SAVEPOINT</text>
+
+            <text x="245" y="255" class="ca-sub">DDL auto-commits — there's no rolling back a DROP TABLE</text>
+          </svg>
+        </figure>
+
+        <div class="callout warn">
+          <strong>The trap inside this question</strong>
+          DDL statements (<code>CREATE</code>, <code>ALTER</code>, <code>DROP</code>, <code>TRUNCATE</code>) implicitly commit in most databases — they can't be rolled back inside a transaction the way DML can. Someone who says "just wrap it in a transaction and roll back if the test fails" without knowing this will run into a schema change that silently stuck around.
+        </div>
+
+        <div class="quiz">
+          <div class="quiz-q">Which category does <code>TRUNCATE TABLE orders</code> belong to, and why does that matter compared to <code>DELETE FROM orders</code>?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">DML, same as DELETE — they're interchangeable</button>
+            <button class="quiz-opt" data-correct="true">DDL — it resets the table structure rather than deleting rows one at a time, which is why it's faster but can't be rolled back and doesn't fire row-level DELETE triggers</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="execution-order">
+        <h2>Logical query execution order</h2>
+        <p>The single most useful mental model in this entire track. A query is <strong>written</strong> top to bottom as <code>SELECT → FROM → WHERE → GROUP BY → HAVING → ORDER BY → LIMIT</code> — but the database doesn't run it in that order. It's actually processed like this:</p>
+
+        <figure class="concept-art">
+          <div class="cs-scene">
+            <div class="cs-code">
+              <div class="cs-code-line cs-p1">FROM orders  <span class="cs-num"># 1. rows gathered first</span></div>
+              <div class="cs-code-line cs-p2">WHERE status = 'shipped'  <span class="cs-num"># 2. filtered before any grouping</span></div>
+              <div class="cs-code-line cs-p3">GROUP BY customer_id  <span class="cs-num"># 3. then grouped</span></div>
+            </div>
+            <svg viewBox="0 0 640 170" width="100%" height="auto" role="img" aria-label="Rows are gathered from FROM first, filtered by WHERE second, grouped third — SELECT does not run until after all of that">
+              <rect class="cs-p1" x="15" y="40" width="140" height="70" rx="10" fill="#ffb15c"/>
+              <text x="85" y="68" class="ca-lbl" style="font-size:12px">1. FROM</text>
+              <text x="85" y="88" class="ca-lbl" style="font-size:11px">gather the rows</text>
+              <path d="M160 75 L200 75" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+              <rect class="cs-p2" x="205" y="40" width="140" height="70" rx="10" fill="#7fd8c9"/>
+              <text x="275" y="68" class="ca-lbl" style="font-size:12px">2. WHERE</text>
+              <text x="275" y="88" class="ca-lbl" style="font-size:11px">filter row by row</text>
+              <path d="M350 75 L390 75" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+              <ellipse class="cs-ring cs-ring-p3" cx="475" cy="75" rx="90" ry="45" stroke="#c98bd6" stroke-width="3"/>
+              <rect class="cs-p3" x="395" y="40" width="160" height="70" rx="10" fill="#c98bd6"/>
+              <text x="475" y="68" class="ca-lbl" style="font-size:12px">3. GROUP BY</text>
+              <text x="475" y="88" class="ca-lbl" style="font-size:11px">bucket what's left</text>
+              <text x="320" y="145" class="ca-sub">SELECT and its column aliases don't exist yet at steps 1-3</text>
+            </svg>
+          </div>
+          <figcaption>By the time WHERE runs, SELECT hasn't happened — which is exactly why a SELECT alias can't be used in WHERE</figcaption>
+        </figure>
+
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Written order</th><th>Actual execution order</th></tr></thead>
+            <tbody>
+              <tr><td>1. SELECT</td><td class="highlight">1. FROM (+ JOIN)</td></tr>
+              <tr><td>2. FROM</td><td class="highlight">2. WHERE</td></tr>
+              <tr><td>3. WHERE</td><td class="highlight">3. GROUP BY</td></tr>
+              <tr><td>4. GROUP BY</td><td class="highlight">4. HAVING</td></tr>
+              <tr><td>5. HAVING</td><td class="highlight">5. SELECT</td></tr>
+              <tr><td>6. ORDER BY</td><td class="highlight">6. ORDER BY</td></tr>
+              <tr><td>7. LIMIT</td><td class="highlight">7. LIMIT</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>This single table answers a whole cluster of "why does SQL do this" questions in one shot:</p>
+        <ul>
+          <li><strong>Why can't <code>WHERE</code> use an aggregate like <code>COUNT(*)</code>?</strong> Because <code>WHERE</code> (step 2) runs before <code>GROUP BY</code> (step 3) — there's no group to aggregate yet. <code>HAVING</code> (step 4) exists specifically because it runs <em>after</em> grouping.</li>
+          <li><strong>Why can't <code>WHERE</code> reference a column alias defined in <code>SELECT</code>?</strong> Because <code>SELECT</code> is step 5 — the alias doesn't exist yet at step 2.</li>
+          <li><strong>Why <em>can</em> <code>ORDER BY</code> reference a <code>SELECT</code> alias?</strong> Because <code>ORDER BY</code> is step 6, after <code>SELECT</code> has already run.</li>
+        </ul>
+
+        <div class="quiz">
+          <div class="quiz-q"><code>SELECT customer_id, COUNT(*) AS order_count FROM orders WHERE order_count > 5 GROUP BY customer_id;</code> — why does this fail?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">Syntax error — COUNT(*) needs parentheses around the whole expression</button>
+            <button class="quiz-opt" data-correct="true">WHERE runs before SELECT, so the order_count alias doesn't exist yet — this needs HAVING COUNT(*) > 5 instead, since HAVING runs after GROUP BY</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="select-basics">
+        <h2>SELECT, WHERE, ORDER BY</h2>
+        <p>The baseline shape every other topic in this track builds on:</p>
+        <pre><code>SELECT first_name, last_name, hire_date
+FROM employees
+WHERE department = 'Engineering'
+ORDER BY hire_date DESC;</code></pre>
+        <p><code>WHERE</code> filters individual rows before any grouping happens (see the execution-order model above). <code>ORDER BY</code> defaults to ascending (<code>ASC</code>); <code>DESC</code> reverses it. Multiple columns are allowed and evaluated left to right — <code>ORDER BY department, hire_date DESC</code> sorts by department first, then by hire date within each department group.</p>
+      </section>
+
+      <section id="distinct-limit">
+        <h2>DISTINCT, LIMIT/OFFSET</h2>
+        <pre><code>SELECT DISTINCT department FROM employees;        -- unique departments only
+
+SELECT * FROM employees
+ORDER BY hire_date DESC
+LIMIT 10;                                          -- most recent 10 hires
+
+SELECT * FROM employees
+ORDER BY hire_date DESC
+LIMIT 10 OFFSET 10;                                -- the *next* 10 — page 2</code></pre>
+        <div class="callout tip">
+          <strong>Pagination needs a stable ORDER BY</strong>
+          Without an explicit, unique <code>ORDER BY</code>, row order is not guaranteed between two separate queries — <code>LIMIT</code>/<code>OFFSET</code> pagination can silently skip or repeat rows across pages if the sort isn't deterministic. This is a real bug class, not just a theoretical concern, and worth mentioning if asked about pagination reliability.
+        </div>
+      </section>
+
+      <section id="null-handling">
+        <h2>NULL handling</h2>
+        <p><code>NULL</code> means "unknown," not "empty" or "zero" — and that changes how comparisons behave in a way that catches almost everyone at least once.</p>
+        <pre><code>SELECT * FROM employees WHERE manager_id = NULL;    -- returns ZERO rows, always
+SELECT * FROM employees WHERE manager_id IS NULL;   -- this is the correct form
+
+SELECT COALESCE(nickname, first_name) AS display_name FROM employees;  -- first non-null value
+SELECT NULLIF(discount, 0) AS discount FROM orders;                    -- NULL if the two are equal</code></pre>
+        <p><code>manager_id = NULL</code> doesn't evaluate to <code>false</code> — it evaluates to <code>NULL</code> (unknown), and a <code>WHERE</code> clause only keeps rows where the condition is <code>true</code>. <code>NULL</code> is neither kept nor rejected as false; it's simply never <code>true</code>, so the row is dropped either way. This is three-valued logic (<code>true</code> / <code>false</code> / <code>unknown</code>), not the two-valued boolean logic most languages use.</p>
+
+        <div class="demo" id="null-compare-demo"></div>
+        <script>
+          renderAssertToggle("null-compare-demo", {
+            expression: "WHERE manager_id = ___",
+            initialKey: "value",
+            options: [
+              { key: "value", label: "manager_id = 7", pass: true, detail: "A normal value comparison — true or false, works as expected." },
+              { key: "null", label: "manager_id = NULL", pass: false, detail: "Evaluates to NULL (unknown), not false — this row is dropped even if manager_id genuinely has no value. Always use IS NULL instead." },
+              { key: "isnull", label: "manager_id IS NULL", pass: true, detail: "The correct form — IS NULL is a dedicated operator, not a value comparison, so it actually matches NULL rows." }
+            ]
+          });
+        </script>
+
+        <div class="callout warn">
+          <strong>NULL breaks NOT IN silently</strong>
+          <code>WHERE id NOT IN (SELECT manager_id FROM employees)</code> returns <strong>zero rows</strong> if even one <code>manager_id</code> in that subquery is <code>NULL</code> — not an error, just silently wrong. <code>NOT IN</code> against a list containing <code>NULL</code> can never be proven <code>true</code> for anything, by the same three-valued-logic rule above. <code>NOT EXISTS</code> is the safer, NULL-proof alternative for this pattern.
+        </div>
+      </section>
+
+      <section id="case-when">
+        <h2>CASE WHEN</h2>
+        <p>Inline conditional logic inside a query — the closest thing SQL has to an if/elif/else expression, and commonly used to bucket rows into categories without a separate lookup table:</p>
+        <pre><code>SELECT
+  order_id,
+  total,
+  CASE
+    WHEN total >= 1000 THEN 'high'
+    WHEN total >= 100  THEN 'medium'
+    ELSE 'low'
+  END AS order_tier
+FROM orders;</code></pre>
+        <p>Evaluated top to bottom, first match wins — the exact same short-circuit behavior as a Python <code>if/elif/else</code> chain. <code>ELSE</code> is optional; if it's omitted and nothing matches, the result is <code>NULL</code> rather than an error.</p>
+      </section>
+
+      <section id="data-types">
+        <h2>Data types, briefly</h2>
+        <p>Deep type-system trivia rarely comes up — but a few distinctions are common enough to be worth knowing cold:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Choice</th><th>What actually matters</th></tr></thead>
+            <tbody>
+              <tr><td><code>VARCHAR(n)</code> vs <code>CHAR(n)</code></td><td><code>CHAR</code> is fixed-width, space-padded; <code>VARCHAR</code> is variable-length. Default to <code>VARCHAR</code> unless every value is genuinely the same length (e.g. a 2-letter country code).</td></tr>
+              <tr><td><code>DECIMAL</code>/<code>NUMERIC</code> vs <code>FLOAT</code></td><td class="highlight"><code>FLOAT</code> is binary floating-point and loses precision — never use it for money. <code>DECIMAL(p,s)</code> stores an exact value and is the correct choice for currency.</td></tr>
+              <tr><td><code>DATE</code> vs <code>TIMESTAMP</code></td><td><code>DATE</code> is calendar-date only; <code>TIMESTAMP</code> includes time (and often timezone, depending on the database).</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the difference between DDL, DML, DCL, and TCL?</summary>
+          <div class="qa-body">DDL (<code>CREATE</code>/<code>ALTER</code>/<code>DROP</code>/<code>TRUNCATE</code>) changes schema structure and auto-commits. DML (<code>SELECT</code>/<code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code>) changes or reads row data. DCL (<code>GRANT</code>/<code>REVOKE</code>) manages permissions. TCL (<code>COMMIT</code>/<code>ROLLBACK</code>/<code>SAVEPOINT</code>) controls transaction boundaries around DML.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why does a query fail when a WHERE clause tries to filter on an aggregate function?</summary>
+          <div class="qa-body">Because of logical execution order: WHERE runs before GROUP BY, so no aggregation has happened yet at that point — there's nothing for an aggregate function to aggregate. HAVING exists specifically to filter after grouping, once aggregates are available.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why does WHERE id = NULL never return any rows, even when id genuinely has no value?</summary>
+          <div class="qa-body">SQL uses three-valued logic — a comparison against NULL evaluates to NULL (unknown), not true or false. WHERE only keeps rows where the condition is true, and NULL never satisfies that, so the row is dropped regardless of the actual data. IS NULL is a dedicated operator built for this case and is the only correct way to test for NULL.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Can ORDER BY reference a column alias defined in SELECT? Can WHERE?</summary>
+          <div class="qa-body">ORDER BY can — it's step 6 in logical execution order, after SELECT (step 5) has already produced that alias. WHERE cannot — it's step 2, long before SELECT runs, so the alias doesn't exist yet from WHERE's point of view.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> A teammate wraps a schema migration in a transaction "to be safe" and rolls it back after a test failure — but the schema change is still there. Why?</summary>
+          <div class="qa-body">DDL statements auto-commit in most databases (notably MySQL) and can't be rolled back as part of a transaction the way DML can. Some databases (PostgreSQL) do support transactional DDL, so this is engine-dependent — but the safe assumption in an interview, and in practice, is that a DROP/ALTER/CREATE should be treated as immediately permanent rather than relying on ROLLBACK as a safety net.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Why does WHERE id NOT IN (subquery) sometimes return zero rows unexpectedly?</summary>
+          <div class="qa-body">If the subquery's result set contains even one NULL, NOT IN can never be proven true for any row, by the same three-valued-logic rule that breaks direct NULL comparisons — so the whole query silently returns nothing rather than erroring. NOT EXISTS is NULL-safe and is the recommended alternative whenever the subquery's column might contain NULL.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>DDL auto-commits — no rollback safety net</strong>
+          Treat schema changes as immediately permanent in most engines, regardless of surrounding transaction code.
+        </div>
+        <div class="callout warn">
+          <strong><code>= NULL</code> is always wrong</strong>
+          It silently returns zero rows instead of erroring, which makes it a genuinely dangerous typo — no test failure points at the real cause. Always <code>IS NULL</code> / <code>IS NOT NULL</code>.
+        </div>
+        <div class="callout warn">
+          <strong><code>NOT IN</code> plus a NULL-containing subquery = silently empty</strong>
+          Prefer <code>NOT EXISTS</code> whenever the subquery's column could contain NULL — which, without an explicit NOT NULL constraint, should be the default assumption.
+        </div>
+        <div class="callout warn">
+          <strong>Unstable pagination</strong>
+          <code>LIMIT</code>/<code>OFFSET</code> without a fully deterministic <code>ORDER BY</code> (unique column, or a tiebreaker added to a non-unique one) can skip or duplicate rows across pages if the underlying data changes between queries.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="sql-dml.html">DML Deep Dive →</a>
+          <a href="sql-joins.html">Joins &amp; Relationships →</a>
+          <a href="sql-subqueries.html">Subqueries &amp; Set Operations →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: Original content — written for interview prep, not sourced from a transcript — added 2026-08-04</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

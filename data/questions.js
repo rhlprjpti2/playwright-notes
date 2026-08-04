@@ -1317,6 +1317,134 @@ window.ALL_QUESTIONS = [
   "file": "pages/python-strings.html"
  },
  {
+  "q": "What happens if you run UPDATE or DELETE without a WHERE clause?",
+  "a": "It applies to every row in the table — there's no confirmation, no error, no partial safeguard. UPDATE without WHERE overwrites every row's specified columns; DELETE without WHERE removes every row (though the table itself still exists, unlike TRUNCATE or DROP).",
+  "level": "junior",
+  "topic": "sql-dml",
+  "topicLabel": "SQL: DML Deep Dive",
+  "file": "pages/sql-dml.html"
+ },
+ {
+  "q": "What's the difference between DELETE, TRUNCATE, and DROP?",
+  "a": "DELETE (DML) removes rows matching a WHERE clause, can be rolled back, and fires triggers. TRUNCATE (DDL) removes all rows at once by deallocating pages rather than deleting row by row — faster, but no WHERE clause, no rollback in most engines, and no triggers. DROP (DDL) removes the entire table, including its structure — there's no table left to insert into afterward.",
+  "level": "junior",
+  "topic": "sql-dml",
+  "topicLabel": "SQL: DML Deep Dive",
+  "file": "pages/sql-dml.html"
+ },
+ {
+  "q": "Why is it risky to run INSERT INTO table VALUES (...) without listing column names?",
+  "a": "It relies on the table's current physical column order matching the value order exactly. A later schema change — a new column added, an existing one reordered — silently breaks this: values can land in the wrong columns with no error raised, rather than failing loudly. Explicitly listing columns makes the statement immune to that class of schema drift.",
+  "level": "mid",
+  "topic": "sql-dml",
+  "topicLabel": "SQL: DML Deep Dive",
+  "file": "pages/sql-dml.html"
+ },
+ {
+  "q": "What's an upsert, and why do INSERT and UPDATE alone not solve the same problem?",
+  "a": "An upsert inserts a row if it doesn't exist yet, or updates it if it does — in one atomic statement. Doing this manually (SELECT to check existence, then INSERT or UPDATE based on the result) has a race condition: another connection could insert the same row between the SELECT and the write, causing a duplicate-key error or a lost update. ON CONFLICT / ON DUPLICATE KEY UPDATE / MERGE handle this atomically at the database level instead.",
+  "level": "mid",
+  "topic": "sql-dml",
+  "topicLabel": "SQL: DML Deep Dive",
+  "file": "pages/sql-dml.html"
+ },
+ {
+  "q": "A test suite deletes rows between tests using DELETE FROM table (no WHERE) for cleanup. What's a better approach, and why?",
+  "a": "Wrapping each test in a transaction and rolling back at the end, rather than deleting rows outright, is usually better — it's faster (no actual row-by-row deletion), automatically restores exactly the pre-test state, and avoids DELETE's dependency on foreign-key ordering across tables. TRUNCATE is a middle ground when a full rollback-per-test pattern isn't feasible, but it still can't run inside a rolled-back transaction in most engines and will reset auto-increment counters, which can itself break tests that hardcode expected IDs.",
+  "level": "senior",
+  "topic": "sql-dml",
+  "topicLabel": "SQL: DML Deep Dive",
+  "file": "pages/sql-dml.html"
+ },
+ {
+  "q": "What's the difference between DDL, DML, DCL, and TCL?",
+  "a": "DDL (<code>CREATE</code>/<code>ALTER</code>/<code>DROP</code>/<code>TRUNCATE</code>) changes schema structure and auto-commits. DML (<code>SELECT</code>/<code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code>) changes or reads row data. DCL (<code>GRANT</code>/<code>REVOKE</code>) manages permissions. TCL (<code>COMMIT</code>/<code>ROLLBACK</code>/<code>SAVEPOINT</code>) controls transaction boundaries around DML.",
+  "level": "junior",
+  "topic": "sql-fundamentals",
+  "topicLabel": "SQL: Fundamentals",
+  "file": "pages/sql-fundamentals.html"
+ },
+ {
+  "q": "Why does a query fail when a WHERE clause tries to filter on an aggregate function?",
+  "a": "Because of logical execution order: WHERE runs before GROUP BY, so no aggregation has happened yet at that point — there's nothing for an aggregate function to aggregate. HAVING exists specifically to filter after grouping, once aggregates are available.",
+  "level": "mid",
+  "topic": "sql-fundamentals",
+  "topicLabel": "SQL: Fundamentals",
+  "file": "pages/sql-fundamentals.html"
+ },
+ {
+  "q": "Why does WHERE id = NULL never return any rows, even when id genuinely has no value?",
+  "a": "SQL uses three-valued logic — a comparison against NULL evaluates to NULL (unknown), not true or false. WHERE only keeps rows where the condition is true, and NULL never satisfies that, so the row is dropped regardless of the actual data. IS NULL is a dedicated operator built for this case and is the only correct way to test for NULL.",
+  "level": "mid",
+  "topic": "sql-fundamentals",
+  "topicLabel": "SQL: Fundamentals",
+  "file": "pages/sql-fundamentals.html"
+ },
+ {
+  "q": "Can ORDER BY reference a column alias defined in SELECT? Can WHERE?",
+  "a": "ORDER BY can — it's step 6 in logical execution order, after SELECT (step 5) has already produced that alias. WHERE cannot — it's step 2, long before SELECT runs, so the alias doesn't exist yet from WHERE's point of view.",
+  "level": "mid",
+  "topic": "sql-fundamentals",
+  "topicLabel": "SQL: Fundamentals",
+  "file": "pages/sql-fundamentals.html"
+ },
+ {
+  "q": "A teammate wraps a schema migration in a transaction \"to be safe\" and rolls it back after a test failure — but the schema change is still there. Why?",
+  "a": "DDL statements auto-commit in most databases (notably MySQL) and can't be rolled back as part of a transaction the way DML can. Some databases (PostgreSQL) do support transactional DDL, so this is engine-dependent — but the safe assumption in an interview, and in practice, is that a DROP/ALTER/CREATE should be treated as immediately permanent rather than relying on ROLLBACK as a safety net.",
+  "level": "senior",
+  "topic": "sql-fundamentals",
+  "topicLabel": "SQL: Fundamentals",
+  "file": "pages/sql-fundamentals.html"
+ },
+ {
+  "q": "Why does WHERE id NOT IN (subquery) sometimes return zero rows unexpectedly?",
+  "a": "If the subquery's result set contains even one NULL, NOT IN can never be proven true for any row, by the same three-valued-logic rule that breaks direct NULL comparisons — so the whole query silently returns nothing rather than erroring. NOT EXISTS is NULL-safe and is the recommended alternative whenever the subquery's column might contain NULL.",
+  "level": "senior",
+  "topic": "sql-fundamentals",
+  "topicLabel": "SQL: Fundamentals",
+  "file": "pages/sql-fundamentals.html"
+ },
+ {
+  "q": "What's the difference between INNER JOIN and LEFT JOIN?",
+  "a": "INNER JOIN keeps only rows that have a match on both sides — a row with no match is dropped entirely. LEFT JOIN keeps every row from the left table regardless of whether it has a match, filling the right side's columns with NULL when there's no match.",
+  "level": "junior",
+  "topic": "sql-joins",
+  "topicLabel": "SQL: Joins",
+  "file": "pages/sql-joins.html"
+ },
+ {
+  "q": "How do you find all customers who have never placed an order?",
+  "a": "LEFT JOIN customers to orders, then filter WHERE orders.<i>some_column</i> IS NULL. Customers with no matching order have every order column as NULL after the join, so filtering for NULL isolates exactly the unmatched customers.",
+  "level": "mid",
+  "topic": "sql-joins",
+  "topicLabel": "SQL: Joins",
+  "file": "pages/sql-joins.html"
+ },
+ {
+  "q": "A LEFT JOIN with a WHERE clause on the right table's column is returning fewer rows than expected. Why?",
+  "a": "If the WHERE condition filters on a right-table column (e.g. WHERE orders.status = 'shipped'), it also filters out every row where that column is NULL — which includes all the unmatched left-side rows the LEFT JOIN was specifically trying to preserve. This silently turns the LEFT JOIN into the equivalent of an INNER JOIN. The fix is moving that condition into the join's ON clause instead of WHERE.",
+  "level": "mid",
+  "topic": "sql-joins",
+  "topicLabel": "SQL: Joins",
+  "file": "pages/sql-joins.html"
+ },
+ {
+  "q": "What is a self join, and why does the query need table aliases?",
+  "a": "A self join joins a table to itself — typically to relate rows within the same table, like an employee to their manager who is also a row in the employees table. Aliases (e.g. e and m) are required because the query references the same table twice and SQL needs a way to disambiguate which \"copy\" a given column reference belongs to.",
+  "level": "mid",
+  "topic": "sql-joins",
+  "topicLabel": "SQL: Joins",
+  "file": "pages/sql-joins.html"
+ },
+ {
+  "q": "What causes an accidental CROSS JOIN, and why is it dangerous?",
+  "a": "Missing or incorrect join conditions — an ON clause that's omitted, or one where every row happens to match every row — produce a cartesian product: every row from one table paired with every row from the other, N × M results. On tables of any real size this can produce an enormous, database-locking result set from what looked like an ordinary query, making it a genuine production-incident cause rather than just a theoretical concern.",
+  "level": "senior",
+  "topic": "sql-joins",
+  "topicLabel": "SQL: Joins",
+  "file": "pages/sql-joins.html"
+ },
+ {
   "q": "Playwright supports multiple browsers and OSes — isn't that the same as Selenium? What's actually unique about it then?",
   "a": "Cross-browser and cross-OS support are shared with Selenium, not exclusive to Playwright. What's genuinely different: (1) built-in automatic waiting, so you don't hand-write synchronization/explicit-wait code; (2) the ability to do web <em>and</em> API automation in the same tool/script, enabling combined front-end + back-end end-to-end tests; (3) inbuilt logging/tracing and automatic before/after screenshots with no extra reporting setup.",
   "level": "mid",

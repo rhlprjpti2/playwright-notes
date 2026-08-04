@@ -747,9 +747,9 @@ a:hover { text-decoration: underline; }
 .cs-p1 { animation: csEmph1 7.5s ease-in-out infinite; }
 .cs-p2 { animation: csEmph2 7.5s ease-in-out infinite; }
 .cs-p3 { animation: csEmph3 7.5s ease-in-out infinite; }
-@keyframes csEmph1 { 0%, 3% { opacity: .35; } 7%, 28% { opacity: 1; } 33%, 100% { opacity: .35; } }
-@keyframes csEmph2 { 0%, 36% { opacity: .35; } 40%, 61% { opacity: 1; } 66%, 100% { opacity: .35; } }
-@keyframes csEmph3 { 0%, 69% { opacity: .35; } 73%, 94% { opacity: 1; } 100% { opacity: .35; } }
+@keyframes csEmph1 { 0%, 3% { opacity: .2; } 7%, 28% { opacity: 1; } 33%, 100% { opacity: .2; } }
+@keyframes csEmph2 { 0%, 36% { opacity: .2; } 40%, 61% { opacity: 1; } 66%, 100% { opacity: .2; } }
+@keyframes csEmph3 { 0%, 69% { opacity: .2; } 73%, 94% { opacity: 1; } 100% { opacity: .2; } }
 
 .cs-tag-p1 { animation: csTag1 7.5s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom center; }
 .cs-tag-p2 { animation: csTag2 7.5s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom center; }
@@ -775,8 +775,8 @@ a:hover { text-decoration: underline; }
    mutable vs immutable or "is" vs "==" where there's exactly one flip. */
 .cs-q1 { animation: csEmphA 5s ease-in-out infinite; }
 .cs-q2 { animation: csEmphB 5s ease-in-out infinite; }
-@keyframes csEmphA { 0%, 4% { opacity: .35; } 9%, 42% { opacity: 1; } 50%, 100% { opacity: .35; } }
-@keyframes csEmphB { 0%, 54% { opacity: .35; } 59%, 92% { opacity: 1; } 100% { opacity: .35; } }
+@keyframes csEmphA { 0%, 4% { opacity: .2; } 9%, 42% { opacity: 1; } 50%, 100% { opacity: .2; } }
+@keyframes csEmphB { 0%, 54% { opacity: .2; } 59%, 92% { opacity: 1; } 100% { opacity: .2; } }
 .cs-glow-q1 { animation: csGlowA 5s ease-in-out infinite; }
 .cs-glow-q2 { animation: csGlowB 5s ease-in-out infinite; }
 @keyframes csGlowA { 0%, 6% { opacity: 0; } 12% { opacity: .8; } 42%, 100% { opacity: 0; } }

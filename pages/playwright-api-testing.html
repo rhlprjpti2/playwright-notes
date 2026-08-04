@@ -356,7 +356,7 @@ page.route("**/orders", lambda route: route.fulfill(
 page.goto("/orders")   # UI's error-state handling is what's under test here</code></pre>
         <div class="callout supplement">
           <strong>Same site, different mechanism</strong>
-          If this "register something before it happens" shape feels familiar, it's the same family as <a href="playwright-alerts-dialogs.html">dialog handlers</a> and <a href="playwright-child-windows.html">popup capture</a> — <code>page.route()</code> is also registered <em>before</em> the navigation that triggers it, not called reactively afterwards.
+          If this "register something before it happens" shape feels familiar, it's the same family as <a href="playwright-alerts-dialogs.html">dialog handlers</a> and <a href="playwright-child-windows.html">popup capture</a> — <code>page.route()</code> is also registered <em>before</em> the navigation that triggers it, not called reactively afterwards. Route interception gets a full page of its own — <code>fulfill()</code> vs. <code>continue_()</code>, a full request/response reference, and the related trick of skipping login via injected session storage — at <a href="playwright-network-interception.html">Network Interception &amp; Session Storage</a>.
         </div>
       </section>
 
@@ -415,6 +415,7 @@ page.goto("/orders")   # UI's error-state handling is what's under test here</co
       <div class="related-box">
         <h3>Related topics</h3>
         <div class="related-links">
+          <a href="playwright-network-interception.html">Network Interception &amp; Session Storage →</a>
           <a href="playwright-browser-context-page.html">Browser, Context &amp; Page →</a>
           <a href="playwright-alerts-dialogs.html">JavaScript Alerts &amp; Dialogs →</a>
           <a href="pytest-fixtures.html">Pytest Fixtures &amp; Fundamentals →</a>

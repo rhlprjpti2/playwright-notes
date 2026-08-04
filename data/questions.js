@@ -765,6 +765,62 @@ window.ALL_QUESTIONS = [
   "file": "pages/playwright-locators.html"
  },
  {
+  "q": "What does <code>page.route()</code> do?",
+  "a": "It registers a handler for network requests matching a URL pattern (glob, regex, or predicate). When a matching request fires, Playwright routes it to the handler instead of letting it proceed normally — the handler then decides what happens: answer it locally with <code>fulfill()</code>, forward it (optionally modified) with <code>continue_()</code>, or block it with <code>abort()</code>.",
+  "level": "junior",
+  "topic": "playwright-network-interception",
+  "topicLabel": "Network Interception &amp; Storage",
+  "file": "pages/playwright-network-interception.html"
+ },
+ {
+  "q": "What's the difference between <code>route.fulfill()</code> and <code>route.continue_()</code>?",
+  "a": "<code>fulfill()</code> answers the request entirely locally — no real network call happens, and you control the whole response (status, headers, body). <code>continue_()</code> lets the request proceed to a real server, optionally with something changed first (URL, method, headers, body). <code>fulfill()</code> tests how the frontend reacts to a given response; <code>continue_()</code> tests how the backend reacts to a given request.",
+  "level": "mid",
+  "topic": "playwright-network-interception",
+  "topicLabel": "Network Interception &amp; Storage",
+  "file": "pages/playwright-network-interception.html"
+ },
+ {
+  "q": "Why would a test mock a response instead of just using real test data?",
+  "a": "Some states are impractical to produce with real data on demand — an account with literally zero orders, a specific error response, a slow network. Rather than maintaining dedicated accounts or destructively deleting real records just to hit one UI state, the response is faked for that one request only; the real backend and real data are never touched.",
+  "level": "mid",
+  "topic": "playwright-network-interception",
+  "topicLabel": "Network Interception &amp; Storage",
+  "file": "pages/playwright-network-interception.html"
+ },
+ {
+  "q": "How would you test that a user can't view another account's order by tampering with the order ID?",
+  "a": "Register a route on the order-details request, and inside the handler use <code>route.continue_(url=...)</code> to swap in another account's order ID before the request reaches the server. Assert that the app shows an authorization error rather than the other account's data. Because <code>continue_()</code> still sends a real request, the assertion is proving the backend itself enforces the check — not just that the frontend would display an error if told to.",
+  "level": "mid",
+  "topic": "playwright-network-interception",
+  "topicLabel": "Network Interception &amp; Storage",
+  "file": "pages/playwright-network-interception.html"
+ },
+ {
+  "q": "Why does <code>page.add_init_script()</code> have to be called before <code>page.goto()</code>?",
+  "a": "It registers a script to run on future navigations — it doesn't retroactively run on a page that's already loaded. Called after <code>goto()</code>, the app's own startup JavaScript (which checks localStorage for a token) would already have executed and found nothing, so the login screen would still appear. This is the same \"register before the trigger\" ordering rule that governs dialog handlers and route handlers elsewhere in Playwright.",
+  "level": "mid",
+  "topic": "playwright-network-interception",
+  "topicLabel": "Network Interception &amp; Storage",
+  "file": "pages/playwright-network-interception.html"
+ },
+ {
+  "q": "Would you use <code>add_init_script()</code> or <code>storage_state</code> to skip a login screen, and why?",
+  "a": "<code>storage_state</code> for the common case — it captures cookies, localStorage, and sessionStorage together from an already-authenticated context and restores all of it in one call to <code>new_context(storage_state=...)</code>, with no hand-written JavaScript to get subtly wrong. <code>add_init_script()</code> is the right tool for something <code>storage_state</code> can't express — injecting a feature flag, mocking <code>Date</code>, or any other pre-navigation script that isn't just \"restore a session that already existed.\"",
+  "level": "senior",
+  "topic": "playwright-network-interception",
+  "topicLabel": "Network Interception &amp; Storage",
+  "file": "pages/playwright-network-interception.html"
+ },
+ {
+  "q": "Is mocking the network the same thing as API testing?",
+  "a": "No, and conflating them is a common mistake. API testing (<code>APIRequestContext</code>) sends a real request and validates the real backend's real response — see <a href=\"playwright-api-testing.html\">API Testing &amp; Assertion Validation</a>. Route interception with <code>fulfill()</code> never contacts the real backend at all — it's for controlling what the frontend receives, useful for UI states the real backend won't reliably reproduce on demand. <code>continue_()</code> sits in between: a real request still goes out, just with something intentionally altered first.",
+  "level": "senior",
+  "topic": "playwright-network-interception",
+  "topicLabel": "Network Interception &amp; Storage",
+  "file": "pages/playwright-network-interception.html"
+ },
+ {
   "q": "How would you verify a specific cell's value in a table where both the row and column positions are dynamic?",
   "a": "Resolve both coordinates at runtime. For the column: get all <code>th</code> elements, use <code>count()</code> as a loop bound, and check each with <code>.nth(i).filter(has_text=\"Price\").count() &gt; 0</code>, recording the index and breaking on match. For the row: <code>page.locator(\"tr\").filter(has_text=\"Rice\")</code> — content-based, so position doesn't matter. Then intersect: <code>rice_row.locator(\"td\").nth(price_column)</code>, scoping the cell search to that row. Finally assert with <code>expect(...).to_have_text()</code>.",
   "level": "mid",

@@ -549,6 +549,28 @@ window.TOPICS_INDEX = [
     lastUpdated: "2026-08-04",
     phase: "advanced",
     order: 5
+  },
+  {
+    slug: "playwright-network-interception",
+    title: "Network Interception & Session Storage",
+    file: "pages/playwright-network-interception.html",
+    tags: ["playwright", "network", "mocking", "storage"],
+    keyTerms: [
+      "page.route", "route.fulfill", "route.continue_", "route.abort", "route.request",
+      "page.unroute", "mocking response", "mocking request", "network interception",
+      "add_init_script", "localStorage", "local storage", "session storage", "storage_state",
+      "bypass login", "token injection", "glob pattern", "url pattern"
+    ],
+    summary: "Faking a response with route.fulfill(), altering a request with route.continue_(), and skipping login entirely by planting a token via add_init_script() (or storage_state).",
+    related: ["playwright-api-testing", "playwright-alerts-dialogs", "playwright-child-windows", "playwright-frames", "course-roadmap"],
+    sources: [
+      { title: "Intercepting & Mocking API Responses", addedDate: "2026-08-04" },
+      { title: "Intercepting & Mocking API Requests", addedDate: "2026-08-04" },
+      { title: "Bypassing Login via Session/Local Storage Injection", addedDate: "2026-08-04" }
+    ],
+    lastUpdated: "2026-08-04",
+    phase: "advanced",
+    order: 6
   }
 ];
 

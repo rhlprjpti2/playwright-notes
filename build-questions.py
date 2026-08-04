@@ -35,6 +35,7 @@ TOPIC_LABELS = {
     "playwright-frames": "Frames &amp; iFrames",
     "framework-system-design": "Framework &amp; System Design",
     "playwright-api-testing": "API Testing &amp; Assertions",
+    "playwright-network-interception": "Network Interception &amp; Storage",
     "python-memory-model": "Python: Memory Model",
     "python-data-types": "Python: Data Types",
     "python-strings": "Python: Strings",

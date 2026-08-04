@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network Interception & Session Storage · Tech Interview Hub</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../data/topics-index.js"></script>
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
+    <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
+<nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
+  <div class="nav-drawer-head">
+    <span>Menu</span>
+    <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="nav-drawer-body" id="nav-drawer-body"></div>
+</nav>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Network Interception &amp; Session Storage</div>
+    <h1>Network Interception &amp; Session Storage</h1>
+    <p class="lede">Two edge cases that are painful to set up for real — an account with zero orders, someone else's order ID — and one that's slow to repeat every test: logging in through the UI. <code>page.route()</code> solves the first two by tweaking traffic in flight; <code>page.add_init_script()</code> solves the third by planting a login token before the page ever loads. Neither one touches real test data or a real login form.</p>
+    <div class="card-tags">
+      <span>playwright</span>
+      <span>network</span>
+      <span>mocking</span>
+      <span>storage</span>
+    </div>
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Why mock the network at all</a>
+      <a href="#fulfill">Mocking a response: route.fulfill()</a>
+      <a href="#continue">Mocking a request: route.continue_()</a>
+      <a href="#fulfill-vs-continue">fulfill() vs. continue_()</a>
+      <a href="#route-api">Route API reference</a>
+      <a href="#storage-bypass">Bypassing login with local storage</a>
+      <a href="#storage-state">The Playwright-native alternative: storage_state</a>
+      <a href="#lifecycle">Full flow: inject token, skip login, verify</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <figure class="concept-art">
+        <div class="cs-scene">
+          <div class="cs-code">
+            <div class="cs-code-line cs-p1">page.route("**/orders*", handle_orders)</div>
+            <div class="cs-code-line cs-p2">page.get_by_role("link", name="Orders").click()</div>
+            <div class="cs-code-line cs-p3">route.fulfill(json=fake_empty_response)  <span class="cs-num"># server never asked</span></div>
+          </div>
+          <svg viewBox="0 0 640 170" width="100%" height="auto" role="img" aria-label="A route handler is registered before the click, so the moment the real request fires it never reaches the server at all">
+            <rect class="cs-p1" x="20" y="40" width="160" height="70" rx="10" fill="none" stroke="#f4d35e" stroke-width="3"/>
+            <text x="100" y="68" class="ca-lbl" style="font-size:12px">route armed</text>
+            <text x="100" y="88" class="ca-sub">nothing intercepted yet</text>
+            <path d="M180 75 L230 75" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+            <rect class="cs-p2" x="235" y="40" width="160" height="70" rx="10" fill="#ffb15c"/>
+            <text x="315" y="68" class="ca-lbl" style="font-size:12px">click fires request</text>
+            <text x="315" y="88" class="ca-lbl" style="font-size:11px">GET /orders*</text>
+            <path d="M395 75 L445 75" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
+            <ellipse class="cs-ring cs-ring-p3" cx="530" cy="75" rx="95" ry="45" stroke="#7fd8c9" stroke-width="3"/>
+            <rect class="cs-p3" x="450" y="40" width="160" height="70" rx="10" fill="#7fd8c9"/>
+            <text x="530" y="68" class="ca-lbl" style="font-size:12px">fulfilled locally</text>
+            <text x="530" y="88" class="ca-lbl" style="font-size:11px">real server never hit</text>
+          </svg>
+        </div>
+        <figcaption>Same "register before the trigger" shape as dialogs, popups, and frames — the route is armed first, so it's already listening by the time the request fires</figcaption>
+      </figure>
+
+      <section id="concept">
+        <h2>Why mock the network at all</h2>
+        <p>Some scenarios are painful to set up with real data:</p>
+        <ul>
+          <li><strong>Empty state</strong> — to see "you have no orders," you'd otherwise have to delete every real order first (or maintain a dedicated empty test account) just to test one message.</li>
+          <li><strong>Security edge cases</strong> — testing "you can't view someone else's order" means getting your hands on another account's real order ID, which usually isn't practical in an automated suite.</li>
+        </ul>
+        <p><code>page.route(url_pattern, handler)</code> intercepts matching network traffic before it completes, the same way <code>page.on("dialog", ...)</code> intercepts dialogs and <code>expect_popup()</code> intercepts new windows — <strong>register interest before the trigger</strong>, then react when it fires. The difference here is what you can do once you've intercepted it: fake the response entirely, or let the request through with something changed.</p>
+      </section>
+
+      <section id="fulfill">
+        <h2>Mocking a response: <code>route.fulfill()</code></h2>
+        <p>The scenario: an account has real orders, but the test needs to verify the empty-state message — without deleting anything. Register a route on the orders API call, and when it fires, answer it yourself instead of letting it reach the server:</p>
+        <pre><code>def handle_orders_route(route):
+    fake_empty_response = {
+        "orders": [],
+        "message": "You have no orders to show at this time."
+    }
+    route.fulfill(status=200, json=fake_empty_response)
+
+def test_empty_orders_message(page):
+    page.goto(BASE_URL)
+    page.get_by_label("Username").fill("test_user")
+    page.get_by_label("Password").fill("...")
+    page.get_by_role("button", name="Login").click()
+
+    # Regex — the customer ID segment changes per account, "*" covers it
+    page.route("**/customers/*/orders", handle_orders_route)
+
+    page.get_by_role("link", name="Orders").click()
+    message = page.locator(".empty-orders").text_content()
+    assert message == "You have no orders to show at this time."</code></pre>
+        <p><code>route.fulfill()</code> answers the request <strong>locally</strong> — the real backend never sees it at all. The browser gets exactly the JSON handed to it, renders accordingly, and the actual account's real orders are never touched.</p>
+        <div class="callout tip">
+          <strong>The account still has its real orders after the test</strong>
+          Nothing was deleted and no test data was swapped — only the one intercepted response was faked. The next real page load (outside the mocked route) sees the genuine orders again.
+        </div>
+      </section>
+
+      <section id="continue">
+        <h2>Mocking a request: <code>route.continue_()</code></h2>
+        <p>The scenario is reversed: instead of faking what comes back, this time the outgoing request itself needs to change before it reaches the server. A user views their own order, and the test needs to prove that swapping in <em>another account's</em> order ID doesn't leak that data:</p>
+        <pre><code>def handle_order_id_swap(route):
+    other_account_order_url = "https://shop.example.com/api/orders?id=OTHER-ACCT-ID"
+    route.continue_(url=other_account_order_url)
+
+def test_cannot_view_other_accounts_order(page):
+    page.goto(BASE_URL)
+    # ...login as this test's own account...
+    page.get_by_role("link", name="Orders").click()
+
+    page.route("**/orders*id=*", handle_order_id_swap)
+    page.get_by_role("button", name="View").first.click()
+
+    message = page.locator(".error-message").text_content()
+    assert message == "You are not authorized to view this order."</code></pre>
+        <p><code>route.continue_()</code> <strong>lets the request proceed to a real server</strong> — just with something about it changed first (here, the URL; it can also override the method, headers, or body). This is a genuine network call, unlike <code>fulfill()</code>. The assertion proves the <em>backend itself</em> rejects the mismatched ID, which is the actual security property under test.</p>
+        <div class="callout warn">
+          <strong>Python note: the trailing underscore is required</strong>
+          <code>continue</code> is a reserved keyword in Python, so the method is named <code>continue_()</code>, not <code>continue()</code>. Easy to typo under pressure in an interview or a live coding round.
+        </div>
+      </section>
+
+      <section id="fulfill-vs-continue">
+        <h2><code>fulfill()</code> vs. <code>continue_()</code></h2>
+        <p>These get mixed up because both start with the identical setup — <code>page.route(pattern, handler)</code> — and only diverge inside the handler. The distinction is the single most interview-relevant fact on this page:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th></th><th><code>route.fulfill(...)</code></th><th><code>route.continue_(...)</code></th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">Does a real network call happen?</td><td>No — answered locally</td><td class="highlight">Yes — proceeds to a real server</td></tr>
+              <tr><td class="highlight">What you control</td><td>The entire response — status, headers, body</td><td>The outgoing request — URL, method, headers, post data</td></tr>
+              <tr><td class="highlight">What it proves</td><td>How the <em>frontend</em> reacts to a given response</td><td>How the <em>backend</em> reacts to a given request</td></tr>
+              <tr><td class="highlight">This page's example</td><td>Faking an empty-orders JSON payload</td><td>Swapping in another account's order ID</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="demo" id="fulfill-continue-demo"></div>
+        <script>
+          renderAssertToggle("fulfill-continue-demo", {
+            expression: "Inside the route handler:",
+            initialKey: "fulfill",
+            options: [
+              { key: "fulfill", label: "route.fulfill(json=fake_data)", pass: true, detail: "No request leaves the browser. The response is entirely made up — useful for testing how the UI renders a state (empty list, error banner) the real backend won't reliably hand you on demand." },
+              { key: "continue", label: "route.continue_(url=new_url)", pass: true, detail: "A real request is sent to new_url. The real backend processes it and returns a genuine response — useful for testing how the SERVER reacts to a manipulated request." }
+            ]
+          });
+        </script>
+      </section>
+
+      <section id="route-api">
+        <h2>Route API reference</h2>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Member</th><th>What it does</th></tr></thead>
+            <tbody>
+              <tr><td><code>route.fulfill(status=, json=, headers=)</code></td><td class="highlight">Answers the request locally — no real network call is made.</td></tr>
+              <tr><td><code>route.continue_(url=, method=, headers=, post_data=)</code></td><td>Forwards the request to a real server, optionally modified first.</td></tr>
+              <tr><td><code>route.abort()</code></td><td>Fails the request outright — simulates a network error / offline condition.</td></tr>
+              <tr><td><code>route.request</code></td><td>The intercepted request — <code>.url</code>, <code>.method</code>, <code>.headers</code>, <code>.post_data</code>.</td></tr>
+              <tr><td><code>page.unroute(pattern)</code></td><td>Removes a previously registered handler for that pattern.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>The pattern passed to <code>page.route()</code> can be a glob string (<code>"**/orders*"</code> — <code>**</code> matches any number of path segments, <code>*</code> matches within one), a regular expression, or a predicate function for anything more specific than either can express.</p>
+      </section>
+
+      <section id="storage-bypass">
+        <h2>Bypassing login with local storage</h2>
+        <p>A separate problem: most tests need to be logged in, and re-running a real login form on every single test adds seconds of setup, repeated hundreds of times across a suite. Many apps store their auth token in the browser's <code>localStorage</code> after login — if that token can be planted <em>before</em> the page loads, the app treats the session as already authenticated and the login form never appears at all.</p>
+        <pre><code>def test_orders_visible_without_logging_in(page):
+    token = api_utils.get_token(playwright, username="test_user", password="...")
+
+    page.add_init_script(f"""
+        window.localStorage.setItem('token', '{token}');
+    """)
+
+    page.goto(f"{BASE_URL}/client")   # lands straight past the login screen
+    page.get_by_role("button", name="Orders").click()
+    expect(page.get_by_text("Order History")).to_be_visible()</code></pre>
+        <p><code>page.add_init_script()</code> registers JavaScript that runs <strong>before any of the page's own scripts</strong>, on every document the page navigates to. Setting the token there means it's already sitting in <code>localStorage</code> the instant the app's own startup code checks for it — which is exactly what a real login would have left behind, just without spending any time on the login form itself.</p>
+        <div class="callout warn">
+          <strong>Where does the token actually come from?</strong>
+          The script only <em>plants</em> the token — it doesn't generate one. A real one has to be obtained first, typically via a direct API login call (see <a href="playwright-api-testing.html">API Testing &amp; Assertion Validation</a>) rather than the UI. The whole point is skipping the UI form, not skipping authentication itself.
+        </div>
+      </section>
+
+      <section id="storage-state">
+        <h2>The Playwright-native alternative: <code>storage_state</code></h2>
+        <p>Hand-writing a <code>localStorage.setItem(...)</code> script works, but it's re-deriving something Playwright already does natively. A browser context can be created directly from a previously captured session:</p>
+        <pre><code># Capture once, from an already-authenticated context
+state = context.storage_state()   # cookies + localStorage, serializable
+
+# Reuse — a brand-new context that starts already logged in
+authed_context = browser.new_context(storage_state=state)
+page = authed_context.new_page()
+page.goto(f"{BASE_URL}/client")   # no login screen, no add_init_script needed</code></pre>
+        <div class="callout supplement">
+          <strong>Beyond this video <span class="src-tag">— storage_state is the built-in version of the same trick</span></strong>
+          <code>storage_state</code> captures cookies as well as <code>localStorage</code> and <code>sessionStorage</code> in one object supplied directly to <code>new_context()</code> — no manual JavaScript string, and no risk of a typo in a hand-written <code>setItem</code> call. It's usually the better default; <code>add_init_script()</code> is still the right tool when something more custom than "restore an existing session" is needed — injecting a feature flag, a mocked <code>Date</code>, or any other pre-navigation script.
+        </div>
+      </section>
+
+      <section id="lifecycle">
+        <h2>Full flow: inject token, skip login, verify</h2>
+        <p class="lead">Step through the token-injection test end to end — note exactly where the login screen would have appeared, and doesn't:</p>
+
+        <div class="sim" id="storage-lifecycle-sim"></div>
+        <script>
+          renderStepDebugger("storage-lifecycle-sim", {
+            title: "test_orders_visible_without_logging_in · step debugger",
+            terminalPrompt: "$ pytest test_network_storage.py -s",
+            legend: [
+              { label: "token acquired", color: "#ffb15c" },
+              { label: "injected pre-navigation", color: "var(--success)" },
+              { label: "verified", color: "var(--accent-3)" }
+            ],
+            codeBlocks: [
+              {
+                caption: "test_network_storage.py",
+                lines: [
+                  { id: "sln1", zone: "setup", html: '<span class="ln">1</span> token = api_utils.get_token(playwright, username, password)' },
+                  { id: "sln2", zone: "setup", html: '<span class="ln">2</span> page.add_init_script(<span class="tok-kw">f</span><span class="tok-str">"window.localStorage.setItem(\'token\', \'{token}\')"</span>)' },
+                  { id: "sln3", html: '<span class="ln">3</span> page.goto(<span class="tok-kw">f</span><span class="tok-str">"{BASE_URL}/client"</span>)' },
+                  { id: "sln4", html: '<span class="ln">4</span> page.get_by_role(<span class="tok-str">"button"</span>, name=<span class="tok-str">"Orders"</span>).click()' },
+                  { id: "sln5", zone: "teardown", html: '<span class="ln">5</span> expect(page.get_by_text(<span class="tok-str">"Order History"</span>)).to_be_visible()' }
+                ]
+              }
+            ],
+            steps: [
+              { lineIds: ["sln1"], desc: "A real token is obtained via a direct API login call — no browser involved yet at all.", term: '<span class="tag-setup">▸ POST /auth/login → token acquired</span>' },
+              { lineIds: ["sln2"], desc: "The init script is registered before any navigation happens. Nothing has loaded yet — this only arms what happens on the NEXT page load.", term: '<span class="tag-setup">▸ init script armed — not run yet</span>' },
+              { lineIds: ["sln3"], desc: "Navigation starts. Before the app's own JavaScript runs, the init script fires first and plants the token in localStorage.", term: '<span class="tag-pause">⚠ init script fires → token in localStorage</span>' },
+              { lineIds: ["sln3"], desc: "The app's own startup code now runs, checks localStorage, finds the token already there, and treats the session as authenticated. No login form is ever rendered.", term: '<span class="tag-setup">▸ app boots — sees token — skips login screen</span>' },
+              { lineIds: ["sln4"], desc: "Straight to app functionality — this click only makes sense post-login, and it works immediately.", term: '<span class="tag-setup">▸ Orders clicked</span>' },
+              { lineIds: ["sln5"], desc: "Confirms the whole trick actually worked — proof the session is real, not just that no error was thrown.", term: '<span class="tag-test">✓ "Order History" visible</span>' }
+            ]
+          });
+        </script>
+
+        <div class="quiz">
+          <div class="quiz-q">What would happen if <code>page.add_init_script()</code> were called <em>after</em> <code>page.goto()</code> instead of before?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">No difference — the token is set either way before any assertion runs</button>
+            <button class="quiz-opt" data-correct="true">The app's own startup code would already have run and checked localStorage before the token existed — the login screen would still appear, same as the dialog-handler and route-handler ordering rule elsewhere on this site</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What does <code>page.route()</code> do?</summary>
+          <div class="qa-body">It registers a handler for network requests matching a URL pattern (glob, regex, or predicate). When a matching request fires, Playwright routes it to the handler instead of letting it proceed normally — the handler then decides what happens: answer it locally with <code>fulfill()</code>, forward it (optionally modified) with <code>continue_()</code>, or block it with <code>abort()</code>.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What's the difference between <code>route.fulfill()</code> and <code>route.continue_()</code>?</summary>
+          <div class="qa-body"><code>fulfill()</code> answers the request entirely locally — no real network call happens, and you control the whole response (status, headers, body). <code>continue_()</code> lets the request proceed to a real server, optionally with something changed first (URL, method, headers, body). <code>fulfill()</code> tests how the frontend reacts to a given response; <code>continue_()</code> tests how the backend reacts to a given request.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why would a test mock a response instead of just using real test data?</summary>
+          <div class="qa-body">Some states are impractical to produce with real data on demand — an account with literally zero orders, a specific error response, a slow network. Rather than maintaining dedicated accounts or destructively deleting real records just to hit one UI state, the response is faked for that one request only; the real backend and real data are never touched.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> How would you test that a user can't view another account's order by tampering with the order ID?</summary>
+          <div class="qa-body">Register a route on the order-details request, and inside the handler use <code>route.continue_(url=...)</code> to swap in another account's order ID before the request reaches the server. Assert that the app shows an authorization error rather than the other account's data. Because <code>continue_()</code> still sends a real request, the assertion is proving the backend itself enforces the check — not just that the frontend would display an error if told to.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why does <code>page.add_init_script()</code> have to be called before <code>page.goto()</code>?</summary>
+          <div class="qa-body">It registers a script to run on future navigations — it doesn't retroactively run on a page that's already loaded. Called after <code>goto()</code>, the app's own startup JavaScript (which checks localStorage for a token) would already have executed and found nothing, so the login screen would still appear. This is the same "register before the trigger" ordering rule that governs dialog handlers and route handlers elsewhere in Playwright.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Would you use <code>add_init_script()</code> or <code>storage_state</code> to skip a login screen, and why?</summary>
+          <div class="qa-body"><code>storage_state</code> for the common case — it captures cookies, localStorage, and sessionStorage together from an already-authenticated context and restores all of it in one call to <code>new_context(storage_state=...)</code>, with no hand-written JavaScript to get subtly wrong. <code>add_init_script()</code> is the right tool for something <code>storage_state</code> can't express — injecting a feature flag, mocking <code>Date</code>, or any other pre-navigation script that isn't just "restore a session that already existed."</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Is mocking the network the same thing as API testing?</summary>
+          <div class="qa-body">No, and conflating them is a common mistake. API testing (<code>APIRequestContext</code>) sends a real request and validates the real backend's real response — see <a href="playwright-api-testing.html">API Testing &amp; Assertion Validation</a>. Route interception with <code>fulfill()</code> never contacts the real backend at all — it's for controlling what the frontend receives, useful for UI states the real backend won't reliably reproduce on demand. <code>continue_()</code> sits in between: a real request still goes out, just with something intentionally altered first.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>A route handler stays active for every matching request</strong>
+          Once registered, <code>page.route(pattern, handler)</code> applies to every subsequent request matching that pattern for the rest of the page's lifetime — the same "register once, applies to everything after" behavior as dialog handlers. Use <code>page.unroute(pattern)</code> if a later step needs the real, un-mocked network call again.
+        </div>
+        <div class="callout warn">
+          <strong>The route pattern needs to actually match the real request</strong>
+          A pattern that's too narrow (hardcoding a dynamic customer or order ID instead of wildcarding it) silently never fires, and the test proceeds against the real, un-mocked network — often failing later in a confusing way that looks unrelated to the routing at all.
+        </div>
+        <div class="callout warn">
+          <strong>Registering the route too late misses the request</strong>
+          Same ordering rule as dialogs and popups: the route has to be armed <em>before</em> the action that triggers the request (the click on "Orders," in this page's examples), not after.
+        </div>
+        <div class="callout warn">
+          <strong>fulfill() needs a real body</strong>
+          Calling <code>route.fulfill()</code> with no <code>body</code>/<code>json</code> at all sends an empty response, which is rarely what a JSON-consuming frontend expects — it typically fails to parse rather than rendering a sensible empty state.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="playwright-api-testing.html">API Testing &amp; Assertion Validation →</a>
+          <a href="playwright-alerts-dialogs.html">JavaScript Alerts &amp; Dialogs →</a>
+          <a href="playwright-child-windows.html">Child Windows &amp; Popups →</a>
+          <a href="playwright-frames.html">Frames &amp; iFrames →</a>
+          <a href="course-roadmap.html">Course Roadmap →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: "Intercepting &amp; Mocking API Responses", "Intercepting &amp; Mocking API Requests", "Bypassing Login via Session/Local Storage Injection" — added 2026-08-04</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

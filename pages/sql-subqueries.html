@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subqueries & Set Operations · Tech Interview Hub</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../data/topics-index.js"></script>
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
+    <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
+<nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
+  <div class="nav-drawer-head">
+    <span>Menu</span>
+    <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="nav-drawer-body" id="nav-drawer-body"></div>
+</nav>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Subqueries &amp; Set Operations</div>
+    <h1>Subqueries &amp; Set Operations</h1>
+    <p class="lede">Correlated vs non-correlated is really a performance question wearing a syntax costume — a correlated subquery re-runs once per outer row, which either doesn't matter or matters enormously depending on table size. Plus UNION's silent deduplication and CTEs as subqueries you can actually read.</p>
+    <div class="card-tags">
+      <span>sql</span>
+      <span>subqueries</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone SQL track — authored directly for Lead SDET interview prep, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#correlated">Correlated subqueries, row by row</a>
+      <a href="#exists-vs-in">EXISTS vs IN</a>
+      <a href="#union">UNION vs UNION ALL</a>
+      <a href="#intersect-except">INTERSECT and EXCEPT</a>
+      <a href="#cte">CTEs — subqueries with a name</a>
+      <a href="#recursive-cte">Recursive CTEs</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p>A subquery is a query nested inside another — in <code>WHERE</code>, in <code>SELECT</code>, in <code>FROM</code>. The distinction that actually matters in an interview isn't where it's nested, it's whether it references anything from the outer query: <strong>non-correlated</strong> subqueries stand alone and run once; <strong>correlated</strong> subqueries reference an outer-query column and conceptually re-run once per outer row.</p>
+      </section>
+
+      <section id="correlated">
+        <h2>Correlated subqueries, row by row</h2>
+        <p>Finding every employee who earns more than their <em>own department's</em> average — the department average is different depending on which employee's row is currently being checked, which is exactly what makes this correlated:</p>
+        <div class="sim" id="correlated-stepper"></div>
+        <script>
+          renderQueryStepper("correlated-stepper", {
+            tables: [
+              { id: "employees5", label: "employees", headers: ["id", "name", "department", "salary"], rows: [[1, "Ada", "Eng", 90], [2, "Grace", "Eng", 70], [3, "Katherine", "Sales", 60], [4, "Alan", "Sales", 80]] }
+            ],
+            resultHeaders: ["name", "salary", "dept_avg"],
+            introCode: "SELECT name FROM employees e1 WHERE salary > (SELECT AVG(salary) FROM employees e2 WHERE e2.department = e1.department);",
+            introText: "Step through — the inner AVG() query re-runs fresh for every single outer row.",
+            steps: [
+              {
+                code: "outer row: Ada (Eng, 90) -> inner query: AVG(salary) WHERE department='Eng' -> 80",
+                rowStates: { employees5: { 0: "match" } },
+                resultRows: [["Ada", 90, 80]],
+                resultRowStates: { 0: "new" },
+                desc: "Inner subquery runs fresh for Ada's row: Eng average = (90+70)/2 = 80. Ada's 90 > 80 → included."
+              },
+              {
+                code: "outer row: Grace (Eng, 70) -> inner query re-runs: AVG(salary) WHERE department='Eng' -> 80",
+                rowStates: { employees5: { 0: "match", 1: "exclude" } },
+                resultRows: [["Ada", 90, 80]],
+                desc: "Inner subquery runs AGAIN, same Eng average of 80. Grace's 70 is not > 80 → excluded. Note: the exact same subquery just executed twice."
+              },
+              {
+                code: "outer row: Katherine (Sales, 60) -> inner query re-runs: AVG(salary) WHERE department='Sales' -> 70",
+                rowStates: { employees5: { 0: "match", 1: "exclude", 2: "exclude" } },
+                resultRows: [["Ada", 90, 80]],
+                desc: "Different department, different average: Sales = (60+80)/2 = 70. Katherine's 60 is not > 70 → excluded."
+              },
+              {
+                code: "outer row: Alan (Sales, 80) -> inner query re-runs: AVG(salary) WHERE department='Sales' -> 70",
+                rowStates: { employees5: { 0: "match", 1: "exclude", 2: "exclude", 3: "match" } },
+                resultRows: [["Ada", 90, 80], ["Alan", 80, 70]],
+                resultRowStates: { 1: "new" },
+                desc: "Sales average again (70). Alan's 80 > 70 → included. Final result: 2 employees, each above their own department's average — 4 separate executions of the inner query for 4 outer rows."
+              }
+            ]
+          });
+        </script>
+        <div class="callout warn">
+          <strong>This is the performance conversation, not just a syntax detail</strong>
+          On a 4-row table, re-running the inner query 4 times is free. On a million-row table, a correlated subquery can mean a million re-executions of the inner query — often the actual root cause when someone says "this query used to be fast." Many databases' optimizers can rewrite some correlated subqueries into an equivalent join internally, but that's an optimization, not a guarantee — understanding what the naive execution looks like is what the interview question is really testing.
+        </div>
+      </section>
+
+      <section id="exists-vs-in">
+        <h2>EXISTS vs IN</h2>
+        <pre><code>-- IN — compares against a full list of values
+SELECT * FROM customers WHERE id IN (SELECT customer_id FROM orders);
+
+-- EXISTS — just checks whether the correlated subquery returns anything at all
+SELECT * FROM customers c WHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);</code></pre>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th></th><th>IN</th><th>EXISTS</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">NULL safety</td><td>Dangerous — NOT IN silently returns zero rows if the list contains a NULL (see <a href="sql-fundamentals.html#null-handling">Fundamentals</a>)</td><td>Safe — EXISTS only cares whether any row matched, NULL in the subquery's other columns doesn't affect that</td></tr>
+              <tr><td class="highlight">What it evaluates</td><td>A concrete list of values, materialized in full</td><td>A boolean — "did the correlated subquery find at least one row" — can often stop at the first match</td></tr>
+              <tr><td class="highlight">Typical performance</td><td>Fine for small, non-NULL lists</td><td>Usually the safer default for existence checks against large tables</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="union">
+        <h2>UNION vs UNION ALL</h2>
+        <p>Both stack the rows from two queries on top of each other — the entire difference is whether the result is deduplicated afterward:</p>
+        <pre><code>SELECT name FROM engineers
+UNION
+SELECT name FROM managers;        -- "Ada" appearing in both lists shows up ONCE
+
+SELECT name FROM engineers
+UNION ALL
+SELECT name FROM managers;        -- "Ada" appearing in both lists shows up TWICE</code></pre>
+        <div class="demo" id="union-demo"></div>
+        <script>
+          renderAssertToggle("union-demo", {
+            expression: "engineers = [Ada, Grace], managers = [Ada, Katherine]",
+            initialKey: "union",
+            options: [
+              { key: "union", label: "UNION", pass: true, detail: "Result: Ada, Grace, Katherine — 3 rows. Ada appeared in both lists but the duplicate is removed." },
+              { key: "unionall", label: "UNION ALL", pass: true, detail: "Result: Ada, Grace, Ada, Katherine — 4 rows. No deduplication, so Ada appears twice." }
+            ]
+          });
+        </script>
+        <div class="callout tip">
+          <strong>Default to UNION ALL unless duplicates are actually a problem</strong>
+          Deduplication isn't free — UNION has to sort or hash the entire combined result to find and remove duplicates. If the two queries are already known not to overlap (or duplicates are fine), UNION ALL is strictly cheaper.
+        </div>
+      </section>
+
+      <section id="intersect-except">
+        <h2>INTERSECT and EXCEPT</h2>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Operator</th><th>Returns</th></tr></thead>
+            <tbody>
+              <tr><td><code>INTERSECT</code></td><td>Only rows present in <em>both</em> query results — e.g. employees who are both managers and certified trainers.</td></tr>
+              <tr><td><code>EXCEPT</code> <span style="color:var(--text-faint); font-size:11px;">(MINUS in Oracle)</span></td><td>Rows in the first query's result that do <em>not</em> appear in the second — e.g. customers who signed up but never placed an order.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Both, like <code>UNION</code>, require the two queries to select the same number of columns with compatible types — this is a shared syntactic rule across all set operations, not specific to any one of them.</p>
+      </section>
+
+      <section id="cte">
+        <h2>CTEs — subqueries with a name</h2>
+        <p>A Common Table Expression (<code>WITH</code>) is a named, temporary result set that can be referenced later in the same query — functionally similar to a subquery, but readable top to bottom instead of nested inside itself:</p>
+        <pre><code>-- Nested subquery — reads inside-out
+SELECT name FROM (
+  SELECT customer_id, COUNT(*) AS order_count
+  FROM orders
+  GROUP BY customer_id
+) AS order_counts
+JOIN customers ON customers.id = order_counts.customer_id
+WHERE order_count > 5;
+
+-- Same logic as a CTE — reads top to bottom
+WITH order_counts AS (
+  SELECT customer_id, COUNT(*) AS order_count
+  FROM orders
+  GROUP BY customer_id
+)
+SELECT name
+FROM order_counts
+JOIN customers ON customers.id = order_counts.customer_id
+WHERE order_count > 5;</code></pre>
+        <p>Multiple CTEs can be chained with commas, each one able to reference the ones defined before it — which is how a long, multi-stage transformation stays readable instead of turning into several layers of nested parentheses.</p>
+      </section>
+
+      <section id="recursive-cte">
+        <h2>Recursive CTEs</h2>
+        <p>A CTE that references <em>itself</em>, used for hierarchical or graph-shaped data where the depth isn't known in advance — an org chart, a category tree, a bill-of-materials. Each iteration adds one more level:</p>
+        <pre><code>WITH RECURSIVE org_chain AS (
+  -- Anchor: the starting row(s), no recursion yet
+  SELECT id, name, manager_id, 1 AS depth
+  FROM employees WHERE id = 1                 -- start at the CEO
+
+  UNION ALL
+
+  -- Recursive step: join back to org_chain itself, one level at a time
+  SELECT e.id, e.name, e.manager_id, oc.depth + 1
+  FROM employees e
+  JOIN org_chain oc ON e.manager_id = oc.id
+)
+SELECT * FROM org_chain;</code></pre>
+        <div class="sim" id="recursive-cte-stepper"></div>
+        <script>
+          renderQueryStepper("recursive-cte-stepper", {
+            tables: [
+              { id: "employees6", label: "employees", headers: ["id", "name", "manager_id"], rows: [[1, "CEO", null], [2, "VP Eng", 1], [3, "VP Sales", 1], [4, "Engineer", 2]] }
+            ],
+            resultHeaders: ["name", "depth"],
+            introCode: "WITH RECURSIVE org_chain AS (...) SELECT * FROM org_chain;",
+            introText: "The recursion terminates when a step adds zero new rows — step through to see each level appear.",
+            steps: [
+              {
+                code: "anchor: SELECT ... WHERE id = 1",
+                rowStates: { employees6: { 0: "match" } },
+                resultRows: [["CEO", 1]],
+                resultRowStates: { 0: "new" },
+                desc: "Anchor member runs once — just the CEO, depth 1. This seeds the recursion."
+              },
+              {
+                code: "recursive step 1: JOIN org_chain (CEO) -> employees.manager_id = 1",
+                rowStates: { employees6: { 0: "match", 1: "match", 2: "match" } },
+                resultRows: [["CEO", 1], ["VP Eng", 2], ["VP Sales", 2]],
+                resultRowStates: { 1: "new", 2: "new" },
+                desc: "The recursive step joins back to org_chain's current contents (just the CEO) — finds both VPs, adds them at depth 2."
+              },
+              {
+                code: "recursive step 2: JOIN org_chain (CEO, VP Eng, VP Sales) -> employees.manager_id in (1,2,3)",
+                rowStates: { employees6: { 0: "match", 1: "match", 2: "match", 3: "match" } },
+                resultRows: [["CEO", 1], ["VP Eng", 2], ["VP Sales", 2], ["Engineer", 3]],
+                resultRowStates: { 3: "new" },
+                desc: "Now joins against ALL of org_chain so far (CEO + both VPs) — finds Engineer reporting to VP Eng, adds at depth 3."
+              },
+              {
+                code: "recursive step 3: no employee has manager_id in (1,2,3,4) -> zero new rows -> STOP",
+                rowStates: { employees6: { 0: "match", 1: "match", 2: "match", 3: "match" } },
+                resultRows: [["CEO", 1], ["VP Eng", 2], ["VP Sales", 2], ["Engineer", 3]],
+                desc: "<b>This step adds zero rows — recursion terminates automatically.</b> Without a query that eventually adds nothing, a recursive CTE runs forever (or until a safety limit kills it)."
+              }
+            ]
+          });
+        </script>
+        <div class="callout warn">
+          <strong>An infinite recursive CTE is a real, self-inflicted incident</strong>
+          If the data has a cycle (A manages B, B manages A — a data-integrity bug, but it happens) or the recursive step's join condition is wrong, the query never reaches zero new rows and runs until the database's recursion limit or timeout kills it.
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the difference between a correlated and non-correlated subquery?</summary>
+          <div class="qa-body">A non-correlated subquery is fully independent of the outer query and conceptually runs once. A correlated subquery references a column from the outer query, so it conceptually re-runs once per outer row — the inner query's result can be different for every row being checked.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> When would you prefer EXISTS over IN?</summary>
+          <div class="qa-body">EXISTS is NULL-safe and typically the better default for existence checks, especially against large tables — it only needs to confirm at least one matching row exists rather than materializing a full list. IN (or specifically NOT IN) becomes dangerous when the subquery's result can contain NULL, since NOT IN against a NULL-containing list silently returns zero rows.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What's the actual difference between UNION and UNION ALL?</summary>
+          <div class="qa-body">UNION deduplicates the combined result — any row appearing in both queries shows up once. UNION ALL keeps every row from both queries, including duplicates, and is cheaper since it skips the sort/hash step needed to find duplicates.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What problem do CTEs solve that a regular subquery doesn't?</summary>
+          <div class="qa-body">CTEs don't add new capability over an equivalent nested subquery in most cases — the improvement is readability. A WITH clause reads top to bottom and can be referenced by name later in the query, versus a nested subquery that reads inside-out and gets harder to follow as nesting depth increases. Multiple CTEs can also reference earlier ones, turning a multi-stage transformation into a readable sequence instead of layered parentheses.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> How does a recursive CTE know when to stop?</summary>
+          <div class="qa-body">It re-runs its recursive member against the CTE's own growing result set, each time joining only against rows added in the previous iteration, until a run produces zero new rows — at that point the recursion terminates naturally. If the underlying data has a cycle, or the join condition is wrong, that zero-new-rows state is never reached and the query runs until the database's recursion depth limit or a timeout stops it.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Correlated subqueries can silently be O(n²)</strong>
+          Fine on small tables, a real performance cliff on large ones — this is a legitimate root cause to investigate for "this query got slow" incidents.
+        </div>
+        <div class="callout warn">
+          <strong>NOT IN plus a NULL-containing list</strong>
+          Covered in Fundamentals, worth repeating here since subqueries are the most common source of it: prefer NOT EXISTS whenever the subquery's column could contain NULL.
+        </div>
+        <div class="callout warn">
+          <strong>An unbounded recursive CTE</strong>
+          Always sanity-check that the recursive step's join condition actually converges toward zero new rows — a cyclic data relationship or a wrong join condition means it never does.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="sql-fundamentals.html">SQL Fundamentals &amp; Command Categories →</a>
+          <a href="sql-aggregation.html">Aggregation &amp; Grouping →</a>
+          <a href="sql-joins.html">Joins &amp; Relationships →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: Original content — written for interview prep, not sourced from a transcript — added 2026-08-05</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

@@ -1317,6 +1317,38 @@ window.ALL_QUESTIONS = [
   "file": "pages/python-strings.html"
  },
  {
+  "q": "What's the difference between COUNT(*) and COUNT(column_name)?",
+  "a": "COUNT(*) counts every row, regardless of content. COUNT(column_name) counts only rows where that specific column is non-NULL — any row with a NULL in that column is skipped. They return the same number only when the column has no NULLs at all.",
+  "level": "junior",
+  "topic": "sql-aggregation",
+  "topicLabel": "SQL: Aggregation",
+  "file": "pages/sql-aggregation.html"
+ },
+ {
+  "q": "Why can't you SELECT a non-aggregated, non-grouped column alongside GROUP BY?",
+  "a": "Because GROUP BY collapses potentially many rows into one output row per group, and an ungrouped column could hold different values across the rows in that group — there's no defined rule for which one to display. Every selected column must either be part of the GROUP BY list or wrapped in an aggregate function that reduces the group to one value.",
+  "level": "junior",
+  "topic": "sql-aggregation",
+  "topicLabel": "SQL: Aggregation",
+  "file": "pages/sql-aggregation.html"
+ },
+ {
+  "q": "Write a query to find customers with more than 2 orders.",
+  "a": "<code>SELECT customer_id, COUNT(*) FROM orders GROUP BY customer_id HAVING COUNT(*) > 2;</code> — WHERE can't be used here because COUNT(*) doesn't exist until after grouping; the filter has to be HAVING.",
+  "level": "mid",
+  "topic": "sql-aggregation",
+  "topicLabel": "SQL: Aggregation",
+  "file": "pages/sql-aggregation.html"
+ },
+ {
+  "q": "A report shows \"150 total signups\" from COUNT(*) but \"142 signups with a referral source\" from COUNT(referral_source) on the same table. A stakeholder flags this as a bug. How do you respond?",
+  "a": "It's expected behavior, not a bug — COUNT(*) counts all 150 rows regardless of content, while COUNT(referral_source) only counts the 142 rows where that column is non-NULL. The gap of 8 represents signups with no recorded referral source. Worth proactively clarifying this distinction in the report itself, since it's exactly the kind of number mismatch that reads as a data-quality bug to someone unfamiliar with how COUNT handles NULLs.",
+  "level": "senior",
+  "topic": "sql-aggregation",
+  "topicLabel": "SQL: Aggregation",
+  "file": "pages/sql-aggregation.html"
+ },
+ {
   "q": "What happens if you run UPDATE or DELETE without a WHERE clause?",
   "a": "It applies to every row in the table — there's no confirmation, no error, no partial safeguard. UPDATE without WHERE overwrites every row's specified columns; DELETE without WHERE removes every row (though the table itself still exists, unlike TRUNCATE or DROP).",
   "level": "junior",
@@ -1443,6 +1475,86 @@ window.ALL_QUESTIONS = [
   "topic": "sql-joins",
   "topicLabel": "SQL: Joins",
   "file": "pages/sql-joins.html"
+ },
+ {
+  "q": "What's the difference between a correlated and non-correlated subquery?",
+  "a": "A non-correlated subquery is fully independent of the outer query and conceptually runs once. A correlated subquery references a column from the outer query, so it conceptually re-runs once per outer row — the inner query's result can be different for every row being checked.",
+  "level": "junior",
+  "topic": "sql-subqueries",
+  "topicLabel": "SQL: Subqueries",
+  "file": "pages/sql-subqueries.html"
+ },
+ {
+  "q": "When would you prefer EXISTS over IN?",
+  "a": "EXISTS is NULL-safe and typically the better default for existence checks, especially against large tables — it only needs to confirm at least one matching row exists rather than materializing a full list. IN (or specifically NOT IN) becomes dangerous when the subquery's result can contain NULL, since NOT IN against a NULL-containing list silently returns zero rows.",
+  "level": "mid",
+  "topic": "sql-subqueries",
+  "topicLabel": "SQL: Subqueries",
+  "file": "pages/sql-subqueries.html"
+ },
+ {
+  "q": "What's the actual difference between UNION and UNION ALL?",
+  "a": "UNION deduplicates the combined result — any row appearing in both queries shows up once. UNION ALL keeps every row from both queries, including duplicates, and is cheaper since it skips the sort/hash step needed to find duplicates.",
+  "level": "mid",
+  "topic": "sql-subqueries",
+  "topicLabel": "SQL: Subqueries",
+  "file": "pages/sql-subqueries.html"
+ },
+ {
+  "q": "What problem do CTEs solve that a regular subquery doesn't?",
+  "a": "CTEs don't add new capability over an equivalent nested subquery in most cases — the improvement is readability. A WITH clause reads top to bottom and can be referenced by name later in the query, versus a nested subquery that reads inside-out and gets harder to follow as nesting depth increases. Multiple CTEs can also reference earlier ones, turning a multi-stage transformation into a readable sequence instead of layered parentheses.",
+  "level": "mid",
+  "topic": "sql-subqueries",
+  "topicLabel": "SQL: Subqueries",
+  "file": "pages/sql-subqueries.html"
+ },
+ {
+  "q": "How does a recursive CTE know when to stop?",
+  "a": "It re-runs its recursive member against the CTE's own growing result set, each time joining only against rows added in the previous iteration, until a run produces zero new rows — at that point the recursion terminates naturally. If the underlying data has a cycle, or the join condition is wrong, that zero-new-rows state is never reached and the query runs until the database's recursion depth limit or a timeout stops it.",
+  "level": "senior",
+  "topic": "sql-subqueries",
+  "topicLabel": "SQL: Subqueries",
+  "file": "pages/sql-subqueries.html"
+ },
+ {
+  "q": "What's the fundamental difference between a window function and GROUP BY?",
+  "a": "GROUP BY collapses multiple rows into one row per group — individual rows are gone. A window function (using OVER) computes a value across a related set of rows but keeps every original row intact, annotating each one with the computed value instead of replacing many rows with one.",
+  "level": "junior",
+  "topic": "sql-window-functions",
+  "topicLabel": "SQL: Window Functions",
+  "file": "pages/sql-window-functions.html"
+ },
+ {
+  "q": "Two rows tie for 1st place. What does the next row get under RANK() vs DENSE_RANK()?",
+  "a": "RANK() gives it 3 — it skips a rank number for every tied row above it, since 2 rows already occupy rank 1. DENSE_RANK() gives it 2 — it never skips, incrementing by exactly 1 from the previous distinct rank regardless of how many rows shared it.",
+  "level": "mid",
+  "topic": "sql-window-functions",
+  "topicLabel": "SQL: Window Functions",
+  "file": "pages/sql-window-functions.html"
+ },
+ {
+  "q": "What does PARTITION BY do, and how is it different from GROUP BY?",
+  "a": "PARTITION BY splits rows into independent groups for a window function to operate within — ranking, running totals, etc. restart per partition. Unlike GROUP BY, no rows are collapsed; every original row is still present in the result, just annotated with a value computed relative to its own partition.",
+  "level": "mid",
+  "topic": "sql-window-functions",
+  "topicLabel": "SQL: Window Functions",
+  "file": "pages/sql-window-functions.html"
+ },
+ {
+  "q": "How would you find the top 2 highest-paid employees per department?",
+  "a": "Wrap a RANK() or ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC) in a CTE or subquery, then filter the outer query WHERE rank &lt;= 2. Window functions can't be referenced directly in WHERE (same execution-order reasoning as aggregates and HAVING), so the filter has to happen in an outer layer.",
+  "level": "mid",
+  "topic": "sql-window-functions",
+  "topicLabel": "SQL: Window Functions",
+  "file": "pages/sql-window-functions.html"
+ },
+ {
+  "q": "How would you calculate month-over-month percentage growth in revenue?",
+  "a": "LAG(revenue) OVER (ORDER BY month) to get the prior month's value on the same row, then compute (revenue - prev_revenue) / prev_revenue directly — no self-join needed. The first row's LAG result is NULL (no prior row exists), so the growth calculation for that row is also NULL, which is the correct, honest answer rather than a fabricated 0% or 100%.",
+  "level": "senior",
+  "topic": "sql-window-functions",
+  "topicLabel": "SQL: Window Functions",
+  "file": "pages/sql-window-functions.html"
  },
  {
   "q": "Playwright supports multiple browsers and OSes — isn't that the same as Selenium? What's actually unique about it then?",

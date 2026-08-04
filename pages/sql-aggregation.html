@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aggregation & Grouping · Tech Interview Hub</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../data/topics-index.js"></script>
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
+    <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
+<nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
+  <div class="nav-drawer-head">
+    <span>Menu</span>
+    <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="nav-drawer-body" id="nav-drawer-body"></div>
+</nav>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Aggregation &amp; Grouping</div>
+    <h1>Aggregation &amp; Grouping</h1>
+    <p class="lede">GROUP BY collapses many rows into one per bucket — the mechanics of exactly how that collapse happens, and the COUNT(*) vs COUNT(column) distinction that trips up almost everyone the first time NULL enters the picture.</p>
+    <div class="card-tags">
+      <span>sql</span>
+      <span>aggregation</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone SQL track — authored directly for Lead SDET interview prep, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#group-by-mechanics">GROUP BY, row by row</a>
+      <a href="#count-star-vs-column">COUNT(*) vs COUNT(column)</a>
+      <a href="#having-vs-where">HAVING vs WHERE, revisited</a>
+      <a href="#multi-column-group">Grouping by more than one column</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p><code>GROUP BY</code> takes rows that share a value in one or more columns and collapses each group into a single output row — and every column in <code>SELECT</code> that isn't part of the grouping has to go through an aggregate function (<code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code>), because there's no longer a single row's value to show — there's a whole group of them.</p>
+      </section>
+
+      <section id="group-by-mechanics">
+        <h2>GROUP BY, row by row</h2>
+        <p>Five real order rows, bucketed by customer, with two aggregates computed per bucket at once:</p>
+        <div class="sim" id="group-by-stepper"></div>
+        <script>
+          renderQueryStepper("group-by-stepper", {
+            tables: [
+              { id: "orders4", label: "orders", headers: ["id", "customer_id", "amount"], rows: [[1, 1, 40], [2, 2, 15], [3, 1, 60], [4, 3, 25], [5, 2, 35]] }
+            ],
+            resultHeaders: ["customer_id", "order_count", "total"],
+            introCode: "SELECT customer_id, COUNT(*) AS order_count, SUM(amount) AS total FROM orders GROUP BY customer_id;",
+            introText: "Step through — watch each bucket's count and running total build up as rows are assigned to it.",
+            steps: [
+              {
+                code: "row 1 -> customer 1: count=1, total=40",
+                rowStates: { orders4: { 0: "match" } },
+                resultRows: [[1, 1, 40]],
+                resultRowStates: { 0: "new" },
+                desc: "Row 1 (customer 1, $40) starts a new bucket for customer 1."
+              },
+              {
+                code: "row 2 -> customer 2: count=1, total=15",
+                rowStates: { orders4: { 0: "match", 1: "match" } },
+                resultRows: [[1, 1, 40], [2, 1, 15]],
+                resultRowStates: { 1: "new" },
+                desc: "Row 2 (customer 2, $15) starts a separate bucket — different customer_id, different group."
+              },
+              {
+                code: "row 3 -> customer 1: count=2, total=100",
+                rowStates: { orders4: { 0: "match", 1: "match", 2: "match" } },
+                resultRows: [[1, 2, 100], [2, 1, 15]],
+                desc: "Row 3 (customer 1, $60) joins the existing customer 1 bucket — count goes to 2, total to 100. No new result row; an existing one updates."
+              },
+              {
+                code: "row 4 -> customer 3: count=1, total=25",
+                rowStates: { orders4: { 0: "match", 1: "match", 2: "match", 3: "match" } },
+                resultRows: [[1, 2, 100], [2, 1, 15], [3, 1, 25]],
+                resultRowStates: { 2: "new" },
+                desc: "Row 4 (customer 3, $25) starts a third bucket."
+              },
+              {
+                code: "row 5 -> customer 2: count=2, total=50",
+                rowStates: { orders4: { 0: "match", 1: "match", 2: "match", 3: "match", 4: "match" } },
+                resultRows: [[1, 2, 100], [2, 2, 50], [3, 1, 25]],
+                desc: "Row 5 (customer 2, $35) joins customer 2's bucket. All 5 rows processed — 3 buckets remain, one per distinct customer_id."
+              }
+            ]
+          });
+        </script>
+        <div class="callout tip">
+          <strong>One output row per distinct value, always</strong>
+          It doesn't matter whether a bucket has 1 row or 100 — GROUP BY always collapses it to exactly one row in the result. This is the entire reason ungrouped columns need an aggregate function: <code>SELECT customer_id, amount FROM orders GROUP BY customer_id</code> is invalid in strict SQL mode, because <code>amount</code> could be any one of several different values within a bucket, and the database has no rule for picking which.
+        </div>
+      </section>
+
+      <section id="count-star-vs-column">
+        <h2>COUNT(*) vs COUNT(column)</h2>
+        <p><code>COUNT(*)</code> counts rows. <code>COUNT(column)</code> counts <strong>non-NULL values</strong> in that column — and the two give different answers the moment any row has a NULL in that column.</p>
+        <pre><code>-- orders: 5 rows total, but 'notes' is NULL on 2 of them
+SELECT COUNT(*) FROM orders;          -- 5 (every row counts)
+SELECT COUNT(notes) FROM orders;      -- 3 (NULLs are skipped)</code></pre>
+        <div class="demo" id="count-star-demo"></div>
+        <script>
+          renderAssertToggle("count-star-demo", {
+            expression: "5 rows total, 2 have notes = NULL",
+            initialKey: "star",
+            options: [
+              { key: "star", label: "COUNT(*)", pass: true, detail: "Returns 5 — counts rows, full stop. NULL is irrelevant to COUNT(*)." },
+              { key: "col", label: "COUNT(notes)", pass: true, detail: "Returns 3 — only counts rows where notes IS NOT NULL. The 2 NULL rows are silently excluded from the count." }
+            ]
+          });
+        </script>
+        <div class="callout warn">
+          <strong>The trap this creates</strong>
+          A dashboard reporting "3 orders have notes" using <code>COUNT(notes)</code> and "5 total orders" using <code>COUNT(*)</code> in the same query is correct, not buggy — but a developer who doesn't know the distinction will "fix" what looks like a mismatched number, or worse, use <code>COUNT(column)</code> everywhere out of habit and silently undercount whenever that column has NULLs.
+        </div>
+      </section>
+
+      <section id="having-vs-where">
+        <h2>HAVING vs WHERE, revisited</h2>
+        <p>Covered in <a href="sql-fundamentals.html#execution-order">Fundamentals</a> as an execution-order consequence — worth restating directly here since it's specifically an aggregation topic: <code>WHERE</code> filters individual rows <em>before</em> grouping; <code>HAVING</code> filters entire groups <em>after</em> aggregation has already happened.</p>
+        <pre><code>-- Keep only customers with more than 1 order — a group-level condition, needs HAVING
+SELECT customer_id, COUNT(*) AS order_count
+FROM orders
+GROUP BY customer_id
+HAVING COUNT(*) > 1;
+
+-- Both together — WHERE narrows the rows first, HAVING narrows the resulting groups
+SELECT customer_id, COUNT(*) AS order_count
+FROM orders
+WHERE amount > 10
+GROUP BY customer_id
+HAVING COUNT(*) > 1;</code></pre>
+      </section>
+
+      <section id="multi-column-group">
+        <h2>Grouping by more than one column</h2>
+        <pre><code>SELECT customer_id, status, COUNT(*) AS count
+FROM orders
+GROUP BY customer_id, status;</code></pre>
+        <p>Each distinct <em>combination</em> of <code>customer_id</code> and <code>status</code> becomes its own group — a customer with both shipped and pending orders gets two separate result rows, one per status, not one row averaged across both.</p>
+        <div class="quiz">
+          <div class="quiz-q">A table has 3 customers, each with orders in exactly 2 different statuses. How many rows does GROUP BY customer_id, status return?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">3 — one row per customer</button>
+            <button class="quiz-opt" data-correct="true">6 — one row per distinct (customer_id, status) combination, 3 customers × 2 statuses each</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the difference between COUNT(*) and COUNT(column_name)?</summary>
+          <div class="qa-body">COUNT(*) counts every row, regardless of content. COUNT(column_name) counts only rows where that specific column is non-NULL — any row with a NULL in that column is skipped. They return the same number only when the column has no NULLs at all.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> Why can't you SELECT a non-aggregated, non-grouped column alongside GROUP BY?</summary>
+          <div class="qa-body">Because GROUP BY collapses potentially many rows into one output row per group, and an ungrouped column could hold different values across the rows in that group — there's no defined rule for which one to display. Every selected column must either be part of the GROUP BY list or wrapped in an aggregate function that reduces the group to one value.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Write a query to find customers with more than 2 orders.</summary>
+          <div class="qa-body"><code>SELECT customer_id, COUNT(*) FROM orders GROUP BY customer_id HAVING COUNT(*) > 2;</code> — WHERE can't be used here because COUNT(*) doesn't exist until after grouping; the filter has to be HAVING.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> A report shows "150 total signups" from COUNT(*) but "142 signups with a referral source" from COUNT(referral_source) on the same table. A stakeholder flags this as a bug. How do you respond?</summary>
+          <div class="qa-body">It's expected behavior, not a bug — COUNT(*) counts all 150 rows regardless of content, while COUNT(referral_source) only counts the 142 rows where that column is non-NULL. The gap of 8 represents signups with no recorded referral source. Worth proactively clarifying this distinction in the report itself, since it's exactly the kind of number mismatch that reads as a data-quality bug to someone unfamiliar with how COUNT handles NULLs.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>COUNT(column) silently undercounts when NULLs exist</strong>
+          Default to COUNT(*) for "how many rows" questions; reach for COUNT(column) only when the question is specifically "how many rows have a value here."
+        </div>
+        <div class="callout warn">
+          <strong>WHERE on an aggregate is a syntax error, not a slow query</strong>
+          <code>WHERE COUNT(*) > 1</code> fails outright — the aggregate doesn't exist yet at WHERE's point in execution order. It has to be HAVING.
+        </div>
+        <div class="callout warn">
+          <strong>Every non-aggregated SELECT column must be in GROUP BY</strong>
+          Some databases (older MySQL configurations) silently allow this and pick an arbitrary row's value; most (PostgreSQL, strict MySQL) reject it outright. Never rely on the permissive behavior even where it's allowed — the "arbitrary" row it picks isn't guaranteed to stay consistent.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="sql-fundamentals.html">SQL Fundamentals &amp; Command Categories →</a>
+          <a href="sql-joins.html">Joins &amp; Relationships →</a>
+          <a href="sql-subqueries.html">Subqueries &amp; Set Operations →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: Original content — written for interview prep, not sourced from a transcript — added 2026-08-05</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

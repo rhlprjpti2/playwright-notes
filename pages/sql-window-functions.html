@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Window Functions · Tech Interview Hub</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../data/topics-index.js"></script>
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
+    <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
+<nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
+  <div class="nav-drawer-head">
+    <span>Menu</span>
+    <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="nav-drawer-body" id="nav-drawer-body"></div>
+</nav>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Window Functions</div>
+    <h1>Window Functions</h1>
+    <p class="lede">The feature that separates "knows SQL basics" from "has actually worked with real reporting queries" in most senior interviews. One idea makes all of it click: a window function computes a value across a set of related rows <em>without collapsing them</em> — every row survives, unlike GROUP BY.</p>
+    <div class="card-tags">
+      <span>sql</span>
+      <span>window-functions</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone SQL track — authored directly for Lead SDET interview prep, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#row-number-rank">ROW_NUMBER vs RANK vs DENSE_RANK</a>
+      <a href="#partition-by">PARTITION BY</a>
+      <a href="#lead-lag">LEAD and LAG</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <pre><code>-- GROUP BY: 4 rows in, 1 row out per department — individual rows are GONE
+SELECT department, AVG(salary) FROM employees GROUP BY department;
+
+-- Window function: 4 rows in, 4 rows out — every employee keeps their own row,
+-- each one annotated with a value computed across their department
+SELECT name, department, salary,
+       AVG(salary) OVER (PARTITION BY department) AS dept_avg
+FROM employees;</code></pre>
+        <p>That's the entire concept: <code>OVER (...)</code> turns an aggregate into something that annotates each row instead of replacing many rows with one. Everything else on this page is a variation of "what gets computed per row, over what set of related rows."</p>
+      </section>
+
+      <section id="row-number-rank">
+        <h2>ROW_NUMBER vs RANK vs DENSE_RANK</h2>
+        <p>The single most common window-function interview question — three ways to number rows by sort order, differing only in how they treat <strong>ties</strong>. Watch what happens the moment two sales reps tie at $100:</p>
+        <div class="sim" id="ranking-stepper"></div>
+        <script>
+          renderQueryStepper("ranking-stepper", {
+            tables: [
+              { id: "sales7", label: "sales (already sorted by amount DESC)", headers: ["rep", "amount"], rows: [["Ada", 100], ["Grace", 100], ["Katherine", 90], ["Alan", 80]] }
+            ],
+            resultHeaders: ["rep", "amount", "ROW_NUMBER", "RANK", "DENSE_RANK"],
+            introCode: "SELECT rep, amount, ROW_NUMBER() OVER (ORDER BY amount DESC) AS rn, RANK() OVER (ORDER BY amount DESC) AS rnk, DENSE_RANK() OVER (ORDER BY amount DESC) AS drnk FROM sales;",
+            introText: "Step through row by row, in sort order — the three numbering columns fill in together.",
+            steps: [
+              {
+                code: "row 1: Ada, $100",
+                rowStates: { sales7: { 0: "match" } },
+                resultRows: [["Ada", 100, 1, 1, 1]],
+                resultRowStates: { 0: "new" },
+                desc: "First row — all three functions agree: 1."
+              },
+              {
+                code: "row 2: Grace, $100 -- TIED with Ada",
+                rowStates: { sales7: { 0: "match", 1: "match" } },
+                resultRows: [["Ada", 100, 1, 1, 1], ["Grace", 100, 2, 1, 1]],
+                resultRowStates: { 1: "new" },
+                desc: "<b>This is where they diverge.</b> ROW_NUMBER always increments (2) regardless of ties. RANK and DENSE_RANK both give Grace the same rank as Ada (1), since they're tied on amount."
+              },
+              {
+                code: "row 3: Katherine, $90 -- first row after the tie",
+                rowStates: { sales7: { 0: "match", 1: "match", 2: "match" } },
+                resultRows: [["Ada", 100, 1, 1, 1], ["Grace", 100, 2, 1, 1], ["Katherine", 90, 3, 3, 2]],
+                resultRowStates: { 2: "new" },
+                desc: "<b>The real difference shows up here.</b> ROW_NUMBER: 3 (just counting). RANK: 3 — it skips 2 entirely, because 2 rows already occupied rank 1. DENSE_RANK: 2 — no skipping, it just increments from the previous distinct rank."
+              },
+              {
+                code: "row 4: Alan, $80",
+                rowStates: { sales7: { 0: "match", 1: "match", 2: "match", 3: "match" } },
+                resultRows: [["Ada", 100, 1, 1, 1], ["Grace", 100, 2, 1, 1], ["Katherine", 90, 3, 3, 2], ["Alan", 80, 4, 4, 3]],
+                resultRowStates: { 3: "new" },
+                desc: "No ties involving Alan, so all three agree again on the shape of the count — but RANK (4) and DENSE_RANK (3) are now permanently offset from each other because of the earlier tie."
+              }
+            ]
+          });
+        </script>
+        <div class="quiz">
+          <div class="quiz-q">With 2 rows tied for 1st place, what rank does the row immediately after them get under RANK() vs DENSE_RANK()?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">Both give it rank 2</button>
+            <button class="quiz-opt" data-correct="true">RANK gives it 3 (skips a number for each tied row above it); DENSE_RANK gives it 2 (no skipping, ever)</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="partition-by">
+        <h2>PARTITION BY</h2>
+        <p><code>PARTITION BY</code> splits the rows into independent groups — the window function then resets and operates separately within each group, the same way <code>GROUP BY</code> would bucket rows, except <strong>no rows are collapsed</strong>. Ranking restarts at 1 for every partition:</p>
+        <div class="sim" id="partition-stepper"></div>
+        <script>
+          renderQueryStepper("partition-stepper", {
+            tables: [
+              { id: "sales8", label: "sales", headers: ["region", "rep", "amount"], rows: [["East", "Ada", 100], ["East", "Grace", 60], ["West", "Katherine", 90], ["West", "Alan", 120]] }
+            ],
+            resultHeaders: ["region", "rep", "amount", "RANK"],
+            introCode: "SELECT region, rep, amount, RANK() OVER (PARTITION BY region ORDER BY amount DESC) AS rnk FROM sales;",
+            introText: "Same RANK() as before, but PARTITION BY region means East and West are ranked completely independently.",
+            steps: [
+              {
+                code: "East partition, sorted: Ada ($100) first",
+                rowStates: { sales8: { 0: "match" } },
+                resultRows: [["East", "Ada", 100, 1]],
+                resultRowStates: { 0: "new" },
+                desc: "Ada is the top earner within the East partition — rank 1."
+              },
+              {
+                code: "East partition: Grace ($60) second",
+                rowStates: { sales8: { 0: "match", 1: "match" } },
+                resultRows: [["East", "Ada", 100, 1], ["East", "Grace", 60, 2]],
+                resultRowStates: { 1: "new" },
+                desc: "Grace is rank 2 — but only within East. West hasn't been touched yet."
+              },
+              {
+                code: "West partition, sorted independently: Alan ($120) first",
+                rowStates: { sales8: { 0: "match", 1: "match", 2: "match", 3: "match" } },
+                resultRows: [["East", "Ada", 100, 1], ["East", "Grace", 60, 2], ["West", "Alan", 120, 1]],
+                resultRowStates: { 2: "new" },
+                desc: "<b>Ranking resets to 1</b> for the West partition, even though Alan's $120 is the highest amount overall — PARTITION BY means West doesn't know East exists."
+              },
+              {
+                code: "West partition: Katherine ($90) second",
+                rowStates: { sales8: { 0: "match", 1: "match", 2: "match", 3: "match" } },
+                resultRows: [["East", "Ada", 100, 1], ["East", "Grace", 60, 2], ["West", "Alan", 120, 1], ["West", "Katherine", 90, 2]],
+                resultRowStates: { 3: "new" },
+                desc: "Katherine is rank 2 within West. Final shape: 2 independent rankings, one per region, in a single un-collapsed result set of all 4 original rows."
+              }
+            ]
+          });
+        </script>
+      </section>
+
+      <section id="lead-lag">
+        <h2>LEAD and LAG</h2>
+        <p>Reach into an adjacent row — the next one (<code>LEAD</code>) or the previous one (<code>LAG</code>) — without a self-join. Classic use: month-over-month comparison.</p>
+        <pre><code>SELECT month, revenue,
+       LAG(revenue) OVER (ORDER BY month) AS prev_month_revenue,
+       revenue - LAG(revenue) OVER (ORDER BY month) AS change
+FROM monthly_revenue;</code></pre>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>month</th><th>revenue</th><th>LAG(revenue)</th><th>change</th></tr></thead>
+            <tbody>
+              <tr><td>Jan</td><td>10,000</td><td class="highlight">NULL — no prior row</td><td>NULL</td></tr>
+              <tr><td>Feb</td><td>12,000</td><td>10,000</td><td>+2,000</td></tr>
+              <tr><td>Mar</td><td>9,000</td><td>12,000</td><td>-3,000</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>January's <code>LAG(revenue)</code> is <code>NULL</code> because there's no row before it — the same "no prior row exists" reasoning as any other unmatched-row NULL. Before <code>LEAD</code>/<code>LAG</code> existed as built-ins, this required a self-join on a manually computed "previous row" key — considerably more code for the same result.</p>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the fundamental difference between a window function and GROUP BY?</summary>
+          <div class="qa-body">GROUP BY collapses multiple rows into one row per group — individual rows are gone. A window function (using OVER) computes a value across a related set of rows but keeps every original row intact, annotating each one with the computed value instead of replacing many rows with one.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Two rows tie for 1st place. What does the next row get under RANK() vs DENSE_RANK()?</summary>
+          <div class="qa-body">RANK() gives it 3 — it skips a rank number for every tied row above it, since 2 rows already occupy rank 1. DENSE_RANK() gives it 2 — it never skips, incrementing by exactly 1 from the previous distinct rank regardless of how many rows shared it.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What does PARTITION BY do, and how is it different from GROUP BY?</summary>
+          <div class="qa-body">PARTITION BY splits rows into independent groups for a window function to operate within — ranking, running totals, etc. restart per partition. Unlike GROUP BY, no rows are collapsed; every original row is still present in the result, just annotated with a value computed relative to its own partition.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> How would you find the top 2 highest-paid employees per department?</summary>
+          <div class="qa-body">Wrap a RANK() or ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC) in a CTE or subquery, then filter the outer query WHERE rank &lt;= 2. Window functions can't be referenced directly in WHERE (same execution-order reasoning as aggregates and HAVING), so the filter has to happen in an outer layer.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> How would you calculate month-over-month percentage growth in revenue?</summary>
+          <div class="qa-body">LAG(revenue) OVER (ORDER BY month) to get the prior month's value on the same row, then compute (revenue - prev_revenue) / prev_revenue directly — no self-join needed. The first row's LAG result is NULL (no prior row exists), so the growth calculation for that row is also NULL, which is the correct, honest answer rather than a fabricated 0% or 100%.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>Window functions can't be filtered directly in WHERE</strong>
+          Same execution-order reasoning as aggregates — WHERE runs before window functions are computed. Filtering on a window function's result requires wrapping the query in a CTE or subquery and filtering the outer layer.
+        </div>
+        <div class="callout warn">
+          <strong>RANK() leaves permanent gaps after any tie</strong>
+          If exactness matters (e.g. "the 3rd highest-paid employee" as a literal row count), RANK's skipped numbers can silently point at the wrong row when ties exist upstream — DENSE_RANK or ROW_NUMBER may be the more correct choice depending on what's actually being asked.
+        </div>
+        <div class="callout warn">
+          <strong>Forgetting ORDER BY inside OVER()</strong>
+          ROW_NUMBER, RANK, LEAD, and LAG are all inherently order-dependent — omitting ORDER BY inside OVER(...) leaves the row ordering undefined, and results can vary between runs.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="sql-aggregation.html">Aggregation &amp; Grouping →</a>
+          <a href="sql-subqueries.html">Subqueries &amp; Set Operations →</a>
+          <a href="sql-fundamentals.html">SQL Fundamentals &amp; Command Categories →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: Original content — written for interview prep, not sourced from a transcript — added 2026-08-05</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

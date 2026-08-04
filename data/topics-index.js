@@ -637,6 +637,61 @@ window.TOPICS_INDEX_SQL = [
     lastUpdated: "2026-08-04",
     phase: "sql-core",
     order: 3
+  },
+  {
+    slug: "sql-aggregation",
+    title: "Aggregation & Grouping",
+    file: "pages/sql-aggregation.html",
+    tags: ["sql", "aggregation"],
+    keyTerms: [
+      "GROUP BY", "HAVING", "COUNT", "SUM", "AVG", "MIN", "MAX", "COUNT star vs COUNT column",
+      "NULL in COUNT", "aggregate function", "multi-column GROUP BY", "bucket rows"
+    ],
+    summary: "GROUP BY's row-by-row bucketing mechanics, COUNT(*) vs COUNT(column) once NULL is involved, and HAVING vs WHERE as an aggregation-specific consequence.",
+    related: ["sql-fundamentals", "sql-subqueries", "sql-joins"],
+    sources: [
+      { title: "Original content — written for interview prep, not sourced from a transcript", addedDate: "2026-08-05" }
+    ],
+    lastUpdated: "2026-08-05",
+    phase: "sql-core",
+    order: 4
+  },
+  {
+    slug: "sql-subqueries",
+    title: "Subqueries & Set Operations",
+    file: "pages/sql-subqueries.html",
+    tags: ["sql", "subqueries"],
+    keyTerms: [
+      "correlated subquery", "non-correlated subquery", "EXISTS", "IN", "UNION", "UNION ALL",
+      "INTERSECT", "EXCEPT", "MINUS", "CTE", "WITH clause", "recursive CTE", "WITH RECURSIVE",
+      "named subquery", "anchor member", "recursive member"
+    ],
+    summary: "Correlated subqueries re-running once per outer row, EXISTS vs IN's NULL-safety gap, UNION's silent deduplication, and recursive CTEs for hierarchical data.",
+    related: ["sql-fundamentals", "sql-aggregation", "sql-window-functions"],
+    sources: [
+      { title: "Original content — written for interview prep, not sourced from a transcript", addedDate: "2026-08-05" }
+    ],
+    lastUpdated: "2026-08-05",
+    phase: "sql-core",
+    order: 5
+  },
+  {
+    slug: "sql-window-functions",
+    title: "Window Functions",
+    file: "pages/sql-window-functions.html",
+    tags: ["sql", "window-functions"],
+    keyTerms: [
+      "OVER", "PARTITION BY", "ROW_NUMBER", "RANK", "DENSE_RANK", "LEAD", "LAG",
+      "window function vs GROUP BY", "ties in ranking", "top N per group"
+    ],
+    summary: "Window functions annotate rows instead of collapsing them like GROUP BY — ROW_NUMBER vs RANK vs DENSE_RANK's tie-handling differences, PARTITION BY, and LEAD/LAG.",
+    related: ["sql-aggregation", "sql-subqueries", "sql-fundamentals"],
+    sources: [
+      { title: "Original content — written for interview prep, not sourced from a transcript", addedDate: "2026-08-05" }
+    ],
+    lastUpdated: "2026-08-05",
+    phase: "sql-core",
+    order: 6
   }
 ];
 

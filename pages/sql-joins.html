@@ -73,49 +73,93 @@
         <h2>INNER JOIN vs LEFT JOIN</h2>
         <p>The pairing that comes up in almost every SQL interview, using two small tables: <code>customers</code> (Ada, Grace, Katherine) and <code>orders</code> (one order each for Ada and Katherine — Grace has never ordered anything).</p>
 
-        <figure class="concept-art">
-          <div class="cs-scene">
-            <div class="cs-code">
-              <div class="cs-code-line cs-q1">SELECT * FROM customers c INNER JOIN orders o ON c.id = o.customer_id;</div>
-              <div class="cs-code-line cs-q2">SELECT * FROM customers c LEFT JOIN orders o ON c.id = o.customer_id;</div>
-            </div>
-            <svg viewBox="0 0 640 220" width="100%" height="auto" role="img" aria-label="INNER JOIN keeps only customers with a matching order, dropping Grace entirely. LEFT JOIN keeps every customer regardless of match, filling Grace's order columns with NULL">
-              <text x="90" y="18" class="ca-sub" style="font-size:11px">customers</text>
-              <rect x="20" y="25" width="140" height="28" rx="6" fill="var(--bg-card)" stroke="var(--border)"/>
-              <text x="90" y="43" class="ca-lbl" style="font-size:11px">Ada</text>
-              <rect x="20" y="58" width="140" height="28" rx="6" fill="var(--bg-card)" stroke="var(--border)"/>
-              <text x="90" y="76" class="ca-lbl" style="font-size:11px">Grace</text>
-              <rect x="20" y="91" width="140" height="28" rx="6" fill="var(--bg-card)" stroke="var(--border)"/>
-              <text x="90" y="109" class="ca-lbl" style="font-size:11px">Katherine</text>
+        <p class="lead">Step through both against the exact same two tables — <code>customers</code> (Ada, Grace, Katherine) and <code>orders</code> (one order each for Ada and Katherine; Grace has never ordered anything). Watch what happens to Grace's row specifically.</p>
 
-              <text x="480" y="18" class="ca-sub" style="font-size:11px">result</text>
+        <p style="margin-top:20px;"><strong>INNER JOIN</strong> — a row survives only if both sides match:</p>
+        <div class="sim" id="inner-join-stepper"></div>
+        <script>
+          renderQueryStepper("inner-join-stepper", {
+            tables: [
+              { id: "customers", label: "customers", headers: ["id", "name"], rows: [[1, "Ada"], [2, "Grace"], [3, "Katherine"]] },
+              { id: "orders", label: "orders", headers: ["id", "customer_id", "product"], rows: [[101, 1, "Widget"], [102, 3, "Gadget"]] }
+            ],
+            resultHeaders: ["name", "product"],
+            introCode: "SELECT c.name, o.product FROM customers c INNER JOIN orders o ON c.id = o.customer_id;",
+            introText: "Step through row by row — INNER JOIN checks every customer against orders.",
+            steps: [
+              {
+                code: "-- checking Ada (id 1) against orders.customer_id",
+                rowStates: { customers: { 0: "match" }, orders: { 0: "match" } },
+                resultRows: [["Ada", "Widget"]],
+                resultRowStates: { 0: "new" },
+                desc: "Ada's id matches order 101's customer_id → included."
+              },
+              {
+                code: "-- checking Grace (id 2) against orders.customer_id",
+                rowStates: { customers: { 0: "match", 1: "exclude" }, orders: { 0: "match" } },
+                resultRows: [["Ada", "Widget"]],
+                desc: "<b>Grace has no matching row in orders — INNER JOIN drops her entirely.</b> Nothing gets added to the result."
+              },
+              {
+                code: "-- checking Katherine (id 3) against orders.customer_id",
+                rowStates: { customers: { 0: "match", 1: "exclude", 2: "match" }, orders: { 0: "match", 1: "match" } },
+                resultRows: [["Ada", "Widget"], ["Katherine", "Gadget"]],
+                resultRowStates: { 1: "new" },
+                desc: "Katherine's id matches order 102 → included."
+              },
+              {
+                code: "-- done",
+                rowStates: { customers: { 0: "match", 1: "exclude", 2: "match" }, orders: { 0: "match", 1: "match" } },
+                resultRows: [["Ada", "Widget"], ["Katherine", "Gadget"]],
+                desc: "<b>Final result: 2 rows.</b> Grace never appears — INNER JOIN only keeps rows with a match on both sides."
+              }
+            ]
+          });
+        </script>
 
-              <g class="cs-q1">
-                <path d="M160 39 C220 39 220 39 300 45" fill="none" stroke="#7fd8c9" stroke-width="1.5"/>
-                <path d="M160 105 C220 105 220 60 300 60" fill="none" stroke="#7fd8c9" stroke-width="1.5"/>
-                <rect x="305" y="30" width="270" height="28" rx="6" fill="#7fd8c9"/>
-                <text x="440" y="48" class="ca-lbl" style="font-size:11px">Ada — order #1001</text>
-                <rect x="305" y="63" width="270" height="28" rx="6" fill="#7fd8c9"/>
-                <text x="440" y="81" class="ca-lbl" style="font-size:11px">Katherine — order #1002</text>
-                <text x="440" y="130" class="ca-sub">Grace has no match — dropped entirely, only 2 rows in the result</text>
-              </g>
-
-              <g class="cs-q2">
-                <path d="M160 39 C220 39 220 39 300 45" fill="none" stroke="#7fd8c9" stroke-width="1.5"/>
-                <path d="M160 72 C220 72 220 78 300 78" fill="none" stroke="#e0b429" stroke-width="1.5" stroke-dasharray="3 4"/>
-                <path d="M160 105 C220 105 220 60 300 60" fill="none" stroke="#7fd8c9" stroke-width="1.5"/>
-                <rect x="305" y="30" width="270" height="28" rx="6" fill="#7fd8c9"/>
-                <text x="440" y="48" class="ca-lbl" style="font-size:11px">Ada — order #1001</text>
-                <rect x="305" y="63" width="270" height="28" rx="6" fill="none" stroke="#e0b429" stroke-width="1.5" stroke-dasharray="3 4"/>
-                <text x="440" y="81" class="ca-lbl" style="font-size:11px">Grace — order columns are NULL</text>
-                <rect x="305" y="96" width="270" height="28" rx="6" fill="#7fd8c9"/>
-                <text x="440" y="114" class="ca-lbl" style="font-size:11px">Katherine — order #1002</text>
-                <text x="440" y="150" class="ca-sub">every customer is kept — unmatched order columns become NULL, not dropped</text>
-              </g>
-            </svg>
-          </div>
-          <figcaption>Same tables, same ON condition — the only difference is what happens to the unmatched row</figcaption>
-        </figure>
+        <p style="margin-top:26px;"><strong>LEFT JOIN</strong> — same tables, same ON condition — but every left-side row survives:</p>
+        <div class="sim" id="left-join-stepper"></div>
+        <script>
+          renderQueryStepper("left-join-stepper", {
+            tables: [
+              { id: "customers2", label: "customers", headers: ["id", "name"], rows: [[1, "Ada"], [2, "Grace"], [3, "Katherine"]] },
+              { id: "orders2", label: "orders", headers: ["id", "customer_id", "product"], rows: [[101, 1, "Widget"], [102, 3, "Gadget"]] }
+            ],
+            resultHeaders: ["name", "product"],
+            introCode: "SELECT c.name, o.product FROM customers c LEFT JOIN orders o ON c.id = o.customer_id;",
+            introText: "Same data, same ON condition — only the keyword changed from INNER to LEFT.",
+            steps: [
+              {
+                code: "-- checking Ada (id 1) against orders.customer_id",
+                rowStates: { customers2: { 0: "match" }, orders2: { 0: "match" } },
+                resultRows: [["Ada", "Widget"]],
+                resultRowStates: { 0: "new" },
+                desc: "Ada matches order 101 — same as before."
+              },
+              {
+                code: "-- checking Grace (id 2) against orders.customer_id",
+                rowStates: { customers2: { 0: "match", 1: "match" }, orders2: { 0: "match" } },
+                resultRows: [["Ada", "Widget"], ["Grace", null]],
+                resultRowStates: { 1: "new" },
+                desc: "<b>Grace still has no matching order — but LEFT JOIN keeps her anyway</b>, filling the order columns with NULL instead of dropping the row."
+              },
+              {
+                code: "-- checking Katherine (id 3) against orders.customer_id",
+                rowStates: { customers2: { 0: "match", 1: "match", 2: "match" }, orders2: { 0: "match", 1: "match" } },
+                resultRows: [["Ada", "Widget"], ["Grace", null], ["Katherine", "Gadget"]],
+                resultRowStates: { 2: "new" },
+                desc: "Katherine matches order 102 → included."
+              },
+              {
+                code: "-- done",
+                rowStates: { customers2: { 0: "match", 1: "match", 2: "match" }, orders2: { 0: "match", 1: "match" } },
+                resultRows: [["Ada", "Widget"], ["Grace", null], ["Katherine", "Gadget"]],
+                desc: "<b>Final result: 3 rows.</b> Every customer appears — matched or not."
+              }
+            ]
+          });
+        </script>
+        <p class="source-note" style="margin-top:10px;">Compare the two result tables above: same input, same ON condition — INNER JOIN's result has 2 rows, LEFT JOIN's has 3. That's the entire difference between them.</p>
 
         <div class="quiz">
           <div class="quiz-q">Using a LEFT JOIN from customers to orders, how would you find every customer who has never placed an order?</div>

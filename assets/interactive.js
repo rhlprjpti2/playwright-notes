@@ -1091,6 +1091,148 @@ function renderTableScan(containerId, config) {
 }
 
 /**
+ * renderQueryStepper("container-id", {
+ *   tables: [
+ *     { id: "customers", label: "customers", headers: ["id","name"], rows: [[1,"Ada"],[2,"Grace"],[3,"Katherine"]] },
+ *     { id: "orders", label: "orders", headers: ["id","customer_id","product"], rows: [[101,1,"Widget"],[102,3,"Gadget"]] }
+ *   ],
+ *   resultHeaders: ["name", "product"],
+ *   introCode: "...", introText: "...",
+ *   steps: [
+ *     {
+ *       code: "...", desc: "...",
+ *       rowStates: { customers: { 0: "match" }, orders: { 0: "match" } },  // rowIndex -> "match" | "exclude"
+ *       resultRows: [["Ada", "Widget"]],                                    // full result-table state at this step
+ *       resultRowStates: { 0: "new" }                                       // marks a row as just-added, for a highlight pulse
+ *     }
+ *   ]
+ * });
+ *
+ * Real source tables, a real result table that builds up row by row as you
+ * step forward — not boxes standing in for tables. Rows get marked matched
+ * (kept) or excluded (dropped) directly on the source table itself, so a
+ * join's actual row-by-row behavior is visible rather than summarized.
+ * Mirrors renderTableScan's step-controls pattern (Back/Step/Autoplay/Reset)
+ * for consistency with the rest of the site's step-through diagrams.
+ */
+function renderQueryStepper(containerId, config) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const tables = config.tables || [];
+  const steps = config.steps || [];
+  const resultHeaders = config.resultHeaders || [];
+
+  const tableBlockHtml = (t) => `
+    <div class="qs-table-block" data-table="${t.id}">
+      <div class="qs-table-label">${t.label}</div>
+      <div class="qs-table-wrap">
+        <table class="qs-table">
+          <thead><tr>${t.headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
+          <tbody>
+            ${t.rows.map((r, ri) => `<tr data-row="${ri}">${r.map((c) => `<td>${c}</td>`).join("")}</tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  el.innerHTML = `
+    <div class="qs-controls">
+      <button class="btn-back" disabled>&#9668; Back</button>
+      <button class="btn-step">Step &#9658;</button>
+      <button class="btn-auto">&#9654; Autoplay</button>
+      <button class="btn-reset" disabled>&#8635; Reset</button>
+      <span class="qs-step-label"></span>
+    </div>
+    <div class="qs-code"></div>
+    <div class="qs-tables">
+      ${tables.map((t, i) => tableBlockHtml(t) + (i < tables.length - 1 ? '<div class="qs-arrow">+</div>' : "")).join("")}
+      <div class="qs-arrow">&#8594;</div>
+      <div class="qs-table-block qs-result-block" data-table="result">
+        <div class="qs-table-label">result</div>
+        <div class="qs-table-wrap">
+          <table class="qs-table qs-result-table">
+            <thead><tr>${resultHeaders.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="qs-desc"></div>
+  `;
+
+  const codeEl = el.querySelector(".qs-code");
+  const descEl = el.querySelector(".qs-desc");
+  const label = el.querySelector(".qs-step-label");
+  const backBtn = el.querySelector(".btn-back");
+  const stepBtn = el.querySelector(".btn-step");
+  const autoBtn = el.querySelector(".btn-auto");
+  const resetBtn = el.querySelector(".btn-reset");
+  const resultBody = el.querySelector(".qs-result-table tbody");
+
+  let index = 0;
+  let playing = false;
+
+  function clearRowStates() {
+    el.querySelectorAll(".qs-table-block tbody tr").forEach((tr) => {
+      tr.classList.remove("qs-row-match", "qs-row-exclude");
+    });
+  }
+
+  function render() {
+    const step = index > 0 ? steps[index - 1] : null;
+    clearRowStates();
+
+    if (step) {
+      Object.entries(step.rowStates || {}).forEach(([tableId, states]) => {
+        const block = el.querySelector(`.qs-table-block[data-table="${tableId}"]`);
+        if (!block) return;
+        Object.entries(states).forEach(([rowIdx, state]) => {
+          const tr = block.querySelector(`tr[data-row="${rowIdx}"]`);
+          if (tr) tr.classList.add(state === "match" ? "qs-row-match" : "qs-row-exclude");
+        });
+      });
+
+      resultBody.innerHTML = (step.resultRows || []).map((r, ri) => {
+        const isNew = step.resultRowStates && step.resultRowStates[ri] === "new";
+        const cells = r.map((c) => `<td>${c === null ? '<span class="qs-null">NULL</span>' : c}</td>`).join("");
+        return `<tr class="${isNew ? "qs-row-new" : ""}">${cells}</tr>`;
+      }).join("");
+
+      codeEl.textContent = step.code || "";
+      descEl.innerHTML = step.desc || "";
+    } else {
+      codeEl.textContent = config.introCode || "";
+      descEl.textContent = config.introText || "Step through to watch the query build its result.";
+      resultBody.innerHTML = "";
+    }
+
+    label.textContent = index === 0 ? `Ready — step 0 of ${steps.length}` : `Step ${index} of ${steps.length}`;
+    backBtn.disabled = index === 0;
+    resetBtn.disabled = index === 0;
+    const atEnd = index === steps.length;
+    stepBtn.disabled = atEnd || playing;
+    autoBtn.disabled = atEnd || playing;
+    stepBtn.textContent = atEnd ? "Done ✓" : "Step ▸";
+  }
+
+  stepBtn.addEventListener("click", () => { if (index < steps.length) { index++; render(); } });
+  backBtn.addEventListener("click", () => { if (index > 0) { index--; render(); } });
+  autoBtn.addEventListener("click", () => {
+    playing = true; render();
+    const tick = () => {
+      if (index >= steps.length) { playing = false; render(); return; }
+      index++; render();
+      setTimeout(tick, 1600);
+    };
+    tick();
+  });
+  resetBtn.addEventListener("click", () => { index = 0; playing = false; render(); });
+
+  render();
+}
+
+/**
  * renderScopeCompare("container-id", { panels })
  *
  * Two side-by-side card diagrams that advance IN SYNC from one Step button, so

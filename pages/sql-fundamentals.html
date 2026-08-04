@@ -125,31 +125,46 @@
         <h2>Logical query execution order</h2>
         <p>The single most useful mental model in this entire track. A query is <strong>written</strong> top to bottom as <code>SELECT → FROM → WHERE → GROUP BY → HAVING → ORDER BY → LIMIT</code> — but the database doesn't run it in that order. It's actually processed like this:</p>
 
-        <figure class="concept-art">
-          <div class="cs-scene">
-            <div class="cs-code">
-              <div class="cs-code-line cs-p1">FROM orders  <span class="cs-num"># 1. rows gathered first</span></div>
-              <div class="cs-code-line cs-p2">WHERE status = 'shipped'  <span class="cs-num"># 2. filtered before any grouping</span></div>
-              <div class="cs-code-line cs-p3">GROUP BY customer_id  <span class="cs-num"># 3. then grouped</span></div>
-            </div>
-            <svg viewBox="0 0 640 170" width="100%" height="auto" role="img" aria-label="Rows are gathered from FROM first, filtered by WHERE second, grouped third — SELECT does not run until after all of that">
-              <rect class="cs-p1" x="15" y="40" width="140" height="70" rx="10" fill="#ffb15c"/>
-              <text x="85" y="68" class="ca-lbl" style="font-size:12px">1. FROM</text>
-              <text x="85" y="88" class="ca-lbl" style="font-size:11px">gather the rows</text>
-              <path d="M160 75 L200 75" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
-              <rect class="cs-p2" x="205" y="40" width="140" height="70" rx="10" fill="#7fd8c9"/>
-              <text x="275" y="68" class="ca-lbl" style="font-size:12px">2. WHERE</text>
-              <text x="275" y="88" class="ca-lbl" style="font-size:11px">filter row by row</text>
-              <path d="M350 75 L390 75" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
-              <ellipse class="cs-ring cs-ring-p3" cx="475" cy="75" rx="90" ry="45" stroke="#c98bd6" stroke-width="3"/>
-              <rect class="cs-p3" x="395" y="40" width="160" height="70" rx="10" fill="#c98bd6"/>
-              <text x="475" y="68" class="ca-lbl" style="font-size:12px">3. GROUP BY</text>
-              <text x="475" y="88" class="ca-lbl" style="font-size:11px">bucket what's left</text>
-              <text x="320" y="145" class="ca-sub">SELECT and its column aliases don't exist yet at steps 1-3</text>
-            </svg>
-          </div>
-          <figcaption>By the time WHERE runs, SELECT hasn't happened — which is exactly why a SELECT alias can't be used in WHERE</figcaption>
-        </figure>
+        <p>Step through the real thing — five actual order rows, filtered, grouped, and only then shaped into the final columns:</p>
+        <div class="sim" id="execution-order-stepper"></div>
+        <script>
+          renderQueryStepper("execution-order-stepper", {
+            tables: [
+              { id: "orders3", label: "orders", headers: ["id", "customer_id", "status"], rows: [[1, 1, "shipped"], [2, 2, "pending"], [3, 1, "shipped"], [4, 3, "shipped"], [5, 2, "shipped"]] }
+            ],
+            resultHeaders: ["customer_id", "order_count"],
+            introCode: "SELECT customer_id, COUNT(*) AS order_count FROM orders WHERE status = 'shipped' GROUP BY customer_id;",
+            introText: "Written top to bottom as SELECT → FROM → WHERE → GROUP BY. Step through to see the ACTUAL order it runs in.",
+            steps: [
+              {
+                code: "1. FROM orders",
+                rowStates: { orders3: { 0: "match", 1: "match", 2: "match", 3: "match", 4: "match" } },
+                resultRows: [],
+                desc: "<b>Step 1: FROM.</b> All 5 rows are gathered first — before WHERE, before GROUP BY, long before SELECT has run at all."
+              },
+              {
+                code: "2. WHERE status = 'shipped'",
+                rowStates: { orders3: { 0: "match", 1: "exclude", 2: "match", 3: "match", 4: "match" } },
+                resultRows: [],
+                desc: "<b>Step 2: WHERE.</b> Row 2 (pending) is filtered out — row by row, with no concept of grouping yet. This is why WHERE can't filter on an aggregate: there's nothing aggregated at this point."
+              },
+              {
+                code: "3. GROUP BY customer_id",
+                rowStates: { orders3: { 0: "match", 1: "exclude", 2: "match", 3: "match", 4: "match" } },
+                resultRows: [[1, 2], [3, 1], [2, 1]],
+                resultRowStates: { 0: "new", 1: "new", 2: "new" },
+                desc: "<b>Step 3: GROUP BY.</b> The 4 surviving rows are bucketed by customer_id — customer 1 has 2 shipped orders, customers 2 and 3 have 1 each. COUNT(*) can only exist from this point forward."
+              },
+              {
+                code: "4. SELECT customer_id, COUNT(*) AS order_count",
+                rowStates: { orders3: { 0: "match", 1: "exclude", 2: "match", 3: "match", 4: "match" } },
+                resultRows: [[1, 2], [3, 1], [2, 1]],
+                desc: "<b>Step 4 (really 5th): SELECT.</b> The alias order_count is created here — step 4, not step 1 — which is exactly why WHERE (step 2) could never have referenced it."
+              }
+            ]
+          });
+        </script>
+        <div class="table-wrap" style="margin-top:16px;">
 
         <div class="table-wrap">
           <table class="compare">

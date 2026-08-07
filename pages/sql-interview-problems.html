@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classic Interview Query Problems · Tech Interview Hub</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../data/topics-index.js"></script>
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
+    <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
+<nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
+  <div class="nav-drawer-head">
+    <span>Menu</span>
+    <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="nav-drawer-body" id="nav-drawer-body"></div>
+</nav>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Classic Interview Query Problems</div>
+    <h1>Classic Interview Query Problems</h1>
+    <p class="lede">The recurring live-coding set — every one of these solves with a technique already covered elsewhere on this track. That's the actual point: these aren't new concepts, they're recognizing which existing tool applies. Two problems already fully covered elsewhere aren't repeated here — customers with no orders (<a href="sql-joins.html#inner-left">Joins</a>) and top N per group (<a href="sql-window-functions.html#interview-qa">Window Functions</a>).</p>
+    <div class="card-tags">
+      <span>sql</span>
+      <span>interview-problems</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone SQL track — authored directly for Lead SDET interview prep, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#nth-highest">The Nth highest salary</a>
+      <a href="#duplicates">Find duplicate rows</a>
+      <a href="#running-total">Running total</a>
+      <a href="#consecutive-streaks">Consecutive-day streaks</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="nth-highest">
+        <h2>The Nth highest salary</h2>
+        <p>The same tie-handling mechanic from <a href="sql-window-functions.html#row-number-rank">Window Functions</a> — <code>DENSE_RANK()</code> is specifically the right tool here because "2nd highest salary" should mean 2nd highest <em>distinct value</em>, not 2nd row:</p>
+        <pre><code>SELECT DISTINCT salary
+FROM (
+  SELECT salary, DENSE_RANK() OVER (ORDER BY salary DESC) AS rnk
+  FROM employees
+) ranked
+WHERE rnk = 2;</code></pre>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>name</th><th>salary</th><th>DENSE_RANK</th></tr></thead>
+            <tbody>
+              <tr><td>Ada</td><td>90</td><td>1</td></tr>
+              <tr><td>Grace</td><td>90</td><td class="highlight">1</td></tr>
+              <tr><td>Katherine</td><td>80</td><td class="highlight">2 ← answer</td></tr>
+              <tr><td>Alan</td><td>70</td><td>3</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout warn">
+          <strong>Why not ROW_NUMBER() or plain LIMIT/OFFSET here</strong>
+          <code>ROW_NUMBER()</code> would give Ada 1 and Grace 2 — making "2nd highest" resolve to 90 again, the exact same salary as 1st, which isn't the intent. <code>LIMIT 1 OFFSET 1</code> on <code>ORDER BY salary DESC</code> has the identical problem — it returns the 2nd <em>row</em>, not the 2nd distinct value. DENSE_RANK is specifically the tie-aware tool for "Nth distinct value" questions.
+        </div>
+      </section>
+
+      <section id="duplicates">
+        <h2>Find duplicate rows</h2>
+        <p>Group by whatever defines "duplicate" for the data, then keep only groups where more than one row shares those values:</p>
+        <pre><code>SELECT email, COUNT(*) AS occurrences
+FROM users
+GROUP BY email
+HAVING COUNT(*) > 1;</code></pre>
+        <p>This is a direct application of <a href="sql-aggregation.html#having-vs-where">HAVING</a> — filtering on <code>COUNT(*)</code>, which only exists after grouping, so it has to be <code>HAVING</code>, not <code>WHERE</code>. To then actually <em>delete</em> the duplicates, keeping just one copy of each:</p>
+        <pre><code>DELETE FROM users
+WHERE id NOT IN (
+  SELECT MIN(id) FROM users GROUP BY email   -- keep the lowest id per email
+);</code></pre>
+      </section>
+
+      <section id="running-total">
+        <h2>Running total</h2>
+        <p>A window function with no <code>PARTITION BY</code> at all treats the whole result as one partition — and the frame clause makes each row sum everything up to and including itself:</p>
+        <pre><code>SELECT order_date, amount,
+       SUM(amount) OVER (ORDER BY order_date) AS running_total
+FROM orders;</code></pre>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>order_date</th><th>amount</th><th>running_total</th></tr></thead>
+            <tbody>
+              <tr><td>Jan 1</td><td>40</td><td>40</td></tr>
+              <tr><td>Jan 2</td><td>15</td><td>55</td></tr>
+              <tr><td>Jan 3</td><td>25</td><td class="highlight">80</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><code>SUM() OVER (ORDER BY order_date)</code> — with no explicit frame clause — defaults to "every row from the start up through the current one," which is exactly the running-total behavior. This is the same <code>OVER (...)</code> mechanism from <a href="sql-window-functions.html#concept">Window Functions</a>, just with <code>SUM</code> instead of a ranking function.</p>
+      </section>
+
+      <section id="consecutive-streaks">
+        <h2>Consecutive-day streaks</h2>
+        <p>Find each user's longest run of consecutive login days — a genuinely clever trick, not just another aggregate. Subtracting a row number from a date produces the <strong>same result for every date in an unbroken run</strong>, and a different result the moment there's a gap:</p>
+        <pre><code>SELECT user_id, login_date,
+       ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY login_date) AS rn,
+       login_date - ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY login_date) AS island
+FROM logins;</code></pre>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>login_date</th><th>ROW_NUMBER</th><th>date − row_number ("island")</th></tr></thead>
+            <tbody>
+              <tr><td>Jan 1</td><td>1</td><td class="highlight">Dec 31</td></tr>
+              <tr><td>Jan 2</td><td>2</td><td class="highlight">Dec 31</td></tr>
+              <tr><td>Jan 3</td><td>3</td><td class="highlight">Dec 31</td></tr>
+              <tr><td>Jan 5 <span style="color:var(--text-faint); font-size:11px;">(gap — no Jan 4)</span></td><td>4</td><td>Jan 1</td></tr>
+              <tr><td>Jan 6</td><td>5</td><td>Jan 1</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>The first three rows (Jan 1–3, genuinely consecutive) all compute the identical "island" value of Dec 31 — each date increases by 1 and so does the row number, so the difference stays constant. The moment there's a gap (no Jan 4), the row number keeps incrementing by 1 but the date jumped by 2, so the difference shifts to a new value. Grouping by that computed "island" column and counting rows per group directly gives the length of each consecutive streak — <code>GROUP BY user_id, island</code>, then the largest <code>COUNT(*)</code> per user is their longest streak.</p>
+        <div class="quiz">
+          <div class="quiz-q">Why does subtracting ROW_NUMBER() from the date produce the same value for every date in a consecutive run?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">It's a coincidence specific to the example dates used</button>
+            <button class="quiz-opt" data-correct="true">Because both the date and the row number increase by exactly 1 for each consecutive day — their difference stays constant until a gap breaks that 1-to-1 relationship</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Write a query for the 2nd highest salary, handling ties correctly.</summary>
+          <div class="qa-body">Wrap DENSE_RANK() OVER (ORDER BY salary DESC) in a subquery or CTE, then filter the outer query WHERE rnk = 2. DENSE_RANK is specifically correct here (over ROW_NUMBER or LIMIT/OFFSET) because it ranks by distinct value — two people tied for 1st both get rank 1, and the next distinct salary correctly gets rank 2.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> How would you find and remove duplicate rows, keeping exactly one copy of each?</summary>
+          <div class="qa-body">GROUP BY the columns that define a duplicate, HAVING COUNT(*) > 1 to find them. To delete: DELETE WHERE id NOT IN (SELECT MIN(id) FROM table GROUP BY those same columns) — keeping the row with the lowest id (or any other deterministic tiebreaker) per group and removing the rest.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Explain the "gaps and islands" technique for finding consecutive-date runs.</summary>
+          <div class="qa-body">Compute ROW_NUMBER() OVER (PARTITION BY the grouping column ORDER BY date), then subtract it from the date itself. For any unbroken run of consecutive dates, both the date and the row number increase by exactly 1 per row, so their difference is constant across the whole run — a stable "island" identifier. The moment there's a gap, the row number keeps incrementing by 1 but the date jumps by more, shifting the difference to a new value and starting a new island. Grouping by that computed difference and counting rows per group gives the length of each consecutive streak directly.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>ROW_NUMBER() for "Nth highest" silently ignores ties</strong>
+          Defaults to treating tied values as distinct ranks — almost never the actual intent behind "2nd highest X."
+        </div>
+        <div class="callout warn">
+          <strong>Deleting duplicates without a deterministic tiebreaker</strong>
+          "Keep the lowest id" is deterministic and repeatable; "keep whichever row the database happens to return first" is not, and can behave differently across runs or database versions.
+        </div>
+        <div class="callout warn">
+          <strong>A running total without ORDER BY inside OVER() is undefined</strong>
+          Same rule as everywhere else on this track — window functions that depend on row order need an explicit ORDER BY inside OVER(...), or the accumulation order isn't guaranteed.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="sql-window-functions.html">Window Functions →</a>
+          <a href="sql-aggregation.html">Aggregation &amp; Grouping →</a>
+          <a href="sql-joins.html">Joins &amp; Relationships →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: Original content — written for interview prep, not sourced from a transcript — added 2026-08-05</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

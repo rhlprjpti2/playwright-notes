@@ -769,6 +769,45 @@ window.TOPICS_INDEX_SQL = [
     lastUpdated: "2026-08-05",
     phase: "sql-advanced",
     order: 4
+  },
+  {
+    slug: "sql-test-automation",
+    title: "SQL for Test Automation",
+    file: "pages/sql-test-automation.html",
+    tags: ["sql", "test-automation"],
+    keyTerms: [
+      "psycopg2", "SQLAlchemy", "database assertion", "assert on database state",
+      "transaction per test", "test isolation", "rollback teardown", "seed test data",
+      "test data factory", "ETL testing", "data migration testing", "checksum verification",
+      "SQL injection in tests", "parameterized query"
+    ],
+    summary: "Querying the database directly to prove a UI/API action actually persisted, transaction-per-test rollback isolation, seeding patterns, and verifying a data migration moved everything correctly.",
+    related: ["pytest-fixtures", "playwright-api-testing", "sql-dml"],
+    sources: [
+      { title: "Original content — written for interview prep, not sourced from a transcript", addedDate: "2026-08-05" }
+    ],
+    lastUpdated: "2026-08-05",
+    phase: "sql-practical",
+    order: 1
+  },
+  {
+    slug: "sql-interview-problems",
+    title: "Classic Interview Query Problems",
+    file: "pages/sql-interview-problems.html",
+    tags: ["sql", "interview-problems"],
+    keyTerms: [
+      "Nth highest salary", "second highest salary", "find duplicate rows", "running total",
+      "cumulative sum", "consecutive day streak", "gaps and islands technique",
+      "DENSE_RANK vs ROW_NUMBER", "GROUP BY HAVING duplicates"
+    ],
+    summary: "The recurring live-coding SQL problem set — Nth highest salary, duplicate rows, running totals, and the gaps-and-islands technique for consecutive-date streaks.",
+    related: ["sql-window-functions", "sql-aggregation", "sql-joins"],
+    sources: [
+      { title: "Original content — written for interview prep, not sourced from a transcript", addedDate: "2026-08-05" }
+    ],
+    lastUpdated: "2026-08-05",
+    phase: "sql-practical",
+    order: 2
   }
 ];
 

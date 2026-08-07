@@ -1469,6 +1469,30 @@ window.ALL_QUESTIONS = [
   "file": "pages/sql-fundamentals.html"
  },
  {
+  "q": "Write a query for the 2nd highest salary, handling ties correctly.",
+  "a": "Wrap DENSE_RANK() OVER (ORDER BY salary DESC) in a subquery or CTE, then filter the outer query WHERE rnk = 2. DENSE_RANK is specifically correct here (over ROW_NUMBER or LIMIT/OFFSET) because it ranks by distinct value — two people tied for 1st both get rank 1, and the next distinct salary correctly gets rank 2.",
+  "level": "mid",
+  "topic": "sql-interview-problems",
+  "topicLabel": "SQL: Interview Problems",
+  "file": "pages/sql-interview-problems.html"
+ },
+ {
+  "q": "How would you find and remove duplicate rows, keeping exactly one copy of each?",
+  "a": "GROUP BY the columns that define a duplicate, HAVING COUNT(*) > 1 to find them. To delete: DELETE WHERE id NOT IN (SELECT MIN(id) FROM table GROUP BY those same columns) — keeping the row with the lowest id (or any other deterministic tiebreaker) per group and removing the rest.",
+  "level": "mid",
+  "topic": "sql-interview-problems",
+  "topicLabel": "SQL: Interview Problems",
+  "file": "pages/sql-interview-problems.html"
+ },
+ {
+  "q": "Explain the \"gaps and islands\" technique for finding consecutive-date runs.",
+  "a": "Compute ROW_NUMBER() OVER (PARTITION BY the grouping column ORDER BY date), then subtract it from the date itself. For any unbroken run of consecutive dates, both the date and the row number increase by exactly 1 per row, so their difference is constant across the whole run — a stable \"island\" identifier. The moment there's a gap, the row number keeps incrementing by 1 but the date jumps by more, shifting the difference to a new value and starting a new island. Grouping by that computed difference and counting rows per group gives the length of each consecutive streak directly.",
+  "level": "senior",
+  "topic": "sql-interview-problems",
+  "topicLabel": "SQL: Interview Problems",
+  "file": "pages/sql-interview-problems.html"
+ },
+ {
   "q": "What's the difference between INNER JOIN and LEFT JOIN?",
   "a": "INNER JOIN keeps only rows that have a match on both sides — a row with no match is dropped entirely. LEFT JOIN keeps every row from the left table regardless of whether it has a match, filling the right side's columns with NULL when there's no match.",
   "level": "junior",
@@ -1579,6 +1603,38 @@ window.ALL_QUESTIONS = [
   "topic": "sql-subqueries",
   "topicLabel": "SQL: Subqueries",
   "file": "pages/sql-subqueries.html"
+ },
+ {
+  "q": "Why query the database directly in a test instead of trusting the UI's success message?",
+  "a": "A success message only proves the application claims the action worked — it doesn't prove the underlying data was actually written correctly, or at all. Querying the database directly verifies the real, persisted outcome independent of what the UI happens to display.",
+  "level": "junior",
+  "topic": "sql-test-automation",
+  "topicLabel": "SQL: Test Automation",
+  "file": "pages/sql-test-automation.html"
+ },
+ {
+  "q": "Why is transaction-per-test rollback usually preferred over DELETE-based cleanup between tests?",
+  "a": "It's faster (no actual row-by-row deletion), it automatically restores the exact pre-test state, and it avoids DELETE's dependency on getting foreign-key deletion order right across multiple tables. The trade-off is that it doesn't work for testing something that itself depends on a real COMMIT (e.g. testing a second database connection's visibility of the data).",
+  "level": "mid",
+  "topic": "sql-test-automation",
+  "topicLabel": "SQL: Test Automation",
+  "file": "pages/sql-test-automation.html"
+ },
+ {
+  "q": "How would you verify a data migration between two databases moved everything correctly?",
+  "a": "At least three levels: row counts matching (catches dropped/duplicated rows), aggregate checksums like SUM or COUNT DISTINCT matching (catches value corruption that row counts alone would miss), and spot-checking individual rows for exact field-level equality. Row counts alone are not sufficient — they can match while every value is subtly wrong.",
+  "level": "mid",
+  "topic": "sql-test-automation",
+  "topicLabel": "SQL: Test Automation",
+  "file": "pages/sql-test-automation.html"
+ },
+ {
+  "q": "A test suite's database fixtures are getting slow as the suite grows. What would you investigate?",
+  "a": "Whether cleanup is transaction-rollback-based (fast) or DELETE-based (row-by-row, and often requires walking foreign-key dependency order across many tables — one of the more common actual causes of fixture slowdown at scale). Also worth checking for N+1-style seeding — a fixture that seeds related data by looping and inserting one row per iteration instead of a single multi-row INSERT.",
+  "level": "senior",
+  "topic": "sql-test-automation",
+  "topicLabel": "SQL: Test Automation",
+  "file": "pages/sql-test-automation.html"
  },
  {
   "q": "What does ACID stand for?",

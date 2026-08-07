@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL for Test Automation · Tech Interview Hub</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../data/topics-index.js"></script>
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
+    <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
+<nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
+  <div class="nav-drawer-head">
+    <span>Menu</span>
+    <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="nav-drawer-body" id="nav-drawer-body"></div>
+</nav>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / SQL for Test Automation</div>
+    <h1>SQL for Test Automation</h1>
+    <p class="lede">The part of this track that's actually SDET-specific rather than generic SQL knowledge: querying the database directly to assert on real application state, seeding and cleaning up test data without pollution between tests, and verifying a data migration actually moved everything correctly.</p>
+    <div class="card-tags">
+      <span>sql</span>
+      <span>test-automation</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone SQL track — authored directly for Lead SDET interview prep, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#running-sql-from-python">Running SQL from Python</a>
+      <a href="#db-assertions">Asserting directly on database state</a>
+      <a href="#transaction-isolation">Transaction-per-test isolation</a>
+      <a href="#seeding">Seeding and cleaning up test data</a>
+      <a href="#etl-testing">ETL / data migration testing</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p>A UI test that clicks "Save" and then only checks for a success toast is trusting the application's own claim that the save worked. Querying the database directly afterward — the same reasoning as the <a href="sql-dml.html">DML</a> page's "prove persistence, not just a response" point for API tests — is the difference between testing that something <em>looked</em> successful and testing that it <em>actually happened</em>.</p>
+      </section>
+
+      <section id="running-sql-from-python">
+        <h2>Running SQL from Python</h2>
+        <pre><code>import psycopg2
+
+conn = psycopg2.connect(host="localhost", dbname="test_db", user="test_user")
+cur = conn.cursor()
+cur.execute("SELECT status FROM orders WHERE id = %s", (order_id,))
+row = cur.fetchone()
+assert row[0] == "shipped"
+conn.close()
+
+# SQLAlchemy — a higher-level, more Pythonic layer over the same idea
+from sqlalchemy import create_engine, text
+engine = create_engine("postgresql://test_user@localhost/test_db")
+with engine.connect() as conn:
+    result = conn.execute(text("SELECT status FROM orders WHERE id = :id"), {"id": order_id})
+    assert result.scalar() == "shipped"</code></pre>
+        <div class="callout warn">
+          <strong>Always parameterize — never format a value into the SQL string</strong>
+          <code>f"SELECT * FROM orders WHERE id = {order_id}"</code> is a SQL injection vector even in test code, and it breaks outright on any value containing a quote. The <code>%s</code> / <code>:id</code> placeholders above hand the value to the driver separately from the query text — the same reasoning Playwright's own <a href="playwright-network-interception.html">parameterized locators</a> follow for a different kind of injection risk.
+        </div>
+      </section>
+
+      <section id="db-assertions">
+        <h2>Asserting directly on database state</h2>
+        <pre><code>def test_creating_order_persists_correctly(page, db_connection):
+    page.goto(BASE_URL)
+    page.get_by_role("button", name="Place Order").click()
+    expect(page.get_by_text("Order placed")).to_be_visible()   # the UI's own claim
+
+    # Now verify it actually happened, independent of what the UI displayed
+    cur = db_connection.cursor()
+    cur.execute("SELECT status, amount FROM orders WHERE customer_id = %s ORDER BY id DESC LIMIT 1", (test_customer_id,))
+    row = cur.fetchone()
+    assert row is not None, "No order row was created at all"
+    assert row[0] == "pending"
+    assert row[1] == 49.99</code></pre>
+        <p>This is the same principle as the <a href="playwright-api-testing.html#lifecycle">API Testing</a> page's create-then-verify pattern, applied one layer deeper — instead of calling the API back to confirm, the test reads the actual row the API call was supposed to produce.</p>
+      </section>
+
+      <section id="transaction-isolation">
+        <h2>Transaction-per-test isolation</h2>
+        <p>Wrapping each test in a transaction that's rolled back at teardown — rather than deleting rows outright — is faster and automatically restores the exact pre-test state, regardless of what the test wrote:</p>
+        <div class="sim" id="txn-isolation-stepper"></div>
+        <script>
+          renderQueryStepper("txn-isolation-stepper", {
+            tables: [
+              { id: "users12", label: "users", headers: ["id", "email"], rows: [[1, "existing1@x.com"], [2, "existing2@x.com"]] }
+            ],
+            resultHeaders: ["event", "row count"],
+            introCode: "@pytest.fixture\ndef db_transaction(): ...",
+            introText: "Step through a full test lifecycle — setup, the test's own writes, and teardown.",
+            steps: [
+              { code: "fixture setup: BEGIN;", rowStates: { users12: { 0: "match", 1: "match" } }, resultRows: [["BEGIN (test starts)", 2]], resultRowStates: { 0: "new" }, desc: "A transaction starts before the test body runs — nothing written yet." },
+              { code: "test body: INSERT INTO users (email) VALUES ('newtestuser@x.com');", rowStates: { users12: { 0: "match", 1: "match" } }, resultRows: [["BEGIN (test starts)", 2], ["test INSERTs a row", 3]], resultRowStates: { 1: "new" }, desc: "The test creates a new user to exercise whatever it's actually testing — row count is now 3, but only within this uncommitted transaction." },
+              { code: "test body: assertions run against the new row", rowStates: { users12: { 0: "match", 1: "match" } }, resultRows: [["BEGIN (test starts)", 2], ["test INSERTs a row", 3], ["assertions pass", 3]], resultRowStates: { 2: "new" }, desc: "The test's own assertions see the new row fine — it exists within this transaction, same as any committed data would." },
+              { code: "fixture teardown: ROLLBACK;", rowStates: { users12: { 0: "match", 1: "match" } }, resultRows: [["BEGIN (test starts)", 2], ["test INSERTs a row", 3], ["assertions pass", 3], ["ROLLBACK (teardown)", 2]], resultRowStates: { 3: "new" }, desc: "<b>ROLLBACK undoes everything the test wrote</b> — row count is back to 2, exactly as if the test never ran. The next test starts from this same clean state, every time." }
+            ]
+          });
+        </script>
+      </section>
+
+      <section id="seeding">
+        <h2>Seeding and cleaning up test data</h2>
+        <p>A dedicated <code>seed_test_account(...)</code> stored procedure or a Python factory function — either works, but the goal is the same: one reusable, named way to create valid test data, instead of every test hand-rolling its own <code>INSERT</code> statements that quietly drift out of sync with the schema over time.</p>
+        <pre><code>@pytest.fixture
+def test_customer(db_connection):
+    cur = db_connection.cursor()
+    cur.execute(
+        "INSERT INTO customers (name, email) VALUES (%s, %s) RETURNING id",
+        ("Test Customer", f"test-{uuid.uuid4()}@example.com")
+    )
+    customer_id = cur.fetchone()[0]
+    yield customer_id
+    # cleanup happens via the transaction-per-test rollback above,
+    # or explicit DELETE here if that pattern isn't in use</code></pre>
+        <p>The <code>yield</code>-based setup/teardown shape here is the exact same mechanism covered in <a href="pytest-fixtures.html#visual-yield">Pytest Fixtures</a> — a database fixture is not a different concept, just a fixture whose setup happens to be a SQL <code>INSERT</code>.</p>
+      </section>
+
+      <section id="etl-testing">
+        <h2>ETL / data migration testing</h2>
+        <p>Verifying a migration moved data correctly comes down to comparing source and destination on three levels, each catching a different failure mode:</p>
+        <pre><code>-- 1. Row counts match — catches dropped or duplicated rows
+SELECT COUNT(*) FROM source_db.orders;
+SELECT COUNT(*) FROM destination_db.orders;
+
+-- 2. Aggregate checksums match — catches silent value corruption row counts alone would miss
+SELECT SUM(amount), COUNT(DISTINCT customer_id) FROM source_db.orders;
+SELECT SUM(amount), COUNT(DISTINCT customer_id) FROM destination_db.orders;
+
+-- 3. Spot-check specific rows for exact field-level equality
+SELECT * FROM source_db.orders WHERE id = 12345;
+SELECT * FROM destination_db.orders WHERE id = 12345;</code></pre>
+        <div class="callout tip">
+          <strong>Row counts matching is necessary, not sufficient</strong>
+          Two tables can have identical row counts while every single amount value is silently off by a currency-conversion bug — matching counts alone proves nothing was dropped or duplicated, not that the data itself is correct. All three levels are needed for real confidence.
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> Why query the database directly in a test instead of trusting the UI's success message?</summary>
+          <div class="qa-body">A success message only proves the application claims the action worked — it doesn't prove the underlying data was actually written correctly, or at all. Querying the database directly verifies the real, persisted outcome independent of what the UI happens to display.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why is transaction-per-test rollback usually preferred over DELETE-based cleanup between tests?</summary>
+          <div class="qa-body">It's faster (no actual row-by-row deletion), it automatically restores the exact pre-test state, and it avoids DELETE's dependency on getting foreign-key deletion order right across multiple tables. The trade-off is that it doesn't work for testing something that itself depends on a real COMMIT (e.g. testing a second database connection's visibility of the data).</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> How would you verify a data migration between two databases moved everything correctly?</summary>
+          <div class="qa-body">At least three levels: row counts matching (catches dropped/duplicated rows), aggregate checksums like SUM or COUNT DISTINCT matching (catches value corruption that row counts alone would miss), and spot-checking individual rows for exact field-level equality. Row counts alone are not sufficient — they can match while every value is subtly wrong.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> A test suite's database fixtures are getting slow as the suite grows. What would you investigate?</summary>
+          <div class="qa-body">Whether cleanup is transaction-rollback-based (fast) or DELETE-based (row-by-row, and often requires walking foreign-key dependency order across many tables — one of the more common actual causes of fixture slowdown at scale). Also worth checking for N+1-style seeding — a fixture that seeds related data by looping and inserting one row per iteration instead of a single multi-row INSERT.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>String-formatting a value into test SQL is still SQL injection risk</strong>
+          Always parameterize, even in test-only code — test databases get real, sometimes sensitive-shaped data too.
+        </div>
+        <div class="callout warn">
+          <strong>Transaction-rollback isolation can't test cross-connection visibility</strong>
+          If a test genuinely needs to verify what a second, separate connection sees, an uncommitted transaction on the first connection is invisible to it by design — that specific scenario needs a real COMMIT and explicit cleanup instead.
+        </div>
+        <div class="callout warn">
+          <strong>Row-count-only migration verification misses corruption</strong>
+          Always pair count checks with an aggregate checksum or field-level spot check.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="pytest-fixtures.html">Pytest Fixtures &amp; Fundamentals →</a>
+          <a href="playwright-api-testing.html">API Testing &amp; Assertion Validation →</a>
+          <a href="sql-dml.html">DML Deep Dive →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: Original content — written for interview prep, not sourced from a transcript — added 2026-08-05</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

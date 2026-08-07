@@ -46,6 +46,8 @@ TOPIC_LABELS = {
     "sql-database-design": "SQL: Database Design",
     "sql-transactions": "SQL: Transactions",
     "sql-query-optimization": "SQL: Query Optimization",
+    "sql-test-automation": "SQL: Test Automation",
+    "sql-interview-problems": "SQL: Interview Problems",
     "python-memory-model": "Python: Memory Model",
     "python-data-types": "Python: Data Types",
     "python-strings": "Python: Strings",

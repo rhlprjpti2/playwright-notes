@@ -730,6 +730,45 @@ window.TOPICS_INDEX_SQL = [
     lastUpdated: "2026-08-05",
     phase: "sql-advanced",
     order: 2
+  },
+  {
+    slug: "sql-transactions",
+    title: "Transactions & Concurrency",
+    file: "pages/sql-transactions.html",
+    tags: ["sql", "transactions"],
+    keyTerms: [
+      "ACID", "atomicity", "consistency", "isolation", "durability", "isolation levels",
+      "READ UNCOMMITTED", "READ COMMITTED", "REPEATABLE READ", "SERIALIZABLE", "dirty read",
+      "non-repeatable read", "phantom read", "shared lock", "exclusive lock", "deadlock",
+      "deadlock victim", "lock ordering"
+    ],
+    summary: "ACID tied to concrete bugs, the isolation-level table and the three read phenomena, a dirty read shown happening, and a full deadlock timeline between two transactions.",
+    related: ["sql-database-design", "sql-dml", "playwright-network-interception"],
+    sources: [
+      { title: "Original content — written for interview prep, not sourced from a transcript", addedDate: "2026-08-05" }
+    ],
+    lastUpdated: "2026-08-05",
+    phase: "sql-advanced",
+    order: 3
+  },
+  {
+    slug: "sql-query-optimization",
+    title: "Query Optimization",
+    file: "pages/sql-query-optimization.html",
+    tags: ["sql", "query-optimization"],
+    keyTerms: [
+      "EXPLAIN", "EXPLAIN ANALYZE", "seq scan", "index scan", "query plan", "N+1 query problem",
+      "lazy loading", "eager loading", "composite index", "covering index", "leftmost prefix",
+      "function on indexed column", "expression index", "SELECT star"
+    ],
+    summary: "Reading a Seq Scan vs Index Scan in EXPLAIN, the N+1 query problem walked through query by query, and index strategy beyond just \"add an index.\"",
+    related: ["sql-database-design", "sql-subqueries", "sql-joins"],
+    sources: [
+      { title: "Original content — written for interview prep, not sourced from a transcript", addedDate: "2026-08-05" }
+    ],
+    lastUpdated: "2026-08-05",
+    phase: "sql-advanced",
+    order: 4
   }
 ];
 

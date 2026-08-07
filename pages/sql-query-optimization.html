@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Query Optimization · Tech Interview Hub</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../data/topics-index.js"></script>
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
+    <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
+<nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
+  <div class="nav-drawer-head">
+    <span>Menu</span>
+    <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="nav-drawer-body" id="nav-drawer-body"></div>
+</nav>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Query Optimization</div>
+    <h1>Query Optimization</h1>
+    <p class="lede">Reading an EXPLAIN plan well enough to spot a full table scan, and the N+1 query pattern — one query per row instead of one query total — which is the single most common real-world "why is this so slow" root cause an SDET will actually encounter, usually hiding behind an ORM.</p>
+    <div class="card-tags">
+      <span>sql</span>
+      <span>query-optimization</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone SQL track — authored directly for Lead SDET interview prep, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#explain">Reading EXPLAIN</a>
+      <a href="#n-plus-one">The N+1 query problem</a>
+      <a href="#index-strategy">Index strategy, beyond the basics</a>
+      <a href="#other-causes">Other common slow-query causes</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p>SQL is declarative — the query says <em>what</em> to fetch, and the query planner decides <em>how</em>. Optimization is entirely about influencing that "how": giving the planner useful indexes, and writing queries in a shape it can actually use them for. Everything on this page is either about reading what the planner decided, or avoiding query patterns that quietly defeat it.</p>
+      </section>
+
+      <section id="explain">
+        <h2>Reading EXPLAIN</h2>
+        <pre><code>EXPLAIN ANALYZE
+SELECT * FROM orders WHERE customer_id = 42;</code></pre>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Plan (no index on customer_id)</th><th>Plan (with an index)</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">Seq Scan on orders<br>(cost=0.00..2500.00 rows=1 width=64)<br>Filter: customer_id = 42</td><td class="highlight">Index Scan using idx_orders_customer_id<br>(cost=0.42..8.60 rows=1 width=64)<br>Index Cond: customer_id = 42</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>Seq Scan</strong> means every row in the table was read to check the filter — this is the literal full-table-scan mechanic from <a href="sql-database-design.html#indexes">Database Design</a>. <strong>Index Scan</strong> means the planner used an index to jump straight to matching rows. The <code>cost</code> numbers (arbitrary planner units, not milliseconds) show the difference directly: 2500 vs 8.6 — roughly 300× cheaper in the planner's own estimate for this one query.</p>
+        <div class="quiz">
+          <div class="quiz-q">EXPLAIN shows "Seq Scan" on a WHERE clause filtering a column you know has an index on it. What's the most likely explanation?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">EXPLAIN is broken — indexes are always used when available</button>
+            <button class="quiz-opt" data-correct="true">The planner decided a sequential scan was actually cheaper — common on small tables, or when the filter matches a large fraction of the rows (an index lookup plus row fetches can cost more than just reading everything)</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="n-plus-one">
+        <h2>The N+1 query problem</h2>
+        <p>Fetch 3 customers, then — inside a loop, one at a time — fetch each customer's orders separately. 3 customers means 1 + 3 = 4 total queries; 1,000 customers means 1,001. This is overwhelmingly the most common real-world query performance bug, and it almost always comes from an ORM's lazy-loading default rather than hand-written SQL:</p>
+        <div class="sim" id="n-plus-one-stepper"></div>
+        <script>
+          renderQueryStepper("n-plus-one-stepper", {
+            tables: [
+              { id: "customers11", label: "customers", headers: ["id", "name"], rows: [[1, "Ada"], [2, "Grace"], [3, "Katherine"]] }
+            ],
+            resultHeaders: ["query #", "query executed"],
+            introCode: "for customer in Customer.objects.all():\n    print(customer.orders)   # each access triggers a NEW query",
+            introText: "Step through — count how many separate round trips to the database this innocent-looking loop actually makes.",
+            steps: [
+              {
+                code: "1 query: SELECT * FROM customers;",
+                rowStates: { customers11: { 0: "match", 1: "match", 2: "match" } },
+                resultRows: [[1, "SELECT * FROM customers"]],
+                resultRowStates: { 0: "new" },
+                desc: "The '1' in N+1 — one query fetches all 3 customers."
+              },
+              {
+                code: "loop iteration 1: SELECT * FROM orders WHERE customer_id = 1;",
+                rowStates: { customers11: { 0: "match", 1: "match", 2: "match" } },
+                resultRows: [[1, "SELECT * FROM customers"], [2, "SELECT * FROM orders WHERE customer_id=1"]],
+                resultRowStates: { 1: "new" },
+                desc: "Accessing customer.orders inside the loop silently fires a brand-new query — one per customer, starting here."
+              },
+              {
+                code: "loop iteration 2: SELECT * FROM orders WHERE customer_id = 2;",
+                rowStates: { customers11: { 0: "match", 1: "match", 2: "match" } },
+                resultRows: [[1, "SELECT * FROM customers"], [2, "SELECT * FROM orders WHERE customer_id=1"], [3, "SELECT * FROM orders WHERE customer_id=2"]],
+                resultRowStates: { 2: "new" },
+                desc: "Query #3, for customer 2. This scales linearly and silently — nothing here looks obviously wrong in the application code."
+              },
+              {
+                code: "loop iteration 3: SELECT * FROM orders WHERE customer_id = 3;",
+                rowStates: { customers11: { 0: "match", 1: "match", 2: "match" } },
+                resultRows: [[1, "SELECT * FROM customers"], [2, "SELECT * FROM orders WHERE customer_id=1"], [3, "SELECT * FROM orders WHERE customer_id=2"], [4, "SELECT * FROM orders WHERE customer_id=3"]],
+                resultRowStates: { 3: "new" },
+                desc: "<b>4 total queries for 3 customers — the \"N+1\" pattern (1 + N).</b> With 10,000 customers this is 10,001 round trips to the database instead of 1."
+              }
+            ]
+          });
+        </script>
+        <pre><code>-- The fix: fetch everything in ONE query with a join, instead of N+1 round trips
+SELECT c.name, o.id AS order_id, o.amount
+FROM customers c
+LEFT JOIN orders o ON o.customer_id = c.id;</code></pre>
+        <div class="callout tip">
+          <strong>Where an SDET actually encounters this</strong>
+          A test that looks correct in isolation can reveal an N+1 problem indirectly — a page-load or API-response-time test that passes fine with 5 seeded test rows and fails a performance budget once seeded with 5,000. That symptom, more than reading application code, is often the first real signal something's fetching data in a loop.
+        </div>
+      </section>
+
+      <section id="index-strategy">
+        <h2>Index strategy, beyond the basics</h2>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Concept</th><th>What it means</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">Composite index</td><td>An index on <code>(customer_id, status)</code> together speeds up queries filtering on both — but generally only helps if the query filters on customer_id first (leftmost-prefix rule); an index on (A, B) usually doesn't help a query that only filters on B.</td></tr>
+              <tr><td class="highlight">Covering index</td><td>An index that includes every column a query needs lets the database answer entirely from the index, without touching the actual table rows at all — meaningfully faster for read-heavy queries on wide tables.</td></tr>
+              <tr><td class="highlight">Function on an indexed column</td><td><code>WHERE UPPER(email) = 'ADA@X.COM'</code> generally can't use a plain index on <code>email</code> — the stored value and the indexed value no longer match literally. A function-based (expression) index built specifically on <code>UPPER(email)</code> is the fix if this pattern is common.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="other-causes">
+        <h2>Other common slow-query causes</h2>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Cause</th><th>Why it's slow</th></tr></thead>
+            <tbody>
+              <tr><td><code>SELECT *</code> on a wide table</td><td>Fetches and transfers every column, including ones never used — real cost on wide tables or large result sets, and it also defeats covering indexes that would otherwise satisfy the query from the index alone.</td></tr>
+              <tr><td>A JOIN with no index on the join column</td><td>Falls back to a full scan of one side for every row of the other — see the "foreign key without an index" gotcha in <a href="sql-database-design.html#gotchas">Database Design</a>.</td></tr>
+              <tr><td>A correlated subquery on a large table</td><td>Covered in <a href="sql-subqueries.html#correlated">Subqueries</a> — potentially re-executes once per outer row.</td></tr>
+              <tr><td>Sorting or grouping without a supporting index</td><td>ORDER BY / GROUP BY on an unindexed column requires sorting the entire result set in memory (or on disk, if it doesn't fit) rather than reading pre-sorted index order.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What's the difference between a sequential scan and an index scan in an EXPLAIN plan?</summary>
+          <div class="qa-body">A sequential scan reads every row in the table to check the filter condition. An index scan uses an index to jump directly to matching rows without reading the whole table. EXPLAIN's cost estimates make the difference visible directly, especially on larger tables.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What is the N+1 query problem?</summary>
+          <div class="qa-body">Fetching a list of N records with one query, then fetching related data for each record with a separate query inside a loop — N+1 total queries instead of one. It commonly comes from an ORM's lazy-loading default and scales linearly (and expensively) with the size of the initial result set. The fix is typically a JOIN or an explicit eager-load/batch-fetch of the related data in one additional query instead of N.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> Why might WHERE UPPER(email) = 'ADA@X.COM' fail to use an index on the email column?</summary>
+          <div class="qa-body">A plain index on email stores the literal column values — applying UPPER() to the column at query time changes what's being compared, and the database generally can't match that against an index built on the untransformed values. A function-based (expression) index built specifically on UPPER(email) would be usable; the plain index on email is not.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> A performance test passes with a small seeded dataset but fails once the dataset is scaled up. What would you investigate first?</summary>
+          <div class="qa-body">Whether the slow endpoint's data access pattern scales linearly per record rather than staying roughly constant — the classic signature of N+1 queries or a missing index that a full table scan can mask on a small table but not a large one. EXPLAIN on the actual queries involved, and a query log or APM trace showing the number of queries fired per request, would confirm it quickly.</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>N+1 hides inside ORM convenience methods</strong>
+          Code that looks like simple object access (<code>customer.orders</code>) can silently be a full extra database round trip — this is invisible from reading the loop itself without knowing the ORM's lazy-loading behavior.
+        </div>
+        <div class="callout warn">
+          <strong>An index existing doesn't guarantee it gets used</strong>
+          A function wrapped around the column, an implicit type mismatch, or the planner simply deciding a scan is cheaper on a small table can all result in an index being present but unused. Always verify with EXPLAIN rather than assuming.
+        </div>
+        <div class="callout warn">
+          <strong>Composite index column order matters</strong>
+          An index on (customer_id, status) generally doesn't help a query filtering only on status — the leftmost column has to be part of the filter for the index to be usable in the typical case.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="sql-database-design.html">Database Design &amp; Constraints →</a>
+          <a href="sql-subqueries.html">Subqueries &amp; Set Operations →</a>
+          <a href="sql-joins.html">Joins &amp; Relationships →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: Original content — written for interview prep, not sourced from a transcript — added 2026-08-05</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

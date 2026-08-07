@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transactions & Concurrency · Tech Interview Hub</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../data/topics-index.js"></script>
+<script src="../assets/app.js"></script>
+<script src="../assets/diagrams.js"></script>
+<script src="../assets/interactive.js"></script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
+    <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
+    <div class="topbar-actions">
+      <a class="topbar-link" href="interview-questions.html">Questions</a>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
+<nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
+  <div class="nav-drawer-head">
+    <span>Menu</span>
+    <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="nav-drawer-body" id="nav-drawer-body"></div>
+</nav>
+
+<div class="wrap">
+  <div class="topic-header">
+    <div class="breadcrumb"><a href="../index.html">All topics</a> / Transactions &amp; Concurrency</div>
+    <h1>Transactions &amp; Concurrency</h1>
+    <p class="lede">ACID isn't four abstract words — each letter maps onto a specific bug that happens without it. Isolation levels are a menu of trade-offs between correctness and speed. And a deadlock isn't a bug in one transaction — it's two transactions each waiting on the other, forever, unless the database steps in.</p>
+    <div class="card-tags">
+      <span>sql</span>
+      <span>transactions</span>
+    </div>
+  </div>
+
+  <div class="callout supplement" style="margin: 0 0 28px;">
+    <strong>Original content <span class="src-tag">— written for this notes site, not sourced from a video</span></strong>
+    Part of the standalone SQL track — authored directly for Lead SDET interview prep, not transcribed from a course.
+  </div>
+
+  <div class="topic-layout">
+    <nav class="toc">
+      <div>On this page</div>
+      <a href="#concept">Concept</a>
+      <a href="#acid">ACID, with a concrete example each</a>
+      <a href="#isolation-levels">Isolation levels and the phenomena they prevent</a>
+      <a href="#dirty-read">A dirty read, happening</a>
+      <a href="#locking">Shared vs. exclusive locks</a>
+      <a href="#deadlock">Deadlocks, step by step</a>
+      <a href="#interview-qa">Interview Q&amp;A</a>
+      <a href="#gotchas">Gotchas</a>
+    </nav>
+
+    <div class="content">
+
+      <section id="concept">
+        <h2>Concept</h2>
+        <p>A transaction groups multiple statements into one all-or-nothing unit — <code>BEGIN</code>, some statements, then <code>COMMIT</code> (make it permanent) or <code>ROLLBACK</code> (undo all of it). Concurrency is what happens when more than one transaction touches the same data at the same time — which is where almost every interesting, interview-relevant problem on this page comes from.</p>
+      </section>
+
+      <section id="acid">
+        <h2>ACID, with a concrete example each</h2>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Property</th><th>What breaks without it</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">Atomicity</td><td>A bank transfer debits one account and credits another as two statements. Without atomicity, a crash between them leaves money debited from one account and never credited to the other — it simply vanishes.</td></tr>
+              <tr><td class="highlight">Consistency</td><td>A CHECK constraint says balance can never go negative. Consistency guarantees a transaction that would violate that constraint is rejected entirely, not partially applied.</td></tr>
+              <tr><td class="highlight">Isolation</td><td>Two transactions run "at the same time" but each behaves (to some configurable degree) as if it were running alone — see isolation levels below for exactly how much.</td></tr>
+              <tr><td class="highlight">Durability</td><td>Once COMMIT returns successfully, the change survives — even a server crash one millisecond later can't undo it. Without durability, a "successful" write could still be silently lost.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="isolation-levels">
+        <h2>Isolation levels and the phenomena they prevent</h2>
+        <p>Four standard levels, each allowing fewer of three specific concurrency phenomena — stricter isolation costs more performance (more locking, more blocking) in exchange for fewer surprises:</p>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Level</th><th>Dirty read</th><th>Non-repeatable read</th><th>Phantom read</th></tr></thead>
+            <tbody>
+              <tr><td>Read Uncommitted</td><td class="highlight">Possible</td><td class="highlight">Possible</td><td class="highlight">Possible</td></tr>
+              <tr><td>Read Committed <span style="color:var(--text-faint); font-size:11px;">(most databases' default)</span></td><td>Prevented</td><td class="highlight">Possible</td><td class="highlight">Possible</td></tr>
+              <tr><td>Repeatable Read</td><td>Prevented</td><td>Prevented</td><td class="highlight">Possible <span style="color:var(--text-faint); font-size:11px;">(varies by engine)</span></td></tr>
+              <tr><td>Serializable</td><td>Prevented</td><td>Prevented</td><td>Prevented</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>The three phenomena, defined precisely:</p>
+        <ul>
+          <li><strong>Dirty read</strong> — reading another transaction's <em>uncommitted</em> change, which might still be rolled back.</li>
+          <li><strong>Non-repeatable read</strong> — reading the same row twice in one transaction and getting two different values, because another transaction committed a change to it in between.</li>
+          <li><strong>Phantom read</strong> — re-running the same query twice in one transaction and getting a <em>different set of rows</em>, because another transaction inserted or deleted rows matching the query's condition in between.</li>
+        </ul>
+      </section>
+
+      <section id="dirty-read">
+        <h2>A dirty read, happening</h2>
+        <p>Under <code>READ UNCOMMITTED</code>, Transaction B can see Transaction A's change before A even decides whether to keep it:</p>
+        <div class="demo" id="dirty-read-demo"></div>
+        <script>
+          renderAssertToggle("dirty-read-demo", {
+            expression: "Txn A: UPDATE accounts SET balance = 500 WHERE id = 1; (not yet committed)  --  Txn B reads accounts.balance for id 1:",
+            initialKey: "uncommitted",
+            options: [
+              { key: "uncommitted", label: "under READ UNCOMMITTED", pass: false, detail: "B sees 500 — A's change, even though A hasn't committed yet. If A then ROLLS BACK, B made a decision based on data that never actually existed." },
+              { key: "committed", label: "under READ COMMITTED", pass: true, detail: "B sees the original balance (before A's update) until A actually commits — B never sees an uncommitted, possibly-reversible value." }
+            ]
+          });
+        </script>
+        <div class="callout warn">
+          <strong>Why READ UNCOMMITTED is rarely used in practice</strong>
+          A dirty read means a decision (a report figure, a business-logic branch) can be based on data that's about to be rolled back and effectively never existed. Most applications default to READ COMMITTED or stricter for exactly this reason — READ UNCOMMITTED trades correctness for a small amount of extra concurrency, and it's rarely a trade worth making.
+        </div>
+      </section>
+
+      <section id="locking">
+        <h2>Shared vs. exclusive locks</h2>
+        <div class="table-wrap">
+          <table class="compare">
+            <thead><tr><th>Lock type</th><th>Allows</th></tr></thead>
+            <tbody>
+              <tr><td class="highlight">Shared (read) lock</td><td>Multiple transactions can hold a shared lock on the same row at once — many concurrent readers, no conflict.</td></tr>
+              <tr><td class="highlight">Exclusive (write) lock</td><td>Only one transaction can hold it, and no other transaction can hold any lock (shared or exclusive) on that row at the same time — writers block everyone else.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>This is the underlying mechanism isolation levels are built from — a stricter isolation level generally means holding locks for longer, or acquiring more of them, which is the actual source of the performance cost mentioned above.</p>
+      </section>
+
+      <section id="deadlock">
+        <h2>Deadlocks, step by step</h2>
+        <p>Two transactions, each already holding a lock the other one needs — neither can proceed, and neither will release what it's holding until it finishes:</p>
+        <div class="sim" id="deadlock-stepper"></div>
+        <script>
+          renderQueryStepper("deadlock-stepper", {
+            tables: [
+              { id: "accounts10", label: "accounts", headers: ["id", "owner", "balance"], rows: [[1, "Ada", 500], [2, "Grace", 300]] }
+            ],
+            resultHeaders: ["transaction", "outcome"],
+            introCode: "-- Two transactions, running concurrently",
+            introText: "Step through — watch both transactions acquire one lock each, then both reach for the lock the other is holding.",
+            steps: [
+              {
+                code: "Txn A: BEGIN; UPDATE accounts SET balance = balance - 50 WHERE id = 1;",
+                rowStates: { accounts10: { 0: "match" } },
+                resultRows: [],
+                desc: "Transaction A locks row 1 (Ada) to perform its update."
+              },
+              {
+                code: "Txn B: BEGIN; UPDATE accounts SET balance = balance - 50 WHERE id = 2;",
+                rowStates: { accounts10: { 0: "match", 1: "match" } },
+                resultRows: [],
+                desc: "Transaction B locks row 2 (Grace) — a different row, no conflict yet. Both transactions are proceeding normally."
+              },
+              {
+                code: "Txn A: UPDATE accounts SET balance = balance + 50 WHERE id = 2;  -- BLOCKS",
+                rowStates: { accounts10: { 0: "match", 1: "match" } },
+                resultRows: [["A", "waiting for B's lock on row 2..."]],
+                resultRowStates: { 0: "new" },
+                desc: "Transaction A now needs row 2 too (crediting the transfer) — but B already holds that lock. A blocks and waits."
+              },
+              {
+                code: "Txn B: UPDATE accounts SET balance = balance + 50 WHERE id = 1;  -- ALSO BLOCKS -> DEADLOCK",
+                rowStates: { accounts10: { 0: "exclude", 1: "exclude" } },
+                resultRows: [["A", "waiting for B's lock on row 2..."], ["B", "waiting for A's lock on row 1..."]],
+                resultRowStates: { 1: "new" },
+                desc: "<b>Deadlock.</b> B now needs row 1 — but A holds it, and A is waiting on B. Neither can ever proceed on its own."
+              },
+              {
+                code: "-- database's deadlock detector intervenes",
+                rowStates: { accounts10: { 0: "match", 1: "match" } },
+                resultRows: [["A", "ROLLED BACK — chosen as deadlock victim"], ["B", "COMMITTED successfully"]],
+                desc: "The database detects the cycle and forcibly rolls back one transaction (the \"victim\" — chosen by cost heuristics, not fairness) to break the deadlock. The other proceeds normally."
+              }
+            ]
+          });
+        </script>
+        <div class="callout tip">
+          <strong>This is why applications retry on deadlock</strong>
+          A deadlock isn't really a bug in the SQL itself — it's an expected, occasionally-occurring outcome of concurrent writes to overlapping rows. Application code that writes to the database under real concurrency is expected to catch a deadlock error and retry the whole transaction, not treat it as a fatal, unrecoverable failure.
+        </div>
+        <div class="quiz">
+          <div class="quiz-q">What single change to Transaction A and B's row access order would have prevented this deadlock entirely?</div>
+          <div class="quiz-opts">
+            <button class="quiz-opt" data-correct="false">Using SELECT instead of UPDATE for the first statement</button>
+            <button class="quiz-opt" data-correct="true">Both transactions acquiring locks in the same order (e.g. always row 1 before row 2) — a consistent lock ordering across the whole application is a standard deadlock-prevention strategy</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </section>
+
+      <section id="interview-qa">
+        <h2>Interview Q&amp;A</h2>
+        <details class="qa">
+          <summary><span class="q-level junior">Junior</span> What does ACID stand for?</summary>
+          <div class="qa-body">Atomicity (all-or-nothing execution), Consistency (a transaction can't leave the database violating its constraints), Isolation (concurrent transactions don't see each other's uncommitted changes, to a configurable degree), and Durability (a committed change survives a crash).</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What's the difference between a dirty read and a non-repeatable read?</summary>
+          <div class="qa-body">A dirty read is seeing another transaction's uncommitted change — data that might be rolled back and never actually exist. A non-repeatable read is reading the same row twice within one transaction and getting two different values because another transaction committed a change in between — the data was real and committed both times, it just changed.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level mid">Mid</span> What causes a deadlock, and how does the database resolve it?</summary>
+          <div class="qa-body">Two (or more) transactions each hold a lock the other one needs, forming a cycle where neither can proceed. The database's deadlock detector identifies the cycle and forcibly rolls back one transaction (chosen by internal cost heuristics) to break it, letting the other continue. The rolled-back transaction's application code is expected to catch this and retry.</div>
+        </details>
+        <details class="qa">
+          <summary><span class="q-level senior">Senior</span> Why might a team choose Read Committed over Serializable even though Serializable is strictly safer?</summary>
+          <div class="qa-body">Stricter isolation means more locking and more blocking between concurrent transactions, which directly costs throughput and can increase deadlock frequency. Read Committed is a deliberate trade — accepting the possibility of non-repeatable and phantom reads in exchange for significantly better concurrency — and it's the right choice for most application code, which either doesn't rely on those guarantees or handles them another way (e.g., optimistic locking with a version column).</div>
+        </details>
+      </section>
+
+      <section id="gotchas">
+        <h2>Gotchas</h2>
+        <div class="callout warn">
+          <strong>READ UNCOMMITTED in production is a red flag</strong>
+          The performance gain rarely justifies the correctness risk — dirty reads mean decisions get made on data that may never have actually existed.
+        </div>
+        <div class="callout warn">
+          <strong>A "successful" write can still deadlock later in the same transaction</strong>
+          The deadlock isn't detected at the first UPDATE — it's detected only once the cycle actually forms. Code shouldn't assume a transaction that started fine will finish fine.
+        </div>
+        <div class="callout warn">
+          <strong>Inconsistent lock ordering across an application is the most common deadlock root cause</strong>
+          If different code paths update the same two tables in a different order, a deadlock is a matter of when, not if, under real concurrent load.
+        </div>
+      </section>
+
+      <div class="related-box">
+        <h3>Related topics</h3>
+        <div class="related-links">
+          <a href="sql-database-design.html">Database Design &amp; Constraints →</a>
+          <a href="sql-dml.html">DML Deep Dive →</a>
+          <a href="playwright-network-interception.html">Network Interception &amp; Session Storage →</a>
+        </div>
+      </div>
+
+      <p class="source-note">Source: Original content — written for interview prep, not sourced from a transcript — added 2026-08-05</p>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">Local notes app</footer>
+
+</body>
+</html>

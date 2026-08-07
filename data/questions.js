@@ -1509,6 +1509,38 @@ window.ALL_QUESTIONS = [
   "file": "pages/sql-joins.html"
  },
  {
+  "q": "What's the difference between a sequential scan and an index scan in an EXPLAIN plan?",
+  "a": "A sequential scan reads every row in the table to check the filter condition. An index scan uses an index to jump directly to matching rows without reading the whole table. EXPLAIN's cost estimates make the difference visible directly, especially on larger tables.",
+  "level": "junior",
+  "topic": "sql-query-optimization",
+  "topicLabel": "SQL: Query Optimization",
+  "file": "pages/sql-query-optimization.html"
+ },
+ {
+  "q": "What is the N+1 query problem?",
+  "a": "Fetching a list of N records with one query, then fetching related data for each record with a separate query inside a loop — N+1 total queries instead of one. It commonly comes from an ORM's lazy-loading default and scales linearly (and expensively) with the size of the initial result set. The fix is typically a JOIN or an explicit eager-load/batch-fetch of the related data in one additional query instead of N.",
+  "level": "mid",
+  "topic": "sql-query-optimization",
+  "topicLabel": "SQL: Query Optimization",
+  "file": "pages/sql-query-optimization.html"
+ },
+ {
+  "q": "Why might WHERE UPPER(email) = 'ADA@X.COM' fail to use an index on the email column?",
+  "a": "A plain index on email stores the literal column values — applying UPPER() to the column at query time changes what's being compared, and the database generally can't match that against an index built on the untransformed values. A function-based (expression) index built specifically on UPPER(email) would be usable; the plain index on email is not.",
+  "level": "mid",
+  "topic": "sql-query-optimization",
+  "topicLabel": "SQL: Query Optimization",
+  "file": "pages/sql-query-optimization.html"
+ },
+ {
+  "q": "A performance test passes with a small seeded dataset but fails once the dataset is scaled up. What would you investigate first?",
+  "a": "Whether the slow endpoint's data access pattern scales linearly per record rather than staying roughly constant — the classic signature of N+1 queries or a missing index that a full table scan can mask on a small table but not a large one. EXPLAIN on the actual queries involved, and a query log or APM trace showing the number of queries fired per request, would confirm it quickly.",
+  "level": "senior",
+  "topic": "sql-query-optimization",
+  "topicLabel": "SQL: Query Optimization",
+  "file": "pages/sql-query-optimization.html"
+ },
+ {
   "q": "What's the difference between a correlated and non-correlated subquery?",
   "a": "A non-correlated subquery is fully independent of the outer query and conceptually runs once. A correlated subquery references a column from the outer query, so it conceptually re-runs once per outer row — the inner query's result can be different for every row being checked.",
   "level": "junior",
@@ -1547,6 +1579,38 @@ window.ALL_QUESTIONS = [
   "topic": "sql-subqueries",
   "topicLabel": "SQL: Subqueries",
   "file": "pages/sql-subqueries.html"
+ },
+ {
+  "q": "What does ACID stand for?",
+  "a": "Atomicity (all-or-nothing execution), Consistency (a transaction can't leave the database violating its constraints), Isolation (concurrent transactions don't see each other's uncommitted changes, to a configurable degree), and Durability (a committed change survives a crash).",
+  "level": "junior",
+  "topic": "sql-transactions",
+  "topicLabel": "SQL: Transactions",
+  "file": "pages/sql-transactions.html"
+ },
+ {
+  "q": "What's the difference between a dirty read and a non-repeatable read?",
+  "a": "A dirty read is seeing another transaction's uncommitted change — data that might be rolled back and never actually exist. A non-repeatable read is reading the same row twice within one transaction and getting two different values because another transaction committed a change in between — the data was real and committed both times, it just changed.",
+  "level": "mid",
+  "topic": "sql-transactions",
+  "topicLabel": "SQL: Transactions",
+  "file": "pages/sql-transactions.html"
+ },
+ {
+  "q": "What causes a deadlock, and how does the database resolve it?",
+  "a": "Two (or more) transactions each hold a lock the other one needs, forming a cycle where neither can proceed. The database's deadlock detector identifies the cycle and forcibly rolls back one transaction (chosen by internal cost heuristics) to break it, letting the other continue. The rolled-back transaction's application code is expected to catch this and retry.",
+  "level": "mid",
+  "topic": "sql-transactions",
+  "topicLabel": "SQL: Transactions",
+  "file": "pages/sql-transactions.html"
+ },
+ {
+  "q": "Why might a team choose Read Committed over Serializable even though Serializable is strictly safer?",
+  "a": "Stricter isolation means more locking and more blocking between concurrent transactions, which directly costs throughput and can increase deadlock frequency. Read Committed is a deliberate trade — accepting the possibility of non-repeatable and phantom reads in exchange for significantly better concurrency — and it's the right choice for most application code, which either doesn't rely on those guarantees or handles them another way (e.g., optimistic locking with a version column).",
+  "level": "senior",
+  "topic": "sql-transactions",
+  "topicLabel": "SQL: Transactions",
+  "file": "pages/sql-transactions.html"
  },
  {
   "q": "What's the difference between a view and a materialized view?",

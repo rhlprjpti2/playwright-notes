@@ -44,6 +44,8 @@ TOPIC_LABELS = {
     "sql-window-functions": "SQL: Window Functions",
     "sql-views-procedures": "SQL: Views & Procedures",
     "sql-database-design": "SQL: Database Design",
+    "sql-transactions": "SQL: Transactions",
+    "sql-query-optimization": "SQL: Query Optimization",
     "python-memory-model": "Python: Memory Model",
     "python-data-types": "Python: Data Types",
     "python-strings": "Python: Strings",

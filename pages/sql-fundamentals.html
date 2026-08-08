@@ -12,9 +12,11 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to content</a>
+
 <div id="scroll-progress"></div>
 
-<div class="topbar">
+<header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
     <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
@@ -23,7 +25,7 @@
       <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
     </div>
   </div>
-</div>
+</header>
 
 <div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
 <nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
@@ -34,7 +36,7 @@
   <div class="nav-drawer-body" id="nav-drawer-body"></div>
 </nav>
 
-<div class="wrap">
+<main class="wrap" id="main-content">
   <div class="topic-header">
     <div class="breadcrumb"><a href="../index.html">All topics</a> / SQL Fundamentals &amp; Command Categories</div>
     <h1>SQL Fundamentals &amp; Command Categories</h1>
@@ -77,7 +79,7 @@
         <p>A near-guaranteed opener in any SQL-adjacent interview: "what's the difference between DDL and DML?" It's really just four buckets, grouped by <em>what kind of thing changes</em>:</p>
 
         <figure class="concept-art">
-          <svg viewBox="0 0 640 260" width="100%" height="auto" role="img" aria-label="Four command categories branching from SQL: DDL changes schema structure, DML changes row data, DCL changes permissions, TCL controls transaction boundaries">
+          <svg viewBox="0 0 640 260" width="100%" role="img" aria-label="Four command categories branching from SQL: DDL changes schema structure, DML changes row data, DCL changes permissions, TCL controls transaction boundaries">
             <rect x="14" y="110" width="90" height="40" rx="10" fill="var(--bg-card)" stroke="var(--border)" stroke-width="1.5"/>
             <text x="59" y="135" class="ca-lbl" style="font-size:12px">SQL</text>
 
@@ -344,7 +346,7 @@ FROM orders;</code></pre>
       <p class="source-note">Source: Original content — written for interview prep, not sourced from a transcript — added 2026-08-04</p>
     </div>
   </div>
-</div>
+</main>
 
 <footer class="site-footer">Local notes app</footer>
 

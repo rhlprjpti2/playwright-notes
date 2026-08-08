@@ -13,9 +13,11 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to content</a>
+
 <div id="scroll-progress"></div>
 
-<div class="topbar">
+<header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
     <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
@@ -24,7 +26,7 @@
       <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
     </div>
   </div>
-</div>
+</header>
 
 <div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
 <nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
@@ -35,7 +37,7 @@
   <div class="nav-drawer-body" id="nav-drawer-body"></div>
 </nav>
 
-<div class="wrap">
+<main class="wrap" id="main-content">
   <div class="topic-header">
     <div class="breadcrumb"><a href="../index.html">All topics</a> / Dynamic Locators &amp; Filtering</div>
     <h1>Dynamic Locators, Filtering &amp; Scoped Search</h1>
@@ -396,7 +398,7 @@ expect(page.locator(".media-body")).to_have_count(2)</code></pre>
       <p class="source-note">Source: "Dynamic Element Scanning: Product Cart Example" — added 2026-07-29</p>
     </div>
   </div>
-</div>
+</main>
 
 <footer class="site-footer">Local notes app</footer>
 

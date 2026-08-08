@@ -12,9 +12,11 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to content</a>
+
 <div id="scroll-progress"></div>
 
-<div class="topbar">
+<header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
     <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
@@ -23,7 +25,7 @@
       <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
     </div>
   </div>
-</div>
+</header>
 
 <div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
 <nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
@@ -34,7 +36,7 @@
   <div class="nav-drawer-body" id="nav-drawer-body"></div>
 </nav>
 
-<div class="wrap">
+<main class="wrap" id="main-content">
   <div class="topic-header">
     <div class="breadcrumb"><a href="../index.html">All topics</a> / Functions Deep Dive</div>
     <h1>Functions Deep Dive</h1>
@@ -147,7 +149,7 @@ def increment():
                   <div class="cs-code-line cs-p2"><span class="cs-var">i</span> = <span class="cs-num">1</span> — makers[1] created</div>
                   <div class="cs-code-line cs-p3"><span class="cs-var">i</span> = <span class="cs-num">2</span>, loop ends</div>
                 </div>
-                <svg viewBox="0 0 640 220" width="100%" height="auto" role="img" aria-label="The shared box i changes from 0 to 1 to 2 as the loop runs; once the loop ends, all three lambdas light up together, all reading 2">
+                <svg viewBox="0 0 640 220" width="100%" role="img" aria-label="The shared box i changes from 0 to 1 to 2 as the loop runs; once the loop ends, all three lambdas light up together, all reading 2">
                   <ellipse class="cs-ring cs-ring-p1" cx="320" cy="65" rx="65" ry="42" stroke="#ffb15c" stroke-width="3"/>
                   <ellipse class="cs-ring cs-ring-p2" cx="320" cy="65" rx="65" ry="42" stroke="#ffb15c" stroke-width="3"/>
                   <ellipse class="cs-ring cs-ring-p3" cx="320" cy="65" rx="65" ry="42" stroke="#ffb15c" stroke-width="3"/>
@@ -273,7 +275,7 @@ retry(lambda: page.click("#flaky-button"))</code></pre>
       <p class="source-note">Original content, written for this notes site — not sourced from a video transcript. — added 2026-08-02</p>
     </div>
   </div>
-</div>
+</main>
 
 <footer class="site-footer">Local notes app</footer>
 

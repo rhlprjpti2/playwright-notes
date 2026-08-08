@@ -12,9 +12,11 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to content</a>
+
 <div id="scroll-progress"></div>
 
-<div class="topbar">
+<header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
     <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
@@ -23,7 +25,7 @@
       <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
     </div>
   </div>
-</div>
+</header>
 
 <div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
 <nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
@@ -34,7 +36,7 @@
   <div class="nav-drawer-body" id="nav-drawer-body"></div>
 </nav>
 
-<div class="wrap">
+<main class="wrap" id="main-content">
   <div class="topic-header">
     <div class="breadcrumb"><a href="../index.html">All topics</a> / DML Deep Dive</div>
     <h1>DML Deep Dive</h1>
@@ -99,7 +101,7 @@ SELECT first_name, last_name FROM employees WHERE department = 'Engineering';</c
               <div class="cs-code-line cs-q1">UPDATE employees SET salary = 50000 WHERE id = 5;</div>
               <div class="cs-code-line cs-q2">UPDATE employees SET salary = 50000;  <span class="cs-num"># WHERE forgotten</span></div>
             </div>
-            <svg viewBox="0 0 640 210" width="100%" height="auto" role="img" aria-label="With a WHERE clause, only the matching row changes; without one, every single row in the table is overwritten">
+            <svg viewBox="0 0 640 210" width="100%" role="img" aria-label="With a WHERE clause, only the matching row changes; without one, every single row in the table is overwritten">
               <g class="cs-q1">
                 <rect x="40" y="20" width="560" height="30" rx="6" fill="#c2b8a3" opacity=".4"/>
                 <text x="60" y="40" class="ca-lbl" style="font-size:11px; text-anchor:start;">id 3 — unchanged</text>
@@ -247,7 +249,7 @@ WHEN NOT MATCHED THEN INSERT (user_id, theme) VALUES (source.user_id, source.the
       <p class="source-note">Source: Original content — written for interview prep, not sourced from a transcript — added 2026-08-04</p>
     </div>
   </div>
-</div>
+</main>
 
 <footer class="site-footer">Local notes app</footer>
 

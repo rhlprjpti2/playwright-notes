@@ -37,12 +37,12 @@ function slugFor(t) {
    so progress reads per-track and per-phase, not just as one site-wide
    number — matters once Python and Playwright are being learned at
    different paces. */
-function makeCollapseHead(className, label, count, targetSection, learnedCount) {
+function makeCollapseHead(className, label, count, targetSection, learnedCount, onToggle) {
   const head = document.createElement("div");
   head.className = className;
   head.tabIndex = 0;
   head.setAttribute("role", "button");
-  head.setAttribute("aria-expanded", "true");
+  head.setAttribute("aria-expanded", String(!targetSection.classList.contains("hub-collapsed")));
   const labelClass = className === "hub-track-head" ? "hub-track-label" : "hub-phase-label";
   const countClass = className === "hub-track-head" ? "hub-track-count" : "hub-phase-count";
   const hasProgress = learnedCount > 0;
@@ -55,6 +55,7 @@ function makeCollapseHead(className, label, count, targetSection, learnedCount) 
   function toggle() {
     const collapsed = targetSection.classList.toggle("hub-collapsed");
     head.setAttribute("aria-expanded", String(!collapsed));
+    if (typeof onToggle === "function") onToggle(collapsed);
   }
   head.addEventListener("click", toggle);
   head.addEventListener("keydown", (e) => {
@@ -239,12 +240,19 @@ function initHub() {
       return;
     }
 
-    // Default view: two top-level tracks (Python Learning, Playwright Course),
+    // Default view: top-level tracks (Python Learning, Playwright Course, SQL),
     // each holding its phases as child sub-groups — a track with only one
     // phase skips the redundant sub-header and lists cards directly.
+    //
+    // Tracks render COLLAPSED by default, with only the last-opened one (or
+    // the first, initially) expanded. With 38 topics across 3 tracks, having
+    // everything expanded meant scrolling ~10 screens on mobile to reach the
+    // last track — and that got linearly worse with every track added. The
+    // open track is remembered so returning to the hub lands where you left off.
     grid.classList.add("grid-grouped");
     let cardIndex = 0;
     const trackOrder = window.TRACK_ORDER || [{ key: "_all", label: "All topics", phases: phaseOrder.map(p => p.key) }];
+    const openTrackKey = (typeof pwLoad === "function" ? pwLoad("pw-notes-open-track").key : null) || trackOrder[0].key;
     trackOrder.forEach((track) => {
       const trackTopics = filtered.filter(t => track.phases.includes(t.phase));
       if (trackTopics.length === 0) return;
@@ -255,7 +263,14 @@ function initHub() {
         : 0;
       const trackSection = document.createElement("div");
       trackSection.className = "hub-track";
-      const trackHead = makeCollapseHead("hub-track-head", track.label, trackTopics.length, trackSection, trackLearned);
+      // A search or tag filter is an explicit "show me matches" intent — keep
+      // every matching track open in that case rather than hiding results
+      // behind a collapsed header the user then has to hunt for.
+      const filtersActive = !!query || !!activeTag || showBookmarksOnly;
+      if (!filtersActive && track.key !== openTrackKey) trackSection.classList.add("hub-collapsed");
+      const trackHead = makeCollapseHead("hub-track-head", track.label, trackTopics.length, trackSection, trackLearned, (collapsed) => {
+        if (!collapsed && typeof pwSave === "function") pwSave("pw-notes-open-track", { key: track.key });
+      });
       trackSection.appendChild(trackHead);
       const trackBody = document.createElement("div");
       trackBody.className = "hub-track-body";

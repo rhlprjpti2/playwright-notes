@@ -8,9 +8,11 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to content</a>
+
 <div id="scroll-progress"></div>
 
-<div class="topbar">
+<header class="topbar">
   <div class="topbar-inner">
     <div class="brand"><span class="brand-mark"></span> Tech Interview Hub</div>
     <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
@@ -23,7 +25,7 @@
       <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
     </div>
   </div>
-</div>
+</header>
 
 <div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
 <nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
@@ -34,7 +36,7 @@
   <div class="nav-drawer-body" id="nav-drawer-body"></div>
 </nav>
 
-<div class="wrap">
+<main class="wrap" id="main-content">
   <div class="hero">
     <div class="hero-controls">
       <button type="button" class="bookmark-filter-btn" id="bookmark-filter-btn" aria-pressed="false">
@@ -61,7 +63,7 @@
   </div>
 
   <div class="grid" id="grid"></div>
-</div>
+</main>
 
 <footer class="site-footer">Local notes app · updates whenever a new transcript is processed</footer>
 

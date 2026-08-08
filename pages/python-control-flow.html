@@ -12,9 +12,11 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to content</a>
+
 <div id="scroll-progress"></div>
 
-<div class="topbar">
+<header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
     <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
@@ -23,7 +25,7 @@
       <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
     </div>
   </div>
-</div>
+</header>
 
 <div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
 <nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
@@ -34,7 +36,7 @@
   <div class="nav-drawer-body" id="nav-drawer-body"></div>
 </nav>
 
-<div class="wrap">
+<main class="wrap" id="main-content">
   <div class="topic-header">
     <div class="breadcrumb"><a href="../index.html">All topics</a> / Control Flow</div>
     <h1>Control Flow</h1>
@@ -73,7 +75,7 @@
             <div class="cs-code-line cs-p2">elif status_code == 404:  <span class="cs-num"># True — runs, stops here</span></div>
             <div class="cs-code-line cs-p3">else: ...  <span class="cs-num"># never reached</span></div>
           </div>
-          <svg viewBox="0 0 640 170" width="100%" height="auto" role="img" aria-label="Each condition is checked top to bottom; the first True branch runs and everything after it, including else, is skipped entirely">
+          <svg viewBox="0 0 640 170" width="100%" role="img" aria-label="Each condition is checked top to bottom; the first True branch runs and everything after it, including else, is skipped entirely">
             <rect class="cs-p1" x="20" y="40" width="150" height="70" rx="10" fill="none" stroke="#8a5e91" stroke-width="3"/>
             <text x="95" y="68" class="ca-lbl" style="font-size:12px">if checked</text>
             <text x="95" y="88" class="ca-sub">200 == 404? No</text>
@@ -166,7 +168,7 @@ else:
               <div class="cs-code-line cs-q1">for item in cart_items: ...        <span class="cs-num"># no break — loop finishes</span></div>
               <div class="cs-code-line cs-q2">for item in cart_items: ... break  <span class="cs-num"># break hit partway through</span></div>
             </div>
-            <svg viewBox="0 0 640 200" width="100%" height="auto" role="img" aria-label="When the loop runs to completion without hitting break, the else block runs; when break fires partway through, else is skipped entirely">
+            <svg viewBox="0 0 640 200" width="100%" role="img" aria-label="When the loop runs to completion without hitting break, the else block runs; when break fires partway through, else is skipped entirely">
               <g class="cs-q1">
                 <rect x="30" y="30" width="55" height="40" rx="8" fill="#c2b8a3" opacity=".6"/>
                 <rect x="100" y="30" width="55" height="40" rx="8" fill="#c2b8a3" opacity=".6"/>
@@ -260,7 +262,7 @@ while (row := get_next_row()) is not None:
       <p class="source-note">Original content, written for this notes site — not sourced from a video transcript. — added 2026-08-02</p>
     </div>
   </div>
-</div>
+</main>
 
 <footer class="site-footer">Local notes app</footer>
 

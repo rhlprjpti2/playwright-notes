@@ -12,9 +12,11 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to content</a>
+
 <div id="scroll-progress"></div>
 
-<div class="topbar">
+<header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
     <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
@@ -23,7 +25,7 @@
       <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
     </div>
   </div>
-</div>
+</header>
 
 <div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
 <nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
@@ -34,7 +36,7 @@
   <div class="nav-drawer-body" id="nav-drawer-body"></div>
 </nav>
 
-<div class="wrap">
+<main class="wrap" id="main-content">
   <div class="topic-header">
     <div class="breadcrumb"><a href="../index.html">All topics</a> / Child Windows &amp; Popups</div>
     <h1>Handling Child Windows &amp; Popups</h1>
@@ -72,7 +74,7 @@
             <div class="cs-code-line cs-p2">&nbsp;&nbsp;page.get_by_role("link", name="Open").click()</div>
             <div class="cs-code-line cs-p3">new_page = popup_info.value</div>
           </div>
-          <svg viewBox="0 0 640 170" width="100%" height="auto" role="img" aria-label="A popup listener is armed before the click, the click opens a real new window, and popup_info.value hands back a page object scoped to it">
+          <svg viewBox="0 0 640 170" width="100%" role="img" aria-label="A popup listener is armed before the click, the click opens a real new window, and popup_info.value hands back a page object scoped to it">
             <rect class="cs-p1" x="30" y="40" width="160" height="70" rx="10" fill="none" stroke="#f4d35e" stroke-width="3"/>
             <text x="110" y="72" class="ca-lbl" style="font-size:12px">listening</text>
             <text x="110" y="90" class="ca-sub">for a new window</text>
@@ -523,7 +525,7 @@ print(text)</code></pre>
       <p class="source-note">Sources: "Handling Child Windows / Popups in Playwright", "Extracting Text with split() &amp; strip() + Pytest Assertions" — added 2026-07-30</p>
     </div>
   </div>
-</div>
+</main>
 
 <footer class="site-footer">Local notes app</footer>
 

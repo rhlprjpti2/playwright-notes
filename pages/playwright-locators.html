@@ -13,9 +13,11 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to content</a>
+
 <div id="scroll-progress"></div>
 
-<div class="topbar">
+<header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
     <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
@@ -24,7 +26,7 @@
       <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
     </div>
   </div>
-</div>
+</header>
 
 <div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
 <nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
@@ -35,7 +37,7 @@
   <div class="nav-drawer-body" id="nav-drawer-body"></div>
 </nav>
 
-<div class="wrap">
+<main class="wrap" id="main-content">
   <div class="topic-header">
     <div class="breadcrumb"><a href="../index.html">All topics</a> / Core Locators</div>
     <h1>Playwright Core Locators</h1>
@@ -70,7 +72,7 @@
         <p>Playwright gives you several complementary ways to locate an element, ranked roughly by how "semantic" the underlying attribute is: a form field's associated label, a component's accessibility role, a raw CSS selector as a universal fallback, or the visible text an element contains.</p>
 
         <figure class="concept-art">
-          <svg viewBox="0 0 640 250" width="100%" height="auto" role="img" aria-label="Locator strategies grouped into three families: semantic attributes (role, label), visible content (text, placeholder), and CSS as the structural fallback">
+          <svg viewBox="0 0 640 250" width="100%" role="img" aria-label="Locator strategies grouped into three families: semantic attributes (role, label), visible content (text, placeholder), and CSS as the structural fallback">
             <rect x="14" y="105" width="130" height="40" rx="10" fill="var(--bg-card)" stroke="var(--border)" stroke-width="1.5"/>
             <text x="79" y="130" class="ca-lbl" style="font-size:12px">locate the element</text>
 
@@ -417,7 +419,7 @@ page.get_by_role("link", name="Top").click()              # click an item inside
       <p class="source-note">Sources: "Handling Core Locators: Labels, Roles & Combo Boxes", "get_by_label Limitations", "Handling Buttons, Links & CSS Selectors" — added 2026-07-29</p>
     </div>
   </div>
-</div>
+</main>
 
 <footer class="site-footer">Local notes app</footer>
 

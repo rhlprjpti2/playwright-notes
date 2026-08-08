@@ -5,7 +5,10 @@
   --border: #232a38;
   --text: #e6e9ef;
   --text-dim: #9aa4b5;
-  --text-faint: #5f6b80;
+  /* Lightened from #5f6b80, which measured 3.20:1 against --bg-card — below
+     the 4.5:1 WCAG AA floor for text under 18.66px, and this token is used
+     81 times, almost entirely on small text (card meta, counts, captions). */
+  --text-faint: #828da3;
   --accent: #5eead4;
   --accent-2: #a78bfa;
   --accent-3: #fb923c;
@@ -14,6 +17,8 @@
   --code-bg: #0d1117;
   --shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
   --radius: 14px;
+  /* Max line length for prose — see the "Reading measure" block below. */
+  --measure: 68ch;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
   --font-mono: "Cascadia Code", "Fira Code", Consolas, "SF Mono", monospace;
 }
@@ -25,7 +30,7 @@
   --border: #e2e5ec;
   --text: #1a1f2b;
   --text-dim: #4b5567;
-  --text-faint: #8b93a3;
+  --text-faint: #6b7488;
   --accent: #0f9d8c;
   --accent-2: #7c5cf0;
   --accent-3: #e2661c;
@@ -42,7 +47,7 @@
     --border: #e2e5ec;
     --text: #1a1f2b;
     --text-dim: #4b5567;
-    --text-faint: #8b93a3;
+    --text-faint: #6b7488;
     --accent: #0f9d8c;
     --accent-2: #7c5cf0;
     --accent-3: #e2661c;
@@ -84,6 +89,23 @@ body {
 
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
+
+/* Keyboard users otherwise have to tab through the topbar and the whole
+   "On this page" list before reaching the actual content, on every page. */
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 300;
+  padding: 10px 16px;
+  border-radius: 0 0 8px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  font-size: 14px;
+  transition: top .15s ease;
+}
+.skip-link:focus { top: 0; text-decoration: none; }
 
 .wrap {
   max-width: 1180px;
@@ -554,7 +576,7 @@ a:hover { text-decoration: underline; }
   .breadcrumb { font-size: 12.5px; }
 }
 .topic-header h1 { font-size: clamp(26px, 3.6vw, 34px); margin: 0 0 10px; letter-spacing: -0.02em; }
-.topic-header .lede { color: var(--text-dim); max-width: 720px; }
+.topic-header .lede { color: var(--text-dim); max-width: var(--measure); }
 .topic-header .card-tags { margin-top: 14px; }
 
 .topic-layout {
@@ -1141,6 +1163,30 @@ footer.site-footer {
   width: 0%;
   transition: width .1s linear;
 }
+
+/* ---------- Reading measure ----------
+   Prose was running to ~110 characters per line on a wide desktop window —
+   well past the 45-75 range where the eye reliably finds the next line, and
+   this is a site that is almost entirely long-form reading.
+   The cap deliberately applies to PROSE ONLY: tables, diagrams, code blocks,
+   and the interactive steppers are data displays, not text to be read
+   line-by-line, and they stay full width where the extra room genuinely helps. */
+.content > section > p,
+.content > section > ul,
+.content > section > ol,
+.content > section > h2,
+.content > section > h3,
+.content > p,
+.content > .callout,
+.content > section > .callout,
+.content > section > details.qa,
+.content > section > figure > figcaption {
+  max-width: var(--measure);
+}
+.content > section > .lead { max-width: var(--measure); }
+/* The "original content" note sits directly in .wrap, outside .content —
+   it's prose too, and was running the full 1132px page width. */
+.wrap > .callout { max-width: var(--measure); }
 
 /* ---------- Numbered sections ---------- */
 .content { counter-reset: topicsection; }

@@ -12,9 +12,11 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to content</a>
+
 <div id="scroll-progress"></div>
 
-<div class="topbar">
+<header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
     <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
@@ -23,7 +25,7 @@
       <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
     </div>
   </div>
-</div>
+</header>
 
 <div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
 <nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
@@ -34,7 +36,7 @@
   <div class="nav-drawer-body" id="nav-drawer-body"></div>
 </nav>
 
-<div class="wrap">
+<main class="wrap" id="main-content">
   <div class="topic-header">
     <div class="breadcrumb"><a href="../index.html">All topics</a> / Lists & Tuples</div>
     <h1>Lists & Tuples</h1>
@@ -155,7 +157,7 @@ failed = [r.name for r in test_results if r.status == "failed"]</code></pre>
                   <div class="cs-code-line cs-p2"><span class="cs-var">matrix</span> = [<span class="cs-var">row</span>] * 3</div>
                   <div class="cs-code-line cs-p3"><span class="cs-var">matrix</span>[0][0] = <span class="cs-num">9</span></div>
                 </div>
-                <svg viewBox="0 0 640 220" width="100%" height="auto" role="img" aria-label="row, matrix zero, matrix one, and matrix two all attach to the same single list — mutating it through matrix zero changes the value every one of them sees">
+                <svg viewBox="0 0 640 220" width="100%" role="img" aria-label="row, matrix zero, matrix one, and matrix two all attach to the same single list — mutating it through matrix zero changes the value every one of them sees">
                   <ellipse class="cs-ring cs-ring-p2" cx="320" cy="145" rx="118" ry="62" stroke="#c98bd6" stroke-width="3"/>
                   <ellipse class="cs-ring cs-ring-p3" cx="320" cy="145" rx="118" ry="62" stroke="#e07a5f" stroke-width="3"/>
                   <ellipse cx="320" cy="145" rx="110" ry="55" fill="#c98bd6"/>
@@ -290,7 +292,7 @@ x, *rest = [1, 2, 3, 4]      # star-unpacking: x = 1, rest = [2, 3, 4]</code></p
       <p class="source-note">Original content, written for this notes site — not sourced from a video transcript. — added 2026-08-02</p>
     </div>
   </div>
-</div>
+</main>
 
 <footer class="site-footer">Local notes app</footer>
 

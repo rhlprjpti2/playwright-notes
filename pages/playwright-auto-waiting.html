@@ -12,9 +12,11 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to content</a>
+
 <div id="scroll-progress"></div>
 
-<div class="topbar">
+<header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
     <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
@@ -23,7 +25,7 @@
       <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
     </div>
   </div>
-</div>
+</header>
 
 <div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
 <nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
@@ -34,7 +36,7 @@
   <div class="nav-drawer-body" id="nav-drawer-body"></div>
 </nav>
 
-<div class="wrap">
+<main class="wrap" id="main-content">
   <div class="topic-header">
     <div class="breadcrumb"><a href="../index.html">All topics</a> / Auto-Waiting &amp; Assertions</div>
     <h1>Playwright Auto-Waiting &amp; Assertions</h1>
@@ -64,7 +66,7 @@
             <div class="cs-code-line cs-q1">page.get_by_role("button", name="Login").click()</div>
             <div class="cs-code-line cs-q2"># all checks passed → click actually happens</div>
           </div>
-          <svg viewBox="0 0 640 150" width="100%" height="auto" role="img" aria-label="Four actionability checks — visible, stable, receives events, enabled — all pending then all passing before the click fires">
+          <svg viewBox="0 0 640 150" width="100%" role="img" aria-label="Four actionability checks — visible, stable, receives events, enabled — all pending then all passing before the click fires">
             <g transform="translate(30,30)">
               <rect width="130" height="60" rx="10" fill="#c2b8a3" opacity=".4"/>
               <text x="65" y="26" class="ca-lbl" style="font-size:11px">visible</text>
@@ -258,7 +260,7 @@ expect(page.get_by_placeholder("Hide/Show Example")).to_be_hidden()</code></pre>
       <p class="source-note">Source: "Auto-Waiting & Assertions in Playwright" — added 2026-07-29</p>
     </div>
   </div>
-</div>
+</main>
 
 <footer class="site-footer">Local notes app</footer>
 

@@ -12,9 +12,11 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to content</a>
+
 <div id="scroll-progress"></div>
 
-<div class="topbar">
+<header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
     <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
@@ -23,7 +25,7 @@
       <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
     </div>
   </div>
-</div>
+</header>
 
 <div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
 <nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
@@ -34,7 +36,7 @@
   <div class="nav-drawer-body" id="nav-drawer-body"></div>
 </nav>
 
-<div class="wrap">
+<main class="wrap" id="main-content">
   <div class="topic-header">
     <div class="breadcrumb"><a href="../index.html">All topics</a> / Generators & yield</div>
     <h1>Generators & yield</h1>
@@ -71,7 +73,7 @@
             <div class="cs-code-line">for line in read_lines_gen(path):</div>
             <div class="cs-code-line">lines = read_lines_list(path)</div>
           </div>
-          <svg viewBox="0 0 640 200" width="100%" height="auto" role="img" aria-label="A generator producing one item at a time on a loop, next to a list crate holding every item at once">
+          <svg viewBox="0 0 640 200" width="100%" role="img" aria-label="A generator producing one item at a time on a loop, next to a list crate holding every item at once">
             <ellipse cx="150" cy="100" rx="110" ry="55" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
             <rect class="ca-pointer-loop" x="-6" y="-6" width="12" height="12" rx="3" fill="#e0b429" style="offset-path: path('M260 100 A110 55 0 1 1 259.9 100')"/>
             <text x="150" y="105" class="ca-lbl" style="font-size:12px">yield</text>
@@ -130,7 +132,7 @@ next(gen)   # raises StopIteration — the while condition is now False</code></
               <div class="cs-code-line cs-p2">next(gen)  <span class="cs-num"># runs to yield, pauses, returns 1</span></div>
               <div class="cs-code-line cs-p3">next(gen)  <span class="cs-num"># resumes right there, not from the top</span></div>
             </div>
-            <svg viewBox="0 0 640 170" width="100%" height="auto" role="img" aria-label="Calling the generator function creates the object with nothing run yet; the first next() runs to the yield and pauses; the second next() resumes from that exact paused point rather than starting over">
+            <svg viewBox="0 0 640 170" width="100%" role="img" aria-label="Calling the generator function creates the object with nothing run yet; the first next() runs to the yield and pauses; the second next() resumes from that exact paused point rather than starting over">
               <rect class="cs-p1" x="20" y="40" width="150" height="70" rx="10" fill="none" stroke="#8a5e91" stroke-width="3"/>
               <text x="95" y="68" class="ca-lbl" style="font-size:12px">gen created</text>
               <text x="95" y="88" class="ca-sub">nothing has run</text>
@@ -238,7 +240,7 @@ def page(browser):
       <p class="source-note">Original content, written for this notes site — not sourced from a video transcript. — added 2026-08-02</p>
     </div>
   </div>
-</div>
+</main>
 
 <footer class="site-footer">Local notes app</footer>
 

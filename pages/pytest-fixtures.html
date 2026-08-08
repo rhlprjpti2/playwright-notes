@@ -12,9 +12,11 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to content</a>
+
 <div id="scroll-progress"></div>
 
-<div class="topbar">
+<header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
     <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
@@ -23,7 +25,7 @@
       <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
     </div>
   </div>
-</div>
+</header>
 
 <div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
 <nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
@@ -34,7 +36,7 @@
   <div class="nav-drawer-body" id="nav-drawer-body"></div>
 </nav>
 
-<div class="wrap">
+<main class="wrap" id="main-content">
   <div class="topic-header">
     <div class="breadcrumb"><a href="../index.html">All topics</a> / Pytest Fixtures &amp; Fundamentals</div>
     <h1>Pytest Fixtures &amp; Fundamentals</h1>
@@ -74,7 +76,7 @@
             <div class="cs-code-line cs-p2">yield page   <span class="cs-num"># test runs here</span></div>
             <div class="cs-code-line cs-p3">page.close()  <span class="cs-num"># after the test finishes</span></div>
           </div>
-          <svg viewBox="0 0 640 150" width="100%" height="auto" role="img" aria-label="A fixture pauses at yield while the test runs, then resumes to run teardown once the test finishes">
+          <svg viewBox="0 0 640 150" width="100%" role="img" aria-label="A fixture pauses at yield while the test runs, then resumes to run teardown once the test finishes">
             <rect class="cs-p1" x="20" y="35" width="170" height="65" rx="10" fill="none" stroke="#f4d35e" stroke-width="3"/>
             <text x="105" y="65" class="ca-lbl" style="font-size:12px">setup</text>
             <text x="105" y="83" class="ca-sub">runs once</text>
@@ -104,7 +106,7 @@
         <p><code>@pytest.fixture</code> works with no arguments at all — that's every example so far on this page. But it also accepts five keyword arguments that change how the fixture behaves, and each one is fair game in an interview. This section is the map; the next few sections each zoom into one entry.</p>
 
         <figure class="concept-art">
-          <svg viewBox="0 0 640 260" width="100%" height="auto" role="img" aria-label="The full pytest.fixture decorator signature with each of its five keyword arguments labeled: scope, params, autouse, ids, and name">
+          <svg viewBox="0 0 640 260" width="100%" role="img" aria-label="The full pytest.fixture decorator signature with each of its five keyword arguments labeled: scope, params, autouse, ids, and name">
             <rect x="20" y="20" width="600" height="46" rx="8" fill="var(--bg-elevated)" stroke="var(--border)" stroke-width="1"/>
             <text x="35" y="49" style="font-family:var(--font-mono); font-size:13px; text-anchor:start; fill:var(--text)">@pytest.fixture(<tspan fill="#e0b429">scope</tspan>=.., <tspan fill="#7fd8c9">params</tspan>=.., <tspan fill="#c98bd6">autouse</tspan>=.., <tspan fill="#f4a4a4">ids</tspan>=.., <tspan fill="#a4c8f0">name</tspan>=..)</text>
 
@@ -269,7 +271,7 @@ def test_login(browser_name):
               <div class="cs-code-line cs-p2">request.param &#8594; "firefox"</div>
               <div class="cs-code-line cs-p3">request.param &#8594; "webkit"</div>
             </div>
-            <svg viewBox="0 0 640 190" width="100%" height="auto" role="img" aria-label="One test function, test_login, runs three separate times — once for each value in the params list, each getting a different request.param">
+            <svg viewBox="0 0 640 190" width="100%" role="img" aria-label="One test function, test_login, runs three separate times — once for each value in the params list, each getting a different request.param">
               <rect x="220" y="15" width="200" height="46" rx="10" fill="none" stroke="#8a5e91" stroke-width="1.5"/>
               <text x="320" y="43" class="ca-lbl" style="font-size:12px">def test_login(browser_name)</text>
               <path d="M270 61 C230 80 170 90 130 100" fill="none" stroke="#8a6b45" stroke-width="1.5" class="ca-flow"/>
@@ -319,7 +321,7 @@ def test_login(browser_name):
               <div class="cs-code-line cs-q1">@pytest.fixture   <span class="cs-num"># autouse=False, the default</span></div>
               <div class="cs-code-line cs-q2">@pytest.fixture(autouse=True)</div>
             </div>
-            <svg viewBox="0 0 640 190" width="100%" height="auto" role="img" aria-label="Without autouse, a fixture only runs for tests that name it as an argument; with autouse=True, it runs for every test regardless">
+            <svg viewBox="0 0 640 190" width="100%" role="img" aria-label="Without autouse, a fixture only runs for tests that name it as an argument; with autouse=True, it runs for every test regardless">
               <rect x="30" y="20" width="150" height="46" rx="10" fill="none" stroke="#8a5e91" stroke-width="1.5"/>
               <text x="105" y="48" class="ca-lbl" style="font-size:11px">log_setup fixture</text>
 
@@ -580,7 +582,7 @@ def test_login(browser_name):
       <p class="source-note">Sources: "Pytest Basics: Test Functions &amp; Fixtures", "Pytest Fixture Scopes &amp; conftest.py", "Pytest Fixtures: Return Values &amp; Yield (Setup/Teardown)" — added 2026-07-29</p>
     </div>
   </div>
-</div>
+</main>
 
 <footer class="site-footer">Local notes app</footer>
 

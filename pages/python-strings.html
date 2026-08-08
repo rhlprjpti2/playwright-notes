@@ -12,9 +12,11 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to content</a>
+
 <div id="scroll-progress"></div>
 
-<div class="topbar">
+<header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
     <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
@@ -23,7 +25,7 @@
       <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
     </div>
   </div>
-</div>
+</header>
 
 <div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
 <nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
@@ -34,7 +36,7 @@
   <div class="nav-drawer-body" id="nav-drawer-body"></div>
 </nav>
 
-<div class="wrap">
+<main class="wrap" id="main-content">
   <div class="topic-header">
     <div class="breadcrumb"><a href="../index.html">All topics</a> / String Methods for Automation</div>
     <h1>String Methods for Automation</h1>
@@ -113,7 +115,7 @@ s[::-1]     # 'thgirwyalP' — step -1 reverses the whole string</code></pre>
                   <div class="cs-code-line cs-q1"><span class="cs-var">url</span> = "https://shop.example.com/product/8842"</div>
                   <div class="cs-code-line cs-q2"><span class="cs-var">product_id</span> = <span class="cs-var">url</span>[idx+1:]</div>
                 </div>
-                <svg viewBox="0 0 640 210" width="100%" height="auto" role="img" aria-label="A URL string split at the last slash — the front portion dropped, the tail 8842 kept and lifted into a new product_id object">
+                <svg viewBox="0 0 640 210" width="100%" role="img" aria-label="A URL string split at the last slash — the front portion dropped, the tail 8842 kept and lifted into a new product_id object">
                   <rect x="30" y="90" width="330" height="42" rx="8" fill="#b9b0a0" opacity=".55"/>
                   <text x="195" y="116" class="ca-lbl" style="font-size:11.5px; fill:#4a4230">.../product/</text>
                   <rect x="370" y="90" width="90" height="42" rx="8" fill="#7fd8c9"/>
@@ -272,7 +274,7 @@ if match:
       <p class="source-note">Original content, written for this notes site — not sourced from a video transcript. — added 2026-07-30</p>
     </div>
   </div>
-</div>
+</main>
 
 <footer class="site-footer">Local notes app</footer>
 

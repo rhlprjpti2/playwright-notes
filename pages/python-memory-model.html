@@ -12,9 +12,11 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to content</a>
+
 <div id="scroll-progress"></div>
 
-<div class="topbar">
+<header class="topbar">
   <div class="topbar-inner">
     <a class="brand" href="../index.html"><span class="brand-mark"></span> Tech Interview Hub</a>
     <button type="button" class="topbar-hamburger" id="topbar-hamburger" aria-expanded="false" aria-label="Menu">&#9776;</button>
@@ -23,7 +25,7 @@
       <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9788;</button>
     </div>
   </div>
-</div>
+</header>
 
 <div class="nav-drawer-overlay" id="nav-drawer-overlay"></div>
 <nav class="nav-drawer" id="nav-drawer" aria-label="Menu">
@@ -34,7 +36,7 @@
   <div class="nav-drawer-body" id="nav-drawer-body"></div>
 </nav>
 
-<div class="wrap">
+<main class="wrap" id="main-content">
   <div class="topic-header">
     <div class="breadcrumb"><a href="../index.html">All topics</a> / Variables &amp; the Memory Model</div>
     <h1>Variables &amp; the Memory Model</h1>
@@ -93,7 +95,7 @@
                   <div class="cs-code-line cs-p2"><span class="cs-var">b</span> = <span class="cs-var">a</span></div>
                   <div class="cs-code-line cs-p3"><span class="cs-var">c</span> = <span class="cs-num">5</span></div>
                 </div>
-                <svg viewBox="0 0 640 210" width="100%" height="auto" role="img" aria-label="a and b are both attached to the same object, 3, one after another; c is attached to a separate object, 5">
+                <svg viewBox="0 0 640 210" width="100%" role="img" aria-label="a and b are both attached to the same object, 3, one after another; c is attached to a separate object, 5">
                   <ellipse class="cs-ring cs-ring-both" cx="175" cy="125" rx="98" ry="70" stroke="#ffb15c" stroke-width="3"/>
                   <ellipse cx="175" cy="125" rx="90" ry="62" fill="#ffb15c"/>
                   <text x="175" y="131" class="ca-lbl" style="font-size:22px">3</text>
@@ -194,7 +196,7 @@
               <div class="cs-code-line" style="margin-left:auto"><span class="cs-var">lst2</span> = <span class="cs-var">lst1</span></div>
               <div class="cs-code-line cs-q2"><span class="cs-var">lst2</span>.append(4)</div>
             </div>
-            <svg viewBox="0 0 640 220" width="100%" height="auto" role="img" aria-label="Rebinding b to a new object leaves a untouched, versus mutating a shared list which both names still see">
+            <svg viewBox="0 0 640 220" width="100%" role="img" aria-label="Rebinding b to a new object leaves a untouched, versus mutating a shared list which both names still see">
               <text x="150" y="24" class="ca-sub" style="font-size:11px">int — immutable</text>
               <line x1="320" y1="15" x2="320" y2="205" stroke="var(--border)" stroke-width="1"/>
               <text x="480" y="24" class="ca-sub" style="font-size:11px">list — mutable</text>
@@ -260,7 +262,7 @@
               <div class="cs-code-line"><span class="cs-var">a</span> = [1, 2, 3]; <span class="cs-var">b</span> = [1, 2, 3]</div>
               <div class="cs-code-line cs-q2"><span class="cs-var">c</span> = <span class="cs-var">a</span></div>
             </div>
-            <svg viewBox="0 0 640 270" width="100%" height="auto" role="img" aria-label="a and b are two separate list objects that happen to hold equal values; c is then attached to the same object as a">
+            <svg viewBox="0 0 640 270" width="100%" role="img" aria-label="a and b are two separate list objects that happen to hold equal values; c is then attached to the same object as a">
               <ellipse class="cs-ring cs-glow-q2" cx="150" cy="115" rx="78" ry="55" stroke="#ffb15c" stroke-width="3"/>
               <ellipse cx="150" cy="115" rx="70" ry="48" fill="#ffb15c"/>
               <text x="150" y="121" class="ca-lbl" style="font-size:13px">[1, 2, 3]</text>
@@ -399,7 +401,7 @@ add_item("banana")    # ['apple', 'banana']  -- not a fresh cart!</code></pre>
       <p class="source-note">Original content, written for this notes site — not sourced from a video transcript. — added 2026-07-30</p>
     </div>
   </div>
-</div>
+</main>
 
 <footer class="site-footer">Local notes app</footer>
 
